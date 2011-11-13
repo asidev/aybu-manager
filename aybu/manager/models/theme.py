@@ -16,11 +16,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from . instance import Instance
-from . redirect import Redirect
-from . environment import Environment
-from . user import User, Group
-from . theme import Theme
+from sqlalchemy import Column
+from sqlalchemy import ForeignKey
+from sqlalchemy import Unicode
+from sqlalchemy.orm import backref
+from sqlalchemy.orm import relationship
+
+from . base import Base
 
 
-__all__ = ['Instance', 'Environment', 'Redirect', 'User', 'Group', 'Theme']
+class Theme(Base):
+
+    __tablename__ = 'themes'
+    __table_args__ = ({'mysql_engine': 'InnoDB'})
+
+    name = Column(Unicode(128), primary_key=True)
+    parent_name = Column(Unicode(128), ForeignKey('themes.name'))
+    children = relationship('Theme',
+                            backref=backref('parent', remote_side=name))
