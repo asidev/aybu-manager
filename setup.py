@@ -18,6 +18,7 @@ setup(name='aybu-manager-daemon',
       include_package_data=True,
       zip_safe=False,
       install_requires=(
+          'SQLAlchemy>=0.7',
       ),
       tests_require=('nose', 'coverage'),
       setup_requires=('versiontools >= 1.8',),
