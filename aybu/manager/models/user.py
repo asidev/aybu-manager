@@ -55,6 +55,11 @@ class User(Base):
 
     username = Column(Unicode(255), primary_key=True)
     password = Column(Crypt(), nullable=False)
+    name = Column(Unicode(128), nullable=False)
+    surname = Column(Unicode(128), nullable=False)
+    organization = Column(Unicode(128))
+    web = Column(Unicode(128))
+    twitter = Column(Unicode(128))
 
     groups = relationship('Group', secondary=users_groups, backref='users')
 
