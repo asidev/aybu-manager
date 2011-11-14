@@ -23,8 +23,11 @@ from sqlalchemy import (Column, Unicode)
 
 
 Paths = collections.namedtuple('Paths', ['root', 'configs', 'sites',
-                                         'archives', 'cgroups', 'logs', 'run'])
-Logs = collections.namedtuple('Logs', ['dir', 'emperor'])
+                                         'archives', 'cgroups', 'logs', 'run',
+                                         'virtualenv'])
+LogPaths = collections.namedtuple('Logs', ['dir', 'emperor'])
+SmtpConfig = collections.namedtuple('SmtpConfig', ['host', 'port'])
+OsConf = collections.namedtuple('OsConf', ['user', 'group'])
 __all__ = ['Environment']
 
 
@@ -40,6 +43,20 @@ class Environment(Base):
     def init(cls, config):
         cls.config = config
 
+    def os_config(self):
+        try:
+            return OsConf(user=self.config['os']['user'],
+                        group=self.config['os']['group'])
+        except AttributeError:
+            raise TypeError('Environment class ha not been initialized')
+
+
+    @property
+    def smtp_config(self):
+        return SmtpConfig(host=self.config['os']['smtp_host'],
+                          port=self.config['os']['smtp_port'])
+
+
     @property
     def paths(self):
         if hasattr(self, '_paths'):
@@ -52,7 +69,6 @@ class Environment(Base):
         c = self.config['paths']
         configs = join(c['configs'], self.name)
 
-
         self._paths = Paths(root=c['root'],
                             configs=configs,
                             sites=c['sites'],
@@ -61,7 +77,8 @@ class Environment(Base):
                             logs=Logs(dir=c['logs'],
                                       emperor=join(c['logs'],
                                                    'uwsgi_emperor.log')),
-                            run=c['run'])
+                            run=c['run'],
+                            virtualenv=c['virtualenv'])
         return self._paths
 
 

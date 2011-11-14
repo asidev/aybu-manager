@@ -51,8 +51,3 @@ class Theme(Base):
     def __repr__(self):
         return "<Theme {t.name} (parent: {t.parent_name}) by {t.author}>"\
                 .format(t=self)
-
-
-
-
-

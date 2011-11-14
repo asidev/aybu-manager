@@ -53,7 +53,7 @@ class User(Base):
     __tablename__ = 'users'
     __table_args__ = ({'mysql_engine': 'InnoDB'})
 
-    username = Column(Unicode(255), primary_key=True)
+    email = Column(Unicode(255), primary_key=True)
     password = Column(Crypt(), nullable=False)
     name = Column(Unicode(128), nullable=False)
     surname = Column(Unicode(128), nullable=False)
