@@ -16,6 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import configobj
 import os
 import collections
 from . base import Base
@@ -41,7 +42,7 @@ class Environment(Base):
 
     @classmethod
     def init(cls, config):
-        cls.config = config
+        cls.config = configobj.ConfigObj(config, file_error=True)
 
     def os_config(self):
         if not self.config:

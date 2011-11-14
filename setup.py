@@ -19,6 +19,7 @@ setup(name='aybu-manager-daemon',
       zip_safe=False,
       install_requires=(
           'SQLAlchemy>=0.7',
+          'ConfigObj',
           'mako',
       ),
       tests_require=('nose', 'coverage'),
