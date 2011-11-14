@@ -45,7 +45,8 @@ class Instance(Base):
     id = Column(Integer, primary_key=True)
     domain = Column(Unicode(255))
     enabled = Column(Boolean, default=True)
-    owner_username = Column(255, ForeignKey('users.username',
+    created = Column(DateTime, default=datetime.datetime.now)
+    owner_username = Column(Unicode(255), ForeignKey('users.username',
                                             onupdate='cascade',
                                             ondelete='restrict'))
     owner = relationship('User', backref='instances')
@@ -53,7 +54,10 @@ class Instance(Base):
                                                        onupdate='cascade',
                                                        ondelete='restrict'))
     environment = relationship('Environment', backref='instances')
-    created = Column(DateTime, default=datetime.datetime.now)
+    theme_name = Column(Unicode(128), ForeignKey('theme.name',
+                                                 onupdate='cascade',
+                                                 ondelete='restrict'))
+    theme = relationship('Theme', backref='instances')
 
     def __repr__(self):
         return "<Instance [{self.id}] {self.domain} (enabled: {self.enabled})>"\
