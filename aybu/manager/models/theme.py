@@ -16,9 +16,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from sqlalchemy import Column
-from sqlalchemy import ForeignKey
-from sqlalchemy import Unicode
+from sqlalchemy import (Column,
+                        ForeignKey,
+                        Integer,
+                        Unicode)
 from sqlalchemy.orm import backref
 from sqlalchemy.orm import relationship
 
@@ -34,3 +35,24 @@ class Theme(Base):
     parent_name = Column(Unicode(128), ForeignKey('themes.name'))
     children = relationship('Theme',
                             backref=backref('parent', remote_side=name))
+    version = Column(Unicode(16))
+    author_username = Column(Unicode(255), ForeignKey('users.username',
+                                                      onupdate='cascade',
+                                                      ondelete='restrict'),
+                             nullable=False)
+    author = relationship('Author', backref='themes')
+
+    banner_width = Column(Integer)
+    banner_height = Column(Integer)
+    logo_width = Column(Integer)
+    logo_height = Column(Integer)
+    main_menu_levels = Column(Integer)
+
+    def __repr__(self):
+        return "<Theme {t.name} (parent: {t.parent_name}) by {t.author}>"\
+                .format(t=self)
+
+
+
+
+
