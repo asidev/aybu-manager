@@ -68,9 +68,9 @@ class User(Base):
         return session.query(cls).options(joinedload('groups')).get(pkey)
 
     @classmethod
-    def check(cls, session, username, password):
+    def check(cls, session, email, password):
         try:
-            user = cls.get(session, username)
+            user = cls.get(session, email)
             enc_password = crypt.crypt(password, user.password[0:2])
             assert user.password == enc_password
 
@@ -89,7 +89,8 @@ class User(Base):
         return bool(set((perm, 'admin')) & set(g.name for g in self.groups))
 
     def __repr__(self):
-        return "<User {}>".format(self.username)
+        return "<User {} ({} {}) [{}]>".format(self.email, self.name,
+                                               self.surname, self.organization)
 
 
 class Group(Base):

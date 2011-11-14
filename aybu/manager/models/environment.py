@@ -44,18 +44,21 @@ class Environment(Base):
         cls.config = config
 
     def os_config(self):
-        try:
-            return OsConf(user=self.config['os']['user'],
-                        group=self.config['os']['group'])
-        except AttributeError:
+        if not self.config:
             raise TypeError('Environment class ha not been initialized')
+
+        return OsConf(user=self.config['os']['user'],
+                    group=self.config['os']['group'])
+
 
 
     @property
     def smtp_config(self):
-        return SmtpConfig(host=self.config['os']['smtp_host'],
-                          port=self.config['os']['smtp_port'])
+        if not self.config:
+            raise TypeError('Environment class ha not been initialized')
 
+        return SmtpConfig(host=self.config['os']['smtp_host'],
+                            port=self.config['os']['smtp_port'])
 
     @property
     def paths(self):
@@ -74,7 +77,7 @@ class Environment(Base):
                             sites=c['sites'],
                             archives=c['archives'],
                             cgroups=c['cgroups'],
-                            logs=Logs(dir=c['logs'],
+                            logs=LogPaths(dir=c['logs'],
                                       emperor=join(c['logs'],
                                                    'uwsgi_emperor.log')),
                             run=c['run'],
@@ -83,4 +86,4 @@ class Environment(Base):
 
 
     def __repr__(self):
-        return '<Environment «{self.name}»>'.format(self=self)
+        return '<Environment {self.name}>'.format(self=self)

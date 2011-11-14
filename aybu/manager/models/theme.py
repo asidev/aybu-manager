@@ -32,21 +32,31 @@ class Theme(Base):
     __table_args__ = ({'mysql_engine': 'InnoDB'})
 
     name = Column(Unicode(128), primary_key=True)
-    parent_name = Column(Unicode(128), ForeignKey('themes.name'))
+    parent_name = Column(Unicode(128), ForeignKey('themes.name',
+                                                  onupdate='cascade',
+                                                  ondelete='restrict'))
     children = relationship('Theme',
                             backref=backref('parent', remote_side=name))
     version = Column(Unicode(16))
-    author_username = Column(Unicode(255), ForeignKey('users.username',
+    author_email = Column(Unicode(255), ForeignKey('users.email',
                                                       onupdate='cascade',
-                                                      ondelete='restrict'),
-                             nullable=False)
-    author = relationship('Author', backref='themes')
+                                                      ondelete='restrict'))
+    author = relationship('User', backref=backref('authored_themes',
+                                                  remote_side=author_email))
+
+    owner_email = Column(Unicode(255), ForeignKey('users.email',
+                                                     onupdate='cascade',
+                                                     ondelete='restrict'),
+                            nullable=False)
+    owner = relationship('User', backref=backref('themes',
+                                                 remote_side=owner_email))
 
     banner_width = Column(Integer)
     banner_height = Column(Integer)
     logo_width = Column(Integer)
     logo_height = Column(Integer)
     main_menu_levels = Column(Integer)
+    image_full_size = Column(Integer)
 
     def __repr__(self):
         return "<Theme {t.name} (parent: {t.parent_name}) by {t.author}>"\

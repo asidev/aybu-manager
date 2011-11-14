@@ -31,7 +31,8 @@ from sqlalchemy import (UniqueConstraint,
                         DateTime,
                         Integer,
                         Unicode)
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import (relationship,
+                            backref)
 from . base import Base
 
 
@@ -82,7 +83,8 @@ class Instance(Base):
                                             onupdate='cascade',
                                             ondelete='restrict'),
                          nullable=False)
-    owner = relationship('User', backref='instances')
+    owner = relationship('User', backref=backref('instances',
+                                                 remote_side=owner_email))
 
     environment_name = Column(Unicode(64), ForeignKey('environments.name',
                                                        onupdate='cascade',
@@ -101,8 +103,10 @@ class Instance(Base):
                                                    onupdate='cascade',
                                                    ondelete='restrict'),
                                      nullable=False)
-    technical_contact = relationship('User', backref='technical_contact_for',
-            primaryjoin='User.email == Instance.technical_contact_email')
+    technical_contact = relationship('User',
+                backref=backref('technical_contact_for',
+                                remote_side=technical_contact_email)
+    )
 
     default_language = Column(Unicode(2))
     database_password = Column(Unicode(32))
@@ -166,16 +170,34 @@ class Instance(Base):
         return self._session
 
     @property
+    def database_user(self):
+        if self.id is None:
+            raise ValueError('instance id does not exist yet.')
+        return "{}{}".format(self.environment.config['database']['prefix'],
+                             self.id)
+
+    @property
+    def database_name(self):
+        return self.database_user
+
+
+    @property
     def database(self):
         if hasattr(self, '_database'):
             return self._database
 
         c = self.environment.config
-        dbname = "{}__{}".format(c['database']['prefix'], self.id)
+        if not c:
+            raise TypeError('Environment has not been configured')
+
+        driver = c['database']['type']
+        if 'driver' in c['database']:
+            driver = "{}+{}".format(driver, c['database']['driver'])
+
         self._database = DBConf(
-            driver=c['database']['driver'],
-            user=dbname,
+            driver=driver,
+            user=self.database_user,
             password=self.database_password,
-            name=dbname
+            name=self.database_name
         )
         return self._database

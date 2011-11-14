@@ -1,6 +1,28 @@
-[database]
+[manager]
 sqlalchemy.url = sqlite:///
 sqlalchemy.echo = false
+
+[database]
+prefix = aybu__
+type = mysql
+# comment out for default driver
+driver = oursql
+
+[os]
+user = asidev_www
+group = asidev
+smtp_host = localhost
+smtp_port = 25
+
+[paths]
+root = /srv/www/aybu/
+configs = %(root)/configs
+sites = %(root)/sites
+archives = %(root)/archives
+cgroups = /sys/fs/cgroups/sites/aybu/
+logs = /var/logs/sites/
+run = /var/run/aybu/
+virtualenv = /srv/.virtualenvs/aybu
 
 [loggers]
 keys = aybu
@@ -24,4 +46,3 @@ formatter = generic
 
 [formatter_generic]
 format = %(asctime)s %(levelname)-5.5s [%(name)s][%(threadName)s] %(message)s
-
