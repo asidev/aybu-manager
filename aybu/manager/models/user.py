@@ -36,9 +36,9 @@ log = getLogger(__name__)
 
 users_groups = Table('users_groups',
                      Base.metadata,
-                     Column('users_username',
+                     Column('users_email',
                             Unicode(255),
-                            ForeignKey('users.username',
+                            ForeignKey('users.email',
                                        onupdate="cascade",
                                        ondelete="cascade")),
                             Column('groups_name',

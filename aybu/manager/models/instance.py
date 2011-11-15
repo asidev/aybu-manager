@@ -92,7 +92,7 @@ class Instance(Base):
                               nullable=False)
     environment = relationship('Environment', backref='instances')
 
-    theme_name = Column(Unicode(128), ForeignKey('theme.name',
+    theme_name = Column(Unicode(128), ForeignKey('themes.name',
                                                  onupdate='cascade',
                                                  ondelete='restrict'),
                         nullable=False)
