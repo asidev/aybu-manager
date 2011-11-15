@@ -23,7 +23,7 @@ import os
 import pkg_resources
 import uuid
 
-from mako import Template
+from mako.template import Template
 from sqlalchemy import (UniqueConstraint,
                         ForeignKey,
                         Column,
@@ -42,7 +42,7 @@ Paths = collections.namedtuple('Paths', ['config', 'vassal_config', 'dir',
                                          'data', 'mako_tmp_dir', 'cache',
                                          'virtualenv'])
 LogPaths = collections.namedtuple('LogPaths', ['vassal', 'application'])
-DataPaths = collections.namedtulple('DataPaths', ['dir', 'default'])
+DataPaths = collections.namedtuple('DataPaths', ['dir', 'default'])
 SessionConf = collections.namedtuple('SessionConf', ['data_dir', 'lock_dir',
                                                       'key', 'secret'])
 DBConf = collections.namedtuple('DBConf', ['driver', 'user',

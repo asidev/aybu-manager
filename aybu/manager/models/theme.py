@@ -51,12 +51,13 @@ class Theme(Base):
     owner = relationship('User', backref=backref('themes',
                                                  remote_side=owner_email))
 
-    banner_width = Column(Integer)
-    banner_height = Column(Integer)
-    logo_width = Column(Integer)
-    logo_height = Column(Integer)
-    main_menu_levels = Column(Integer)
-    image_full_size = Column(Integer)
+    banner_width = Column(Integer, nullable=False)
+    banner_height = Column(Integer, nullable=False)
+    logo_width = Column(Integer, nullable=False)
+    logo_height = Column(Integer, nullable=False)
+    main_menu_levels = Column(Integer, nullable=False)
+    template_levels = Column(Integer, nullable=False)
+    image_full_size = Column(Integer, nullable=False)
 
     def __repr__(self):
         return "<Theme {t.name} (parent: {t.parent_name}) by {t.author}>"\
