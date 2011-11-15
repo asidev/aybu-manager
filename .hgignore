@@ -4,3 +4,4 @@ syntax: glob
 *.egg-info
 *.egg
 *.ini
+.coverage
