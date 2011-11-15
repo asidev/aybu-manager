@@ -21,6 +21,8 @@ from . redirect import Redirect
 from . environment import Environment
 from . user import User, Group
 from . theme import Theme
+from . base import Base
 
 
-__all__ = ['Instance', 'Environment', 'Redirect', 'User', 'Group', 'Theme']
+__all__ = ['Instance', 'Environment', 'Redirect', 'User', 'Group', 'Theme',
+           'Base']
