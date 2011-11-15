@@ -18,8 +18,10 @@ limitations under the License.
 
 import configobj
 import logging
-import unittest
 import os
+import shutil
+import tempfile
+import unittest
 from sqlalchemy import engine_from_config
 from sqlalchemy.orm import sessionmaker
 from aybu.manager.models import Base
@@ -41,9 +43,11 @@ class BaseTests(unittest.TestCase):
         Base.metadata.bind = self.engine
         Base.metadata.create_all()
 
+        self.tempdir = tempfile.mkdtemp()
+        self.config['paths']['root'] = self.tempdir
 
     def tearDown(self):
         self.session.close()
         self.Session.close_all()
         Base.metadata.drop_all()
-
+        shutil.rmtree(self.tempdir)
