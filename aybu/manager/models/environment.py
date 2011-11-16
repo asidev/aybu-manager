@@ -78,7 +78,7 @@ class Environment(Base):
             self.log.error('%s has not been initialized', self)
             raise TypeError('%s class has not been initialized' % (self))
 
-
+    @property
     def os_config(self):
         self.check_initialized()
         return OsConf(user=self.config['os']['user'],
