@@ -16,15 +16,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from . instance import Instance
-from . redirect import Redirect
-from . environment import Environment
-from . user import User, Group
-from . theme import Theme
-from . base import Base
+import logging
 
 
-__all__ = ['Instance', 'Environment', 'Redirect', 'User', 'Group', 'Theme',
-           'Base']
+__all__ = ['Action']
 
 
+class Action(object):
+
+    def __init__(self):
+        self.name = self.__class__.__name__
+        self.log = logging.getLogger("{}.{}".format(self.__class__.__module__,
+                                                  self.name))
+
+    def commit(self):  # pragma: nocover
+        raise NotImplementedError
+
+    def rollback(self):  # pragma: nocover
+        # this must be redefined by subclasses
+        raise NotImplementedError

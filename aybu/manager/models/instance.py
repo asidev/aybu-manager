@@ -47,7 +47,7 @@ LogPaths = collections.namedtuple('LogPaths', ['vassal', 'application'])
 DataPaths = collections.namedtuple('DataPaths', ['dir', 'default'])
 SessionConf = collections.namedtuple('SessionConf', ['data_dir', 'lock_dir',
                                                       'key', 'secret'])
-DBConf = collections.namedtuple('DBConf', ['driver', 'user',
+DBConf = collections.namedtuple('DBConf', ['type', 'driver', 'user',
                                            'password', 'name', 'options'])
 
 
@@ -172,12 +172,14 @@ class Instance(Base):
         if not c:
             raise TypeError('Environment has not been configured')
 
-        driver = c['database']['type']
+        type_ = c['database']['type']
+        driver = type_
         if 'driver' in c['database']:
             driver = "{}+{}".format(driver, c['database']['driver'])
 
         self._database = DBConf(
             driver=driver,
+            type=type_,
             user=self.database_user,
             password=self.database_password,
             name=self.database_name

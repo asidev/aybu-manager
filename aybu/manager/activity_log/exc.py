@@ -16,15 +16,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from . instance import Instance
-from . redirect import Redirect
-from . environment import Environment
-from . user import User, Group
-from . theme import Theme
-from . base import Base
+class TransactionError(Exception):
+    pass
 
 
-__all__ = ['Instance', 'Environment', 'Redirect', 'User', 'Group', 'Theme',
-           'Base']
+class NOOP(Exception):
+    pass
+
 
 

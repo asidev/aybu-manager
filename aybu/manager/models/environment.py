@@ -20,6 +20,7 @@ import configobj
 import os
 import collections
 from . base import Base
+from aybu.manager.activity_log.fs import mkdir
 from sqlalchemy import (Column, Unicode)
 
 
@@ -65,7 +66,7 @@ class Environment(Base):
             paths.append(os.path.dirname(env.paths.configs))
             paths.append(env.paths.logs.dir)
             for path in sorted(paths):
-                session.fs.mkdir(path, error_on_exists=False)
+                session.activity_log.add(mkdir, path, error_on_exists=False)
 
         except:
             session.rollback()

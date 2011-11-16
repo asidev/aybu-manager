@@ -21,7 +21,9 @@ import shutil
 import stat
 import tempfile
 import unittest
-import aybu.manager.utils.filesystem
+from aybu.manager.activity_log import ActivityLog
+from aybu.manager.activity_log.fs import mkdir, create, copy
+from aybu.manager.activity_log.exc import TransactionError
 
 
 class FSTests(unittest.TestCase):
@@ -34,84 +36,83 @@ class FSTests(unittest.TestCase):
 
 
     def test_create(self):
-        fs = aybu.manager.utils.filesystem.FileSystemSession()
+        al = ActivityLog()
 
         # test rollback
         file_= os.path.join(self.tempdir, 'test.txt')
-        fs.create(file_)
+        al.add(create, file_)
         self.assertTrue(os.path.exists(file_))
-        fs.rollback()
+        al.rollback()
         self.assertFalse(os.path.exists(file_))
 
         # test successfull create
-        fs.create(file_)
-        fs.commit()
+        al.add(create, file_)
+        al.commit()
         self.assertTrue(os.path.exists(file_))
 
         # test unsuccessfull create
         with self.assertRaises(OSError):
-            fs.create(file_)
+            al.add(create, file_)
         self.assertTrue(os.path.exists(file_))
 
     def test_transaction_status(self):
-        fs = aybu.manager.utils.filesystem.FileSystemSession(autobegin=False)
-        with self.assertRaises(aybu.manager.utils.filesystem.TransactionError):
-            fs.commit()
-        with self.assertRaises(aybu.manager.utils.filesystem.TransactionError):
-            fs.rollback()
+        al = ActivityLog(autobegin=False)
+        with self.assertRaises(TransactionError):
+            al.commit()
+        with self.assertRaises(TransactionError):
+            al.rollback()
 
-        fs.begin()
-        fs.commit()
+        al.begin()
+        al.commit()
 
-        with self.assertRaises(aybu.manager.utils.filesystem.TransactionError):
-            fs.commit()
+        with self.assertRaises(TransactionError):
+            al.commit()
 
     def test_transaction(self):
-        fs = aybu.manager.utils.filesystem.FileSystemSession()
+        al = ActivityLog()
         dir_ = os.path.join(self.tempdir, 'test')
         join = os.path.join
 
         def dostuff():
-            fs.mkdir(dir_)
-            fs.create(join(dir_, 'testfile.txt'), content="Test")
-            fs.copy(join(dir_, 'testfile.txt'), join(dir_, 'test2.txt'))
+            al.add(mkdir, dir_)
+            al.add(create, join(dir_, 'testfile.txt'), content="Test")
+            al.add(copy, join(dir_, 'testfile.txt'), join(dir_, 'test2.txt'))
 
         dostuff()
-        fs.rollback()
+        al.rollback()
         self.assertFalse(os.path.exists(join(dir_, 'test2.txt')))
         self.assertFalse(os.path.exists(join(dir_, 'testfile.txt')))
         self.assertFalse(os.path.exists(dir_))
 
         dostuff()
-        fs.commit()
+        al.commit()
         self.assertTrue(os.path.exists(dir_))
         self.assertTrue(os.path.exists(join(dir_, 'testfile.txt')))
         self.assertTrue(os.path.exists(join(dir_, 'test2.txt')))
 
     def test_failed_rollback(self):
-        fs = aybu.manager.utils.filesystem.FileSystemSession()
+        al = ActivityLog()
         dir_ = os.path.join(self.tempdir, 'test')
         inner_dir = os.path.join(dir_, 'inner')
-        fs.mkdir(dir_)
-        fs.mkdir(inner_dir)
+        al.add(mkdir, dir_)
+        al.add(mkdir, inner_dir)
 
         os.chmod(dir_, stat.S_IRUSR|stat.S_IXUSR)
         with self.assertRaises(OSError):
-            fs.rollback()
+            al.rollback()
 
         self.assertTrue(os.path.exists(dir_))
         self.assertTrue(os.path.exists(inner_dir))
 
-        fs.rollback() # transaction lost, no errors
         os.chmod(dir_, stat.S_IRWXU | stat.S_IRWXG)
 
     def test_error_on_exists(self):
-        fs = aybu.manager.utils.filesystem.FileSystemSession()
+        al = ActivityLog()
         dir_ = os.path.join(self.tempdir, 'test')
-        fs.mkdir(dir_)
-        fs.commit()
+        al.add(mkdir, dir_)
+        al.commit()
 
-        fs.mkdir(dir_, error_on_exists=False)
-        fs.rollback()
+        al.add(mkdir, dir_, error_on_exists=False)
+        al.rollback()
         self.assertTrue(os.path.exists(dir_))
 

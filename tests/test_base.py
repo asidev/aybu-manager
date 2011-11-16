@@ -25,7 +25,7 @@ import unittest
 from sqlalchemy import engine_from_config
 from sqlalchemy.orm import sessionmaker
 from aybu.manager.models import Base
-from aybu.manager.models import add_session_events
+from aybu.manager.activity_log import ActivityLog
 
 class BaseTests(unittest.TestCase):
 
@@ -41,7 +41,7 @@ class BaseTests(unittest.TestCase):
         self.Session = sessionmaker()
         self.session = self.Session()
         self.session.configure(bind=self.engine)
-        add_session_events(self.session)
+        ActivityLog.attach_to(self.session)
         Base.metadata.bind = self.engine
         Base.metadata.create_all()
 
