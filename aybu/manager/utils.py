@@ -21,7 +21,7 @@ import errno
 import logging
 import os
 import shutil
-__all__ = ['classproperty']
+__all__ = ['classproperty', 'FileSystemSession', 'TransactionError']
 
 
 class classproperty(property):
@@ -39,7 +39,7 @@ class FSAction(object):
     def __init__(self, path, *args, **kwargs):
         self.path = path
         self.name = self.__class__.__name__
-        self.log = logging.getLogger("{}{}".format(self.__class__.__module__,
+        self.log = logging.getLogger("{}.{}".format(self.__class__.__module__,
                                                   self.name))
         self.log.debug("BEGIN: %s %s", self.name, path)
         self.begin(path, *args, **kwargs)
@@ -57,8 +57,14 @@ class FSAction(object):
 
 class mkdir(FSAction):
 
-    def begin(self, path, mode=0777):
-        os.mkdir(path, mode)
+    def begin(self, path, mode=0777, error_on_exists=True):
+        if not error_on_exists:
+            if not os.path.exists(path):
+                os.mkdir(path, mode)
+            else:
+                raise NOOP()
+        else:
+            os.mkdir(path, mode)
 
     def rollback(self):
         self.log.error("ROLLBACK: rmdir %s", self.path)
@@ -90,10 +96,15 @@ class TransactionError(Exception):
     pass
 
 
-class FileSystem(object):
+class NOOP(Exception):
+    pass
+
+
+class FileSystemSession(object):
 
     def __init__(self, autobegin=True):
         self.log = logging.getLogger(__name__)
+        self.log.debug("Creating new FileSystemSession")
         self._steps = collections.deque()
         self.active = False
         self.autobegin = autobegin
@@ -103,6 +114,11 @@ class FileSystem(object):
     def perform(self, action, *args, **kwargs):
         try:
             a = action(*args, **kwargs)
+
+        except NOOP:
+            # the action has no opts to do in
+            # commit or rollback
+            pass
 
         except Exception as e:
             self.rollback(exc=e)
@@ -116,8 +132,8 @@ class FileSystem(object):
     def copy(self, source, destination):
         self.perform(copy, destination, source)
 
-    def mkdir(self, path, mode=0777):
-        self.perform(mkdir, path, mode)
+    def mkdir(self, path, mode=0777, error_on_exists=True):
+        self.perform(mkdir, path, mode, error_on_exists)
 
     def begin(self):
         self.active = True
