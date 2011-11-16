@@ -83,8 +83,9 @@ class Instance(Base):
                                             onupdate='cascade',
                                             ondelete='restrict'),
                          nullable=False)
-    owner = relationship('User', backref=backref('instances',
-                                                 remote_side=owner_email))
+    owner = relationship('User',
+                         backref=backref('instances'),
+                         primaryjoin='User.email == Instance.owner_email')
 
     environment_name = Column(Unicode(64), ForeignKey('environments.name',
                                                        onupdate='cascade',
@@ -104,9 +105,8 @@ class Instance(Base):
                                                    ondelete='restrict'),
                                      nullable=False)
     technical_contact = relationship('User',
-                backref=backref('technical_contact_for',
-                                remote_side=technical_contact_email)
-    )
+                                     backref=backref('technical_contact_for'),
+                primaryjoin='Instance.technical_contact_email == User.email')
 
     default_language = Column(Unicode(2))
     database_password = Column(Unicode(32))

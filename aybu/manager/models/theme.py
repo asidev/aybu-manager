@@ -41,15 +41,18 @@ class Theme(Base):
     author_email = Column(Unicode(255), ForeignKey('users.email',
                                                       onupdate='cascade',
                                                       ondelete='restrict'))
-    author = relationship('User', backref=backref('authored_themes',
-                                                  remote_side=author_email))
+    author = relationship('User', backref=backref('authored_themes'),
+                          primaryjoin='User.email == Theme.author_email')
+
 
     owner_email = Column(Unicode(255), ForeignKey('users.email',
                                                      onupdate='cascade',
                                                      ondelete='restrict'),
                             nullable=False)
-    owner = relationship('User', backref=backref('themes',
-                                                 remote_side=owner_email))
+    owner = relationship('User', backref=backref('themes'),
+                         primaryjoin="User.email == Theme.owner_email")
+
+
 
     banner_width = Column(Integer, nullable=False)
     banner_height = Column(Integer, nullable=False)
