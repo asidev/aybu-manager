@@ -16,25 +16,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import logging
-import sqlalchemy.ext.declarative
-from aybu.manager.utils.decorators import classproperty
+__all__ = ['classproperty']
+
+class classproperty(property):
+    """ a property decorator for classmethods """
+    def __get__(self, obj, type_):
+        return self.fget.__get__(None, type_)()
+
+    def __set__(self, obj, value):
+        cls = type(obj)
+        return self.fset.__get__(None, cls)(value)
 
 
-__all__ = ['Base']
-
-
-class AybuManagerBase(object):
-
-    @classproperty
-    @classmethod
-    def log(cls):
-        if hasattr(cls, '_log'):
-            return cls._log
-
-        cls._log = logging.getLogger("{}.{}".format(cls.__module__,
-                                                    cls.__name__))
-        return cls._log
-
-
-Base = sqlalchemy.ext.declarative.declarative_base(cls=AybuManagerBase)

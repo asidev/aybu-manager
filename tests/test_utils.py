@@ -21,7 +21,7 @@ import shutil
 import stat
 import tempfile
 import unittest
-import aybu.manager.utils
+import aybu.manager.utils.filesystem
 
 
 class FSTests(unittest.TestCase):
@@ -34,7 +34,7 @@ class FSTests(unittest.TestCase):
 
 
     def test_create(self):
-        fs = aybu.manager.utils.FileSystemSession()
+        fs = aybu.manager.utils.filesystem.FileSystemSession()
 
         # test rollback
         file_= os.path.join(self.tempdir, 'test.txt')
@@ -54,20 +54,20 @@ class FSTests(unittest.TestCase):
         self.assertTrue(os.path.exists(file_))
 
     def test_transaction_status(self):
-        fs = aybu.manager.utils.FileSystemSession(autobegin=False)
-        with self.assertRaises(aybu.manager.utils.TransactionError):
+        fs = aybu.manager.utils.filesystem.FileSystemSession(autobegin=False)
+        with self.assertRaises(aybu.manager.utils.filesystem.TransactionError):
             fs.commit()
-        with self.assertRaises(aybu.manager.utils.TransactionError):
+        with self.assertRaises(aybu.manager.utils.filesystem.TransactionError):
             fs.rollback()
 
         fs.begin()
         fs.commit()
 
-        with self.assertRaises(aybu.manager.utils.TransactionError):
+        with self.assertRaises(aybu.manager.utils.filesystem.TransactionError):
             fs.commit()
 
     def test_transaction(self):
-        fs = aybu.manager.utils.FileSystemSession()
+        fs = aybu.manager.utils.filesystem.FileSystemSession()
         dir_ = os.path.join(self.tempdir, 'test')
         join = os.path.join
 
@@ -89,7 +89,7 @@ class FSTests(unittest.TestCase):
         self.assertTrue(os.path.exists(join(dir_, 'test2.txt')))
 
     def test_failed_rollback(self):
-        fs = aybu.manager.utils.FileSystemSession()
+        fs = aybu.manager.utils.filesystem.FileSystemSession()
         dir_ = os.path.join(self.tempdir, 'test')
         inner_dir = os.path.join(dir_, 'inner')
         fs.mkdir(dir_)
@@ -106,7 +106,7 @@ class FSTests(unittest.TestCase):
         os.chmod(dir_, stat.S_IRWXU | stat.S_IRWXG)
 
     def test_error_on_exists(self):
-        fs = aybu.manager.utils.FileSystemSession()
+        fs = aybu.manager.utils.filesystem.FileSystemSession()
         dir_ = os.path.join(self.tempdir, 'test')
         fs.mkdir(dir_)
         fs.commit()

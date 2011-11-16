@@ -23,7 +23,7 @@ from . user import User, Group
 from . theme import Theme
 from . base import Base
 import logging
-from aybu.manager.utils import FileSystemSession
+from aybu.manager.utils.filesystem import FileSystemSession
 from sqlalchemy.event import listen
 
 

@@ -21,17 +21,16 @@ import errno
 import logging
 import os
 import shutil
-__all__ = ['classproperty', 'FileSystemSession', 'TransactionError']
+
+__all__ = ['FileSystemSession', 'TransactionError']
 
 
-class classproperty(property):
-    """ a property decorator for classmethods """
-    def __get__(self, obj, type_):
-        return self.fget.__get__(None, type_)()
+class TransactionError(Exception):
+    pass
 
-    def __set__(self, obj, value):
-        cls = type(obj)
-        return self.fset.__get__(None, cls)(value)
+
+class NOOP(Exception):
+    pass
 
 
 class FSAction(object):
@@ -90,14 +89,6 @@ class copy(create):
         # not that destination and source are swapped
         # w.r.t shutil function, as we care about destination
         shutil.copy(source, destination)
-
-
-class TransactionError(Exception):
-    pass
-
-
-class NOOP(Exception):
-    pass
 
 
 class FileSystemSession(object):
