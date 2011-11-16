@@ -18,19 +18,23 @@ limitations under the License.
 
 import logging
 import sqlalchemy.ext.declarative
+from aybu.manager.utils import classproperty
+
 
 __all__ = ['Base']
 
+
 class AybuManagerBase(object):
 
-    @property
-    def log(self):
-        if hasattr(self, '_log'):
-            return self._log
+    @classproperty
+    @classmethod
+    def log(cls):
+        if hasattr(cls, '_log'):
+            return cls._log
 
-        self._log = logging.getLogger("{}.{}".format(self.__module__,
-                                                     self.__class__.__name__))
-        return self._log
+        cls._log = logging.getLogger("{}.{}".format(cls.__module__,
+                                                    cls.__name__))
+        return cls._log
 
 
 Base = sqlalchemy.ext.declarative.declarative_base(cls=AybuManagerBase)
