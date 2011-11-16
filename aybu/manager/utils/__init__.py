@@ -16,3 +16,27 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import pkg_resources
+from mako.template import Template
+
+
+class IniRenderer(object):
+
+    def __init__(self, instance, template_name, target):
+        self.instance = instance
+        self.template = Template(
+            pkg_resources.resource_stream('aybu.manager.templates',
+                                          template_name)
+        )
+        self.target = target
+
+    def render(self):
+        return self.template.render(instance=self.instance,
+                                    os=self.instance.os_config,
+                                    smtp=self.instance.environment.smtp_config)
+
+    def write(self):
+        with open(self.target, "w") as target:
+            target.write(self.render())
+
+

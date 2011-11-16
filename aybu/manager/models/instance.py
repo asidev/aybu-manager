@@ -23,7 +23,6 @@ import os
 import pkg_resources
 import uuid
 
-from mako.template import Template
 from sqlalchemy import (UniqueConstraint,
                         ForeignKey,
                         Column,
@@ -33,6 +32,7 @@ from sqlalchemy import (UniqueConstraint,
                         Unicode)
 from sqlalchemy.orm import (relationship,
                             backref)
+from aybu.manager.utils import IniRenderer
 from . base import Base
 
 
@@ -47,26 +47,6 @@ SessionConf = collections.namedtuple('SessionConf', ['data_dir', 'lock_dir',
                                                       'key', 'secret'])
 DBConf = collections.namedtuple('DBConf', ['driver', 'user',
                                            'password', 'name', 'options'])
-
-
-class IniRenderer(object):
-
-    def __init__(self, instance, template_name, target):
-        self.instance = instance
-        self.template = Template(
-            pkg_resources.resource_stream('aybu.manager.templates',
-                                          template_name)
-        )
-        self.target = target
-
-    def render(self):
-        return self.template.render(instance=self.instance,
-                                    os=self.instance.os_config,
-                                    smtp=self.instance.environment.smtp_config)
-
-    def write(self):
-        with open(self.target, "w") as target:
-            target.write(self.render())
 
 
 class Instance(Base):
