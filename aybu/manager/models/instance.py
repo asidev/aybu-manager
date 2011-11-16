@@ -90,7 +90,7 @@ class Instance(Base):
                                      backref=backref('technical_contact_for'),
                 primaryjoin='Instance.technical_contact_email == User.email')
 
-    default_language = Column(Unicode(2), default='it')
+    default_language = Column(Unicode(2), default=u'it')
     database_password = Column(Unicode(32))
 
 
@@ -187,7 +187,7 @@ class Instance(Base):
 
     @classmethod
     def deploy(cls, session, name, owner, environment, theme,
-               technical_contact, default_language='it',
+               technical_contact, default_language=u'it',
                database_password=None):
 
         if not database_password:
