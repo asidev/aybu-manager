@@ -32,6 +32,8 @@ from sqlalchemy import (UniqueConstraint,
                         Unicode)
 from sqlalchemy.orm import (relationship,
                             backref)
+import pwgen
+
 from aybu.manager.utils import IniRenderer
 from . base import Base
 
@@ -56,7 +58,7 @@ class Instance(Base):
                       {'mysql_engine': 'InnoDB'})
 
     id = Column(Integer, primary_key=True)
-    domain = Column(Unicode(255))
+    domain = Column(Unicode(255), nullable=False)
     enabled = Column(Boolean, default=True)
     created = Column(DateTime, default=datetime.datetime.now)
     owner_email = Column(Unicode(255), ForeignKey('users.email',
@@ -88,7 +90,7 @@ class Instance(Base):
                                      backref=backref('technical_contact_for'),
                 primaryjoin='Instance.technical_contact_email == User.email')
 
-    default_language = Column(Unicode(2))
+    default_language = Column(Unicode(2), default='it')
     database_password = Column(Unicode(32))
 
 
@@ -181,3 +183,18 @@ class Instance(Base):
             name=self.database_name
         )
         return self._database
+
+
+    @classmethod
+    def deploy(cls, session, name, owner, environment, theme,
+               technical_contact, default_language='it',
+               database_password=None):
+
+        if not database_password:
+            database_password = pwgen(16, no_symbols=True)
+
+        instance = cls(name=name, owner=owner, environment=environment,
+                       theme=theme, technical_contact=technical_contact,
+                       default_language=default_language,
+                       database_password=database_password)
+
