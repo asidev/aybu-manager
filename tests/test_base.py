@@ -25,6 +25,7 @@ import unittest
 from sqlalchemy import engine_from_config
 from sqlalchemy.orm import sessionmaker
 from aybu.manager.models import Base
+from aybu.manager.models import add_session_events
 
 class BaseTests(unittest.TestCase):
 
@@ -40,11 +41,19 @@ class BaseTests(unittest.TestCase):
         self.Session = sessionmaker()
         self.session = self.Session()
         self.session.configure(bind=self.engine)
+        add_session_events(self.session)
         Base.metadata.bind = self.engine
         Base.metadata.create_all()
 
         self.tempdir = tempfile.mkdtemp()
         self.config['paths']['root'] = self.tempdir
+        self.config['paths']['cgroups'] = '%(root)s/cgroups'
+        self.config['paths']['sites'] = '%(root)s/sites'
+        self.config['paths']['configs'] = '%(root)s/configs'
+        self.config['paths']['archives'] = '%(root)s/archives'
+        self.config['paths']['run'] = '%(root)s/run'
+        self.config['paths']['virtualenv'] = '%(root)s/virtualenv'
+        self.config['paths']['logs'] = '%(root)s/logs'
 
     def tearDown(self):
         self.session.close()

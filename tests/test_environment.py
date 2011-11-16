@@ -25,6 +25,19 @@ from . test_base import BaseTests
 class EnvironmentTests(BaseTests):
 
     def test_create(self):
-        env = Environment.create(self.session, 'testenv', self.config)
+        env = Environment.create(self.session, 'testenv', config=self.config)
         for path in self.config['paths']:
+            if path == 'virtualenv':
+                continue
+            self.log.debug("%s: %s", path, self.config['paths'][path])
             self.assertTrue(os.path.isdir(self.config['paths'][path]))
+
+        self.session.commit()
+        for key, path in env.paths._asdict().iteritems():
+            if key == 'logs':
+                path = env.paths.logs.dir
+            if key == 'virtualenv':
+                continue
+
+            self.log.debug("%s: %s", key, path)
+            self.assertTrue(os.path.isdir(path))

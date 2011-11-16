@@ -34,7 +34,7 @@ class FSTests(unittest.TestCase):
 
 
     def test_create(self):
-        fs = aybu.manager.utils.FileSystem()
+        fs = aybu.manager.utils.FileSystemSession()
 
         # test rollback
         file_= os.path.join(self.tempdir, 'test.txt')
@@ -54,7 +54,7 @@ class FSTests(unittest.TestCase):
         self.assertTrue(os.path.exists(file_))
 
     def test_transaction_status(self):
-        fs = aybu.manager.utils.FileSystem(autobegin=False)
+        fs = aybu.manager.utils.FileSystemSession(autobegin=False)
         with self.assertRaises(aybu.manager.utils.TransactionError):
             fs.commit()
         with self.assertRaises(aybu.manager.utils.TransactionError):
@@ -67,7 +67,7 @@ class FSTests(unittest.TestCase):
             fs.commit()
 
     def test_transaction(self):
-        fs = aybu.manager.utils.FileSystem()
+        fs = aybu.manager.utils.FileSystemSession()
         dir_ = os.path.join(self.tempdir, 'test')
         join = os.path.join
 
@@ -89,7 +89,7 @@ class FSTests(unittest.TestCase):
         self.assertTrue(os.path.exists(join(dir_, 'test2.txt')))
 
     def test_failed_rollback(self):
-        fs = aybu.manager.utils.FileSystem()
+        fs = aybu.manager.utils.FileSystemSession()
         dir_ = os.path.join(self.tempdir, 'test')
         inner_dir = os.path.join(dir_, 'inner')
         fs.mkdir(dir_)
@@ -104,3 +104,14 @@ class FSTests(unittest.TestCase):
 
         fs.rollback() # transaction lost, no errors
         os.chmod(dir_, stat.S_IRWXU | stat.S_IRWXG)
+
+    def test_error_on_exists(self):
+        fs = aybu.manager.utils.FileSystemSession()
+        dir_ = os.path.join(self.tempdir, 'test')
+        fs.mkdir(dir_)
+        fs.commit()
+
+        fs.mkdir(dir_, error_on_exists=False)
+        fs.rollback()
+        self.assertTrue(os.path.exists(dir_))
+

@@ -38,26 +38,55 @@ class Environment(Base):
     __table_args__ = ({'mysql_engine': 'InnoDB'})
 
     name = Column(Unicode(64), primary_key=True)
-    config = None
+    venv_name = Column(Unicode(64))
 
     @classmethod
-    def init(cls, config):
-        cls.config = configobj.ConfigObj(config, file_error=True)
+    def initialize(cls, config):
+        if isinstance(config, basestring):
+            cls.config = configobj.ConfigObj(config, file_error=True)
+        else:
+            cls.config = config
+        cls.log.debug("Initialized environment with config %s", config)
+
+    @classmethod
+    def create(cls, session, name, venv_name=None, config=None):
+        cls.log.debug("Creating environment %s", name)
+        if not config is None:
+            cls.initialize(config)
+
+        try:
+            # create the environment
+            env = cls(name=name, venv_name=venv_name)
+            session.add(env)
+            root = env.paths.root
+
+            paths = [p for k, p in env.paths._asdict().iteritems()
+                           if k != 'root' and k != 'virtualenv' and root in p]
+            paths.append(os.path.dirname(env.paths.configs))
+            paths.append(env.paths.logs.dir)
+            for path in sorted(paths):
+                session.fs.mkdir(path, error_on_exists=False)
+
+        except:
+            session.rollback()
+            raise
+        else:
+            return env
+
+    def check_initialized(self):
+        if not hasattr(self, 'config') or not self.config:
+            self.log.error('%s has not been initialized', self)
+            raise TypeError('%s class has not been initialized' % (self))
+
 
     def os_config(self):
-        if not self.config:
-            raise TypeError('Environment class ha not been initialized')
-
+        self.check_initialized()
         return OsConf(user=self.config['os']['user'],
                     group=self.config['os']['group'])
 
-
-
     @property
     def smtp_config(self):
-        if not self.config:
-            raise TypeError('Environment class ha not been initialized')
-
+        self.check_initialized()
         return SmtpConfig(host=self.config['os']['smtp_host'],
                             port=self.config['os']['smtp_port'])
 
@@ -66,12 +95,14 @@ class Environment(Base):
         if hasattr(self, '_paths'):
             return self._paths
 
-        if not self.config:
-            raise TypeError('Environment class has not been initialized')
-
+        self.check_initialized()
         join = os.path.join
         c = self.config['paths']
         configs = join(c['configs'], self.name)
+        if self.venv_name:
+            virtualenv = join(c['virtualenv'], self.venv_name)
+        else:
+            virtualenv = join(c['virtualenv'], self.name)
 
         self._paths = Paths(root=c['root'],
                             configs=configs,
@@ -82,7 +113,8 @@ class Environment(Base):
                                       emperor=join(c['logs'],
                                                    'uwsgi_emperor.log')),
                             run=c['run'],
-                            virtualenv=c['virtualenv'])
+                            virtualenv=virtualenv)
+
         return self._paths
 
 
