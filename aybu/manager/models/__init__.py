@@ -22,7 +22,25 @@ from . environment import Environment
 from . user import User, Group
 from . theme import Theme
 from . base import Base
+import logging
+from aybu.manager.utils import FileSystemSession
+from sqlalchemy.event import listen
 
 
 __all__ = ['Instance', 'Environment', 'Redirect', 'User', 'Group', 'Theme',
-           'Base']
+           'Base', 'add_session_events']
+log = logging.getLogger(__name__)
+
+
+def before_session_commit(session):
+    session.fs.commit()
+
+
+def after_session_rollback(session):
+    session.fs.rollback()
+
+
+def add_session_events(session):
+    session.fs = FileSystemSession()
+    listen(session, 'before_commit', before_session_commit)
+    listen(session, 'after_rollback', after_session_rollback)
