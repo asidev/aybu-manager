@@ -34,7 +34,9 @@ from sqlalchemy.orm import (relationship,
                             backref)
 import pwgen
 
-from aybu.manager.utils import IniRenderer
+from aybu.manager.activity_log.template import render
+from aybu.manager.activity_log.fs import mkdir, create
+from aybu.manager.activity_log.packages import install
 from . base import Base
 
 
@@ -42,8 +44,9 @@ __all__ = ['Instance']
 Paths = collections.namedtuple('Paths', ['config', 'vassal_config', 'dir',
                                          'cgroup', 'logs', 'socket', 'session',
                                          'data', 'mako_tmp_dir', 'cache',
+                                         'instance_dir', 'wsgi_script',
                                          'virtualenv'])
-LogPaths = collections.namedtuple('LogPaths', ['vassal', 'application'])
+LogPaths = collections.namedtuple('LogPaths', ['dir', 'vassal', 'application'])
 DataPaths = collections.namedtuple('DataPaths', ['dir', 'default'])
 SessionConf = collections.namedtuple('SessionConf', ['data_dir', 'lock_dir',
                                                       'key', 'secret'])
@@ -93,15 +96,6 @@ class Instance(Base):
     default_language = Column(Unicode(2), default=u'it')
     database_password = Column(Unicode(32))
 
-
-    def __init__(self, *args, **kwargs):
-        super(Instance, self).__init__(*args, **kwargs)
-        self.application_config = IniRenderer(self, 'aybu.ini.mako',
-                                              self.paths.config)
-        self.vassal_config = IniRenderer(self, 'vassal.ini.mako',
-                                               self.paths.vassal_config)
-
-
     def __repr__(self):
         return "<Instance [{self.id}] {self.domain} (enabled: {self.enabled})>"\
                 .format(self=self)
@@ -128,9 +122,13 @@ class Instance(Base):
             dir=dir_,
             cgroup=join(env.cgroups, self.domain),
             config=join(dir_, 'production.ini'),
-            logs=LogPaths(vassal=join(env.logs.dir, self.domain, 'uwsgi_vassal.log'),
+            wsgi_script=join(dir_, 'main.py'),
+            logs=LogPaths(
+                      dir=join(env.logs.dir, self.domain),
+                      vassal=join(env.logs.dir, self.domain, 'uwsgi_vassal.log'),
                       application=join(env.logs.dir, self.domain,
                                        'application.log')),
+            cache=cache,
             mako_tmp_dir=join(cache, 'templates'),
             data=data,
             virtualenv=env.virtualenv,
@@ -186,6 +184,55 @@ class Instance(Base):
         )
         return self._database
 
+    def create_package(self, session):
+        base = self.paths.dir
+        join = os.path.join
+        session.activity_log.add(mkdir, join(base, 'aybu'))
+        session.activity_log.add(mkdir, join(base, 'instances'))
+        inst_dir = join(base, 'instances', 'self.name')
+        session.activity_log.add(mkdir, inst_dir)
+        session.activity_log.add(mkdir, join(inst_dir, "public"))
+        session.activity_log.add(mkdir, join(inst_dir, "templates"))
+        uploads = join(inst_dir, "public", "uploads")
+        session.activity_log.add(mkdir, uploads)
+        for dir_ in ('banners', 'files', 'logo', 'images'):
+            session.activity_log.add(mkdir, join(uploads, dir_))
+
+        session.activity_log.add(render, 'setup.py.mako', join(base,
+                                                               'setup.py'))
+        session.activity_log.add(render, 'namespace_init.py.mako',
+                                 join(base, 'aybu', '__init__.py'))
+        session.activity_log.add(render, 'namespace_init.py.mako',
+                                 join(base, 'aybu', 'instances',
+                                      '__init__.py'))
+        session.activity_log.add(create, join(inst_dir, '__init__.py'),
+                                 content="#")
+
+    def create_structure(self, session):
+        paths = self.paths
+        dirs = sorted(paths.dir,
+            paths.cgroup,
+            paths.cache,
+            paths.logs.dir,
+            paths.mako_tmp_dir)
+        for dir_ in dirs:
+            session.activity_log.add(mkdir, dir_)
+
+        session.activity_log.add(render, 'aybu.ini.mako', paths.config)
+        session.activity_log.add(render, 'vassal.ini.mako',
+                                 paths.vassal_config, perms=0644, deferred=True)
+        session.activity_log.add(render, 'main.py.mako', paths.wsgi_script,
+                                 perms=0644)
+
+    def install_package(self, session):
+        session.activity_log.add(install, self.paths.virtualenv,
+                                 self.domain, self.paths.dir)
+
+    def create_database(self, session, password):
+        pass
+
+    def populate_database(self, session):
+        pass
 
     @classmethod
     def deploy(cls, session, name, owner, environment, theme,
@@ -199,4 +246,12 @@ class Instance(Base):
                        theme=theme, technical_contact=technical_contact,
                        default_language=default_language,
                        database_password=database_password)
+        session.add(instance)
+        session.flush()
 
+        instance.create_structure(session)
+        instance.create_package(session)
+        instance.install_package(session)
+        instance.create_database(session, database_password)
+        instance.populate_database(session)
+        return instance
