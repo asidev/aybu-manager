@@ -16,7 +16,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+from collections import namedtuple
 import os
+import pkg_resources
 import shutil
 import stat
 import tempfile
@@ -24,9 +26,10 @@ import unittest
 from aybu.manager.activity_log import ActivityLog
 from aybu.manager.activity_log.fs import mkdir, create, copy
 from aybu.manager.activity_log.exc import TransactionError
+from aybu.manager.activity_log.template import render
 
 
-class FSTests(unittest.TestCase):
+class ActivityLogTests(unittest.TestCase):
 
     def setUp(self):
         self.tempdir = tempfile.mkdtemp()
@@ -115,4 +118,31 @@ class FSTests(unittest.TestCase):
         al.add(mkdir, dir_, error_on_exists=False)
         al.rollback()
         self.assertTrue(os.path.exists(dir_))
+
+
+    def test_render(self):
+        al = ActivityLog()
+        instance = namedtuple('Instance', ['paths', 'os_config', 'environment'])(
+            paths=namedtuple('Paths', ['config'])(
+                config='MYDUMMYCONFIG'
+            ),
+            os_config=None,
+            environment= namedtuple('Environment', ['smtp_config'])(
+                smtp_config=None
+            )
+        )
+        template_name = 'main.py.mako'
+        target = os.path.join(self.tempdir, 'main.py')
+        al.add(render, instance, template_name, target)
+        self.assertTrue(os.path.exists(target))
+        with open(target) as f:
+            self.assertIn('MYDUMMYCONFIG', f.read())
+        al.rollback()
+        self.assertFalse(os.path.exists(target))
+
+        al.add(render, instance, template_name, target, deferred=True)
+        self.assertFalse(os.path.exists(target))
+        al.commit()
+        self.assertTrue(os.path.exists(target))
+
 

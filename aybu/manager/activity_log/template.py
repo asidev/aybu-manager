@@ -32,7 +32,7 @@ class render(Action):
         self.template_name = template_name
         self.template = Template(
             pkg_resources.resource_stream('aybu.manager.templates',
-                                          template_name)
+                                          template_name).read()
         )
         self.target = target
         self.written = False
