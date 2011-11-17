@@ -18,7 +18,6 @@ limitations under the License.
 
 from collections import namedtuple
 import os
-import pkg_resources
 import shutil
 import stat
 import tempfile
