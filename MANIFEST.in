@@ -1,0 +1,2 @@
+recursive-include aybu/manager/templates *.mako
+include *.templ
