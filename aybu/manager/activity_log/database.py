@@ -78,13 +78,14 @@ class MysqlCreateDatabaseAction(DatabaseAction):
             "GRANT ALL PRIVILEGES ON `{conf.name}`.* "
              "TO '{conf.user}'@'localhost';",
             "FLUSH PRIVILEGES;"
-        )
+        ).format(conf=self.config)
         self.execute(stmt)
 
     def rollback(self):
         self.log.debug("ROLLBACK: removing MySQL user and database")
         stmt = ("DROP USER '{conf.user'}@'localhost';",
-                "FLUSH PRIVILEGES;")
+                "FLUSH PRIVILEGES;",
+                "ALTER TABLE instances AUTO_INCREMENT=1;")
         self.execute(stmt)
 
 

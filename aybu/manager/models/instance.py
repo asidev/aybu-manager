@@ -37,6 +37,7 @@ import pwgen
 from aybu.manager.activity_log.template import render
 from aybu.manager.activity_log.fs import mkdir, create
 from aybu.manager.activity_log.packages import install
+from aybu.manager.activity_log.database import create_database
 from . base import Base
 
 
@@ -80,8 +81,7 @@ class Instance(Base):
 
     theme_name = Column(Unicode(128), ForeignKey('themes.name',
                                                  onupdate='cascade',
-                                                 ondelete='restrict'),
-                        nullable=False)
+                                                 ondelete='restrict'))
     theme = relationship('Theme', backref='instances')
 
     technical_contact_email = Column(Unicode(255),
@@ -188,8 +188,8 @@ class Instance(Base):
         base = self.paths.dir
         join = os.path.join
         session.activity_log.add(mkdir, join(base, 'aybu'))
-        session.activity_log.add(mkdir, join(base, 'instances'))
-        inst_dir = join(base, 'instances', 'self.name')
+        session.activity_log.add(mkdir, join(base, 'aybu', 'instances'))
+        inst_dir = join(base, 'aybu', 'instances', 'self.name')
         session.activity_log.add(mkdir, inst_dir)
         session.activity_log.add(mkdir, join(inst_dir, "public"))
         session.activity_log.add(mkdir, join(inst_dir, "templates"))
@@ -228,8 +228,8 @@ class Instance(Base):
         session.activity_log.add(install, self.paths.virtualenv,
                                  self.domain, self.paths.dir)
 
-    def create_database(self, session, password):
-        pass
+    def create_database(self, session):
+        session.activity_log.add(create_database, session, self.database)
 
     def populate_database(self, session):
         pass
@@ -252,6 +252,6 @@ class Instance(Base):
         instance.create_structure(session)
         instance.create_package(session)
         instance.install_package(session)
-        instance.create_database(session, database_password)
+        instance.create_database(session)
         instance.populate_database(session)
         return instance
