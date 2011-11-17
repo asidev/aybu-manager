@@ -26,10 +26,12 @@ __all__ = ['render']
 
 class render(Action):
 
-    def __init__(self, instance, template_name, target, deferred=False):
+    def __init__(self, instance, template_name, target, deferred=False,
+                 perms=None):
         super(render, self).__init__()
         self.instance = instance
         self.template_name = template_name
+        self.perms = perms
         self.template = Template(
             pkg_resources.resource_stream('aybu.manager.templates',
                                           template_name).read()
@@ -38,17 +40,25 @@ class render(Action):
         self.written = False
         if not deferred:
             self.write()
+        else:
+            self.log.debug("rendering of %s has been deferred", self.target)
 
     def render(self):
         return self.template.render(instance=self.instance,
-                                    os=self.instance.os_config,
+                                    os=self.instance.environment.os_config,
                                     smtp=self.instance.environment.smtp_config)
 
     def write(self):
         self.written = True
         self.log.debug("RENDERING %s to %s", self.template_name, self.target)
-        with open(self.target, "w") as target:
-            target.write(self.render())
+        try:
+            with open(self.target, "w") as target:
+                target.write(self.render())
+            if self.perms:
+                os.chmod(self.target, self.perms)
+        except:
+            self.rollback()
+            raise
 
     def commit(self):
         if not self.written:

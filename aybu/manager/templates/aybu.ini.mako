@@ -11,8 +11,8 @@ debug = false
 
 <%
    database_uri = "{db.driver}://{db.user}:{db.password}/{db.name}".format(db=instance.database)
-   if database.options:
-      database_uri = "{}?{}".format(database_uri, database.options)
+   if instance.database.options:
+      database_uri = "{}?{}".format(database_uri, instance.database.options)
 %>
 sqlalchemy.url = ${database_uri}
 sqlalchemy.echo = false
@@ -86,7 +86,7 @@ args = ('${instance.paths.logs.application}', 'a', 10485760, 10)
 
 [handler_exc_handler]
 class = handlers.SMTPHandler
-args = (('${smtp.host}', ${smtp.port}), 'exc@${instance.domain}', ['${instance.technical_contact_email}'], '${instance.domain Exception}')
+args = (('${smtp.host}', ${smtp.port}), 'exc@${instance.domain}', ['${instance.technical_contact_email}'], '${instance.domain} Exception')
 level = ERROR
 formatter = exc_formatter
 

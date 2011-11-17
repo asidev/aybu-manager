@@ -29,6 +29,7 @@ __all__ = ['install']
 class install(Action):
 
     def __init__(self, virtualenv, name, path):
+        super(install, self).__init__()
         self.python = os.path.join(virtualenv, 'bin', 'python')
         self.script = pkg_resources.resource_filename('aybu.manager.utils',
                                                       'pip.py')

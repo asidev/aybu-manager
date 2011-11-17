@@ -19,6 +19,7 @@ limitations under the License.
 __all__ = ['create_database']
 
 import logging
+from sqlalchemy.orm import class_mapper
 
 
 class create_database(object):
@@ -45,14 +46,16 @@ class DatabaseAction(object):
         return obj
 
     def get_connection(self):
-        return self.session.get_bind().connect()
+        from aybu.manager.models import Instance
+        mapper = class_mapper(Instance)
+        return self.session.get_bind(mapper=mapper).connect()
 
     def execute(self, statements):
         if isinstance(statements, basestring):
             statements = (statements,)
         connection = self.get_connection()
         for stmt in statements:
-            stmt.format(conf=self.conf)
+            stmt.format(conf=self.config)
             self.log.info(stmt)
             connection.execute(stmt)
         connection.close()
@@ -78,7 +81,7 @@ class MysqlCreateDatabaseAction(DatabaseAction):
             "GRANT ALL PRIVILEGES ON `{conf.name}`.* "
              "TO '{conf.user}'@'localhost';",
             "FLUSH PRIVILEGES;"
-        ).format(conf=self.config)
+        )
         self.execute(stmt)
 
     def rollback(self):

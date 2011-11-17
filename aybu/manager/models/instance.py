@@ -107,46 +107,43 @@ class Instance(Base):
 
         # setup atexit function to clean up temporary files
         atexit.register(pkg_resources.cleanup_resources)
-
         join = os.path.join
         env = self.environment.paths
         dir_= join(env.sites, self.domain)
         cache = join(dir_, 'cache')
         data_dir = join(pkg_resources.resource_filename('aybu.manager', 'data'))
+
+        self._session = SessionConf(data_dir=join(cache, "session_data"),
+                                    lock_dir=join(cache, "session_locks"),
+                                    key=self.domain,
+                                    secret=uuid.uuid4().hex)
         data = DataPaths(
             dir=data_dir,
             default=join(data_dir, 'default_json')
         )
         self._paths = Paths(
+            config=join(dir_, 'production.ini'),
             vassal_config=join(env.configs, "{}.ini".format(self.domain)),
             dir=dir_,
             cgroup=join(env.cgroups, self.domain),
-            config=join(dir_, 'production.ini'),
-            wsgi_script=join(dir_, 'main.py'),
             logs=LogPaths(
                       dir=join(env.logs.dir, self.domain),
                       vassal=join(env.logs.dir, self.domain, 'uwsgi_vassal.log'),
                       application=join(env.logs.dir, self.domain,
                                        'application.log')),
-            cache=cache,
-            mako_tmp_dir=join(cache, 'templates'),
+            socket=join(env.run, "{}.socket".format(self.domain)),
+            session=self._session,
             data=data,
+            mako_tmp_dir=join(cache, 'templates'),
+            cache=cache,
+            instance_dir=join(dir_, 'aybu', 'instances', self.domain),
+            wsgi_script=join(dir_, 'main.py'),
             virtualenv=env.virtualenv,
-            socket=join(env.run, "{}.socket".format(self.domain)))
+        )
         return self._paths
 
     @property
     def session(self):
-        if hasattr(self, '_session'):
-            return self._session
-
-        join = os.path.join
-        paths = self.paths
-
-        self._session = SessionConf(data_dir=join(paths.cache, "session_data"),
-                                    lock_dir=join(paths.cache, "session_locks"),
-                                    key=self.domain,
-                                    secret=uuid.uuid4().hex)
         return self._session
 
     @property
@@ -174,13 +171,17 @@ class Instance(Base):
         driver = type_
         if 'driver' in c['database']:
             driver = "{}+{}".format(driver, c['database']['driver'])
+        options = c['database']['options'] if 'options' in c['database'] \
+                                           and c['database']['options'] \
+                  else None
 
         self._database = DBConf(
             driver=driver,
             type=type_,
             user=self.database_user,
             password=self.database_password,
-            name=self.database_name
+            name=self.database_name,
+            options=options
         )
         return self._database
 
@@ -189,39 +190,38 @@ class Instance(Base):
         join = os.path.join
         session.activity_log.add(mkdir, join(base, 'aybu'))
         session.activity_log.add(mkdir, join(base, 'aybu', 'instances'))
-        inst_dir = join(base, 'aybu', 'instances', 'self.name')
-        session.activity_log.add(mkdir, inst_dir)
-        session.activity_log.add(mkdir, join(inst_dir, "public"))
-        session.activity_log.add(mkdir, join(inst_dir, "templates"))
-        uploads = join(inst_dir, "public", "uploads")
+        session.activity_log.add(mkdir, self.paths.instance_dir)
+        session.activity_log.add(mkdir, join(self.paths.instance_dir, "public"))
+        session.activity_log.add(mkdir, join(self.paths.instance_dir, "templates"))
+        uploads = join(self.paths.instance_dir, "public", "uploads")
         session.activity_log.add(mkdir, uploads)
         for dir_ in ('banners', 'files', 'logo', 'images'):
             session.activity_log.add(mkdir, join(uploads, dir_))
 
-        session.activity_log.add(render, 'setup.py.mako', join(base,
+        session.activity_log.add(render, self, 'setup.py.mako', join(base,
                                                                'setup.py'))
-        session.activity_log.add(render, 'namespace_init.py.mako',
+        session.activity_log.add(render, self, 'namespace_init.py.mako',
                                  join(base, 'aybu', '__init__.py'))
-        session.activity_log.add(render, 'namespace_init.py.mako',
+        session.activity_log.add(render, self, 'namespace_init.py.mako',
                                  join(base, 'aybu', 'instances',
                                       '__init__.py'))
-        session.activity_log.add(create, join(inst_dir, '__init__.py'),
-                                 content="#")
+        session.activity_log.add(create, join(self.paths.instance_dir,
+                                              '__init__.py'), content="#")
 
     def create_structure(self, session):
         paths = self.paths
-        dirs = sorted(paths.dir,
+        dirs = sorted((paths.dir,
             paths.cgroup,
             paths.cache,
             paths.logs.dir,
-            paths.mako_tmp_dir)
+            paths.mako_tmp_dir))
         for dir_ in dirs:
             session.activity_log.add(mkdir, dir_)
 
-        session.activity_log.add(render, 'aybu.ini.mako', paths.config)
-        session.activity_log.add(render, 'vassal.ini.mako',
-                                 paths.vassal_config, perms=0644, deferred=True)
-        session.activity_log.add(render, 'main.py.mako', paths.wsgi_script,
+        session.activity_log.add(render, self, 'aybu.ini.mako', paths.config)
+        session.activity_log.add(render, self, 'vassal.ini.mako',
+                                 paths.vassal_config, deferred=True)
+        session.activity_log.add(render, self, 'main.py.mako', paths.wsgi_script,
                                  perms=0644)
 
     def install_package(self, session):
@@ -235,14 +235,14 @@ class Instance(Base):
         pass
 
     @classmethod
-    def deploy(cls, session, name, owner, environment, theme,
-               technical_contact, default_language=u'it',
+    def deploy(cls, session, domain, owner, environment,
+               technical_contact, theme=None, default_language=u'it',
                database_password=None):
 
         if not database_password:
-            database_password = pwgen(16, no_symbols=True)
+            database_password = pwgen.pwgen(16, no_symbols=True)
 
-        instance = cls(name=name, owner=owner, environment=environment,
+        instance = cls(domain=domain, owner=owner, environment=environment,
                        theme=theme, technical_contact=technical_contact,
                        default_language=default_language,
                        database_password=database_password)

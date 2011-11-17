@@ -121,13 +121,13 @@ class ActivityLogTests(unittest.TestCase):
 
     def test_render(self):
         al = ActivityLog()
-        instance = namedtuple('Instance', ['paths', 'os_config', 'environment'])(
+        instance = namedtuple('Instance', ['paths', 'environment'])(
             paths=namedtuple('Paths', ['config'])(
                 config='MYDUMMYCONFIG'
             ),
-            os_config=None,
-            environment= namedtuple('Environment', ['smtp_config'])(
-                smtp_config=None
+            environment= namedtuple('Environment', ['smtp_config', 'os_config'])(
+                smtp_config=None,
+                os_config=None
             )
         )
         template_name = 'main.py.mako'
