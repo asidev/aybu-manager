@@ -22,28 +22,29 @@ import logging
 from sqlalchemy.orm import class_mapper
 
 
-class create_database(object):
-
-   def __new__(self, session, config):
-       return DatabaseAction("create_database", session, config)
+def create_database(session, config):
+    return [DatabaseAction("create_database", config.type),
+            DatabaseAction("create_user", config.type),
+            DatabaseAction("flush_privileges", config.type)]
 
 
 class DatabaseAction(object):
 
-    def __new__(cls, action, session, config):
+    def __new__(cls, action, type_):
 
-        type_= config.type
         action = action.replace("_", " ").title().replace(" ", "")
         clsname = "{}{}Action".format(type_.title(), action)
         targetcls = globals()[clsname]
         obj = object.__new__(targetcls)
         obj.log = logging.getLogger("{}.{}".format(__name__,
                                                    targetcls.__name__))
-        obj.config = config
-        obj.session = session
-        obj.init()
-
         return obj
+
+    def __call__(self, session, config):
+        self.config = config
+        self.session = session
+        self.init()
+        return self
 
     def get_connection(self):
         from aybu.manager.models import Instance
@@ -52,12 +53,11 @@ class DatabaseAction(object):
 
     def execute(self, statements):
         if isinstance(statements, basestring):
-            statements = (statements,)
+            statements=(statements, )
         connection = self.get_connection()
-        for stmt in statements:
-            stmt.format(conf=self.config)
-            self.log.info(stmt)
-            connection.execute(stmt)
+        for statement in statements:
+            self.log.info(statement)
+            connection.execute(statement)
         connection.close()
 
     def commit(self):
@@ -70,28 +70,38 @@ class DatabaseAction(object):
 class MysqlCreateDatabaseAction(DatabaseAction):
 
     def init(self):
-        self.log.debug("BEGIN: Creating MySQL database and user")
-        stmt = (
-            "CREATE DATABASE '{conf.name}' "
-              "DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;",
-            "CREATE USER '{conf.user}'@'localhost' "
-              "IDENTIFIED BY '{conf.password}';",
-            "GRANT USAGE ON *.* TO {conf.user}'@'localhost' "
-             "IDENTIFIED BY '{conf.password}';",
-            "GRANT ALL PRIVILEGES ON `{conf.name}`.* "
-             "TO '{conf.user}'@'localhost';",
-            "FLUSH PRIVILEGES;"
-        )
+        self.log.debug("BEGIN: Creating MySQL database")
+        stmt = "CREATE DATABASE {config.name} "\
+               "DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;"\
+               .format(config=self.config)
         self.execute(stmt)
 
     def rollback(self):
-        self.log.debug("ROLLBACK: removing MySQL user and database")
-        stmt = ("DROP USER '{conf.user'}@'localhost';",
-                "FLUSH PRIVILEGES;",
-                "ALTER TABLE instances AUTO_INCREMENT=1;")
+        self.log.debug("ROLLBACK: removing MySQL database")
+        stmt = "DROP DATABASE {config.name};".format(config=self.config)
+        self.execute(stmt)
+
+class MysqlCreateUserAction(DatabaseAction):
+
+    def init(self):
+        self.log.debug("BEGIN: Creating MySQL user")
+        statements = ("CREATE USER {config.user}@localhost  IDENTIFIED BY "
+                        "'{config.password}';",
+                      "GRANT USAGE ON *.* TO {config.user}@localhost;",
+                      "GRANT ALL PRIVILEGES ON `{config.name}`.* "
+                         "TO {config.user}@localhost;"
+        )
+        statements = (stmt.format(config=self.config) for stmt in statements)
+        self.execute(statements)
+
+    def rollback(self):
+        self.log.debug("ROLLBACK: removing MySQL user")
+        stmt = "DROP USER {config.user}@localhost;"\
+                .format(config=self.config)
         self.execute(stmt)
 
 
+class MysqlFlushPrivilegesAction(DatabaseAction):
 
-
-
+    def init(self):
+        self.execute("FLUSH PRIVILEGES;")

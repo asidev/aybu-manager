@@ -229,7 +229,7 @@ class Instance(Base):
                                  self.domain, self.paths.dir)
 
     def create_database(self, session):
-        session.activity_log.add(create_database, session, self.database)
+        session.activity_log.add_group(create_database, session, self.database)
 
     def populate_database(self, session):
         pass
