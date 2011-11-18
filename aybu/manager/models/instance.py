@@ -33,6 +33,7 @@ from sqlalchemy import (UniqueConstraint,
                         Unicode)
 from sqlalchemy import engine_from_config
 from sqlalchemy.orm import (sessionmaker,
+                            Session,
                             relationship,
                             backref)
 import pwgen
@@ -309,3 +310,12 @@ class Instance(Base):
 
         else:
             return instance
+
+    def delete(self):
+        session = Session.object_session(self)
+
+        # disable instance
+        # flush cache
+        # drop database and user
+        # remove files
+
