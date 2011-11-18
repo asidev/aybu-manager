@@ -20,6 +20,11 @@ from aybu.manager.models import (Environment,
                                  Instance,
                                  User)
 from . test_base import BaseTests
+import os
+import shlex
+import subprocess
+import time
+import urllib2
 
 
 class InstanceTests(BaseTests):
@@ -32,5 +37,19 @@ class InstanceTests(BaseTests):
                                 venv_name=self.config['virtualenv_name'])
         instance = Instance.deploy(self.session, 'www.example.com', owner,
                                    env, owner)
+
         self.session.rollback()
-        raise Exception('fake')
+
+        """
+        self.session.commit()
+        venv = os.environ['VIRTUAL_ENV']
+        bin_ = os.path.join(venv, 'bin')
+        cmd = "{}/uwsgi --http 0.0.0.0:9876 --ini {}"\
+                .format(bin_, instance.paths.vassal_config)
+
+        uwsgi = subprocess.Popen(shlex.split(cmd))
+        time.sleep(3)
+        res = urllib2.urlopen("http://127.0.0.1:9876/")
+        self.assertEqual(res.code, 200)
+        uwsgi.kill()
+        """
