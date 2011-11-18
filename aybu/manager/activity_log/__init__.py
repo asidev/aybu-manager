@@ -45,6 +45,16 @@ class ActivityLog(object):
         listen(session, 'after_rollback',
             lambda session: session.activity_log.rollback())
 
+    def add_group(self, group, *args, **kwargs):
+        try:
+            actions = group(*args, **kwargs)
+        except Exception as e:
+            self.log.exception(e)
+            self.rollback(exc=e)
+
+        for action in actions:
+            self.add(action, *args, **kwargs)
+
     def add(self, action, *args, **kwargs):
         try:
             a = action(*args, **kwargs)
