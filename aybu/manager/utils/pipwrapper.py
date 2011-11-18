@@ -18,6 +18,15 @@ limitations under the License.
 
 if __name__ == '__main__':
 
-    import pip
-    pip.main()
+    try:
+        import sys
+        import pip
+        pip.main()
+
+    except Exception as e:
+        sys.exit(1)
+
+    else:
+        sys.exit(0)
+
 

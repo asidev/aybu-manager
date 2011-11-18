@@ -41,8 +41,10 @@ class FSAction(Action):
 
 class mkdir(FSAction):
 
-    def __init__(self, path, mode=0777, error_on_exists=True):
+    def __init__(self, path, mode=0777, error_on_exists=True,
+                 recursive_delete=False):
         super(mkdir, self).__init__(path)
+        self.recursive_delete=recursive_delete
         if not error_on_exists:
             if not os.path.exists(path):
                 os.mkdir(path, mode)
@@ -52,8 +54,12 @@ class mkdir(FSAction):
             os.mkdir(path, mode)
 
     def rollback(self):
-        self.log.error("ROLLBACK: rmdir %s", self.path)
-        os.rmdir(self.path)
+        if not self.recursive_delete:
+            self.log.error("ROLLBACK: rmdir %s", self.path)
+            os.rmdir(self.path)
+        else:
+            self.log.error("ROLLBACK: rmtree %s", self.path)
+            shutil.rmtree(self.path)
 
 
 class create(FSAction):

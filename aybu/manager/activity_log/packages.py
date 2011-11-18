@@ -19,6 +19,7 @@ limitations under the License.
 import os
 import pkg_resources
 import shlex
+import shutil
 import subprocess
 from . action import Action
 
@@ -32,23 +33,31 @@ class install(Action):
         super(install, self).__init__()
         self.python = os.path.join(virtualenv, 'bin', 'python')
         self.script = pkg_resources.resource_filename('aybu.manager.utils',
-                                                      'pip.py')
+                                                      'pipwrapper.py')
         self.path = path
         self.name = name
-        self.package_name = 'aybu-instances-{}'.format(self.name)
+        self.package_name = 'aybu-instances-{}'.format(self.name).replace("_",
+                                                                          "-")
         self.virtualenv = virtualenv
         command = "{} {} install -e {}".format(self.python, self.script, path)
         self.log.debug("INSTALL: %s", command)
-        subprocess.check_call(shlex.split(command))
+        try:
+            output = subprocess.check_output(shlex.split(command))
+            self.log.debug("OUTPUT: %s", output)
+        except subprocess.CalledProcessError as e:
+            self.log.error(e.output)
+            raise e
+
 
     def commit(self):
         pass
 
     def rollback(self):
-        cmd = "{} {} uninstall {}".format(self.python, self.script,
+        cmd = "{} {} uninstall -y {}".format(self.python, self.script,
                                           self.package_name)
         self.log.error("UNINSTALL: %s", cmd)
         subprocess.check_call(shlex.split(cmd))
-
-
+        # remove egg_info directory
+        egginfo_dir = "{}.egg-info".format(self.package_name.replace("-", "_"))
+        shutil.rmtree(os.path.join(self.path, egginfo_dir))
 

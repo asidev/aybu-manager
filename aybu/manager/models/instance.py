@@ -54,8 +54,9 @@ Paths = collections.namedtuple('Paths', ['config', 'vassal_config', 'dir',
                                          'virtualenv'])
 LogPaths = collections.namedtuple('LogPaths', ['dir', 'vassal', 'application'])
 DataPaths = collections.namedtuple('DataPaths', ['dir', 'default'])
-SessionConf = collections.namedtuple('SessionConf', ['data_dir', 'lock_dir',
-                                                      'key', 'secret'])
+SessionPaths = collections.namedtuple('SessionPaths', ['data_dir', 'lock_dir'])
+SessionConfig = collections.namedtuple('SessionConfig', ['paths', 'key',
+                                                         'secret'])
 DBConf = collections.namedtuple('DBConf', ['type', 'driver', 'user',
                                            'password', 'name', 'options',
                                            'sqlalchemy_url'])
@@ -107,6 +108,10 @@ class Instance(Base):
                 .format(self=self)
 
     @property
+    def python_name(self):
+        return self.domain.replace(".","_").replace("-","_")
+
+    @property
     def paths(self):
         if hasattr(self, '_paths'):
             return self._paths
@@ -119,10 +124,8 @@ class Instance(Base):
         cache = join(dir_, 'cache')
         data_dir = join(pkg_resources.resource_filename('aybu.manager', 'data'))
 
-        self._session = SessionConf(data_dir=join(cache, "session_data"),
-                                    lock_dir=join(cache, "session_locks"),
-                                    key=self.domain,
-                                    secret=uuid.uuid4().hex)
+        session_paths = SessionPaths(data_dir=join(cache, "session_data"),
+                                    lock_dir=join(cache, "session_locks"))
         data = DataPaths(
             dir=data_dir,
             default=join(data_dir, 'default_json')
@@ -138,19 +141,29 @@ class Instance(Base):
                       application=join(env.logs.dir, self.domain,
                                        'application.log')),
             socket=join(env.run, "{}.socket".format(self.domain)),
-            session=self._session,
+            session=session_paths,
             data=data,
             mako_tmp_dir=join(cache, 'templates'),
             cache=cache,
-            instance_dir=join(dir_, 'aybu', 'instances', self.domain),
+            instance_dir=join(dir_, 'aybu', 'instances', self.python_name),
             wsgi_script=join(dir_, 'main.py'),
             virtualenv=env.virtualenv,
         )
         return self._paths
 
     @property
-    def session(self):
-        return self._session
+    def session_config(self):
+        if hasattr(self, "_session_config"):
+            return self._session_config
+
+        self._session_config = SessionConfig(
+                                paths = self.paths.session,
+                                key=self.domain,
+                                secret=uuid.uuid4().hex
+        )
+        return self._session_config
+
+
 
     @property
     def database_config(self):
@@ -203,19 +216,24 @@ class Instance(Base):
         session.configure(bind=self.database_engine)
         return session
 
-    def create_package(self, session):
+    def create_python_package_paths(self, session):
         base = self.paths.dir
         join = os.path.join
-        session.activity_log.add(mkdir, join(base, 'aybu'))
-        session.activity_log.add(mkdir, join(base, 'aybu', 'instances'))
-        session.activity_log.add(mkdir, self.paths.instance_dir)
-        session.activity_log.add(mkdir, join(self.paths.instance_dir, "public"))
-        session.activity_log.add(mkdir, join(self.paths.instance_dir, "templates"))
+        # add recursive delete so that *.pyc files get erased too
+        session.activity_log.add(mkdir, join(base, 'aybu'),
+                                 recursive_delete=True)
+        session.activity_log.add(mkdir, join(base, 'aybu', 'instances'),
+                                 recursive_delete=True)
+        session.activity_log.add(mkdir, self.paths.instance_dir,
+                                 recursive_delete=True)
+        session.activity_log.add(mkdir,
+                                 join(self.paths.instance_dir, "public"),
+                                 recursive_delete=True)
+        session.activity_log.add(mkdir,
+                                 join(self.paths.instance_dir, "templates"),
+                                 recursive_delete=True)
         uploads = join(self.paths.instance_dir, "public", "uploads")
-        session.activity_log.add(mkdir, uploads)
-        for dir_ in ('banners', 'files', 'logo', 'images'):
-            session.activity_log.add(mkdir, join(uploads, dir_))
-
+        session.activity_log.add(mkdir, uploads, recursive_delete=True)
         session.activity_log.add(render, self, 'setup.py.mako', join(base,
                                                                'setup.py'))
         session.activity_log.add(render, self, 'namespace_init.py.mako',
@@ -241,10 +259,11 @@ class Instance(Base):
                                  paths.vassal_config, deferred=True)
         session.activity_log.add(render, self, 'main.py.mako', paths.wsgi_script,
                                  perms=0644)
+        self.create_python_package_paths(session)
 
     def install_package(self, session):
         session.activity_log.add(install, self.paths.virtualenv,
-                                 self.domain, self.paths.dir)
+                                 self.python_name, self.paths.dir)
 
     def create_database(self, session):
         session.activity_log.add_group(create_database, session,
@@ -280,7 +299,6 @@ class Instance(Base):
             session.flush()
 
             instance.create_structure(session)
-            instance.create_package(session)
             instance.install_package(session)
             instance.create_database(session)
             instance.populate_database()

@@ -14,14 +14,14 @@ sqlalchemy.echo = false
 
 # session
 session.type = file
-session.data_dir = ${instance.session.data_dir}
-session.lock_dir = ${instance.session.lock_dir}
-session.key = ${instance.session.key}
-session.secret = ${instance.session.secret}
+session.data_dir = ${instance.paths.session.data_dir}
+session.lock_dir = ${instance.paths.session.lock_dir}
+session.key = ${instance.session_config.key}
+session.secret = ${instance.session_config.secret}
 session.cookie_on_exception = false
 
 # instance
-instance = ${instance.domain}
+instance = ${instance.python_name}
 
 # data
 default_data = ${instance.paths.data.default}

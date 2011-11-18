@@ -52,11 +52,14 @@ class BaseTests(unittest.TestCase):
         self.config['paths']['configs'] = '%(root)s/configs'
         self.config['paths']['archives'] = '%(root)s/archives'
         self.config['paths']['run'] = '%(root)s/run'
-        self.config['paths']['virtualenv'] = '%(root)s/virtualenv'
+        self.config['paths']['virtualenv'] = \
+                            os.path.dirname(os.environ['VIRTUAL_ENV'])
+        self.config['virtualenv_name'] = \
+                            os.path.basename(os.environ['VIRTUAL_ENV'])
         self.config['paths']['logs'] = '%(root)s/logs'
 
     def tearDown(self):
         self.session.close()
         self.Session.close_all()
         Base.metadata.drop_all()
-        shutil.rmtree(self.tempdir)
+#        shutil.rmtree(self.tempdir)

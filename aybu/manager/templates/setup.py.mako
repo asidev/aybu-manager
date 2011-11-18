@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-setup(name='aybu-instances-${instance.domain}',
+setup(name='aybu-instances-${instance.python_name}',
       version='0.0',
       description="aybu ${instance.domain} instance",
       long_description="aybu ${instance.domain} instance",

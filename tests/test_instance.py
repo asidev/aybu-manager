@@ -16,7 +16,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import os
 from aybu.manager.models import (Environment,
                                  Instance,
                                  User)
@@ -29,15 +28,9 @@ class InstanceTests(BaseTests):
 
         owner = User(email='info@example.com', password='changeme',
                      name='Example', surname='Com')
-        env = Environment.create(self.session, 'testenv', config=self.config)
-        # create a fake python to make pip install work
-        os.mkdir(os.path.dirname(env.paths.virtualenv))
-        os.mkdir(env.paths.virtualenv)
-        os.mkdir(os.path.join(env.paths.virtualenv, 'bin'))
-        with open(os.path.join(env.paths.virtualenv, 'bin', 'python'), 'w') as f:
-            f.write('#!/bin/bash')
-        os.chmod(os.path.join(env.paths.virtualenv, 'bin', 'python'), 0777)
-
+        env = Environment.create(self.session, 'testenv', config=self.config,
+                                venv_name=self.config['virtualenv_name'])
         instance = Instance.deploy(self.session, 'www.example.com', owner,
                                    env, owner)
         self.session.rollback()
+        raise Exception('fake')
