@@ -22,7 +22,7 @@ import shutil
 from . exc import NOOP
 from . action import Action
 
-__all__ = ['mkdir', 'create', 'copy']
+__all__ = ['mkdir', 'create', 'copy', 'rm', 'rmdir', 'rmtree']
 
 
 class FSAction(Action):
@@ -37,6 +37,32 @@ class FSAction(Action):
 
     def rollback(self):
         self.log.debug("ROLLBACK (noop): %s %s", self.name, self.path)
+
+
+class DeleteAction(FSAction):
+
+    def __init__(self, path, error_on_dirs=False, error_on_not_exists=True):
+        super(DeleteAction, self).__init__(path)
+        self.log.info("Removing file %s", self.path)
+        self.tmp_name = "._{}".format(os.path.basename(path))
+        self.tmp_path = os.path.realpath(
+            os.path.join(os.path.dirname(path), self.tmp_name)
+        )
+
+        if error_on_dirs and os.path.isdir(self.path):
+            raise OSError(errno.EISDIR,
+                          "Is a directory: '{}'".format(self.path))
+
+        if not error_on_not_exists and not os.path.exists(path):
+            self.skip = True
+        else:
+            self.skip = False
+            os.rename(path, self.tmp_path)
+
+    def rollback(self):
+        if not self.skip:
+            self.log.error("ROLLBACK: restoring %s", self.path)
+            os.rename(self.tmp_path, self.path)
 
 
 class mkdir(FSAction):
@@ -79,7 +105,33 @@ class create(FSAction):
 class copy(create):
 
     def __init__(self, source, destination):
-        # not that destination and source are swapped
-        # w.r.t shutil function, as we care about destination
         super(copy, self).__init__(destination)
         shutil.copy(source, destination)
+
+
+class rm(DeleteAction):
+
+    def __init__(self, path, error_on_not_exists=True):
+        super(rm, self).__init__(path, True, error_on_not_exists)
+
+    def commit(self):
+        if not self.skip:
+            self.log.debug("unlinking %s (was %s)", self.tmp_path, self.path)
+            os.unlink(self.tmp_path)
+
+
+class rmdir(DeleteAction):
+
+    def commit(self):
+        if not self.skip:
+            self.log.debug("rmdir %s (was %s)", self.tmp_path, self.path)
+            os.rmdir(self.tmp_path)
+
+
+class rmtree(DeleteAction):
+
+    def commit(self):
+        if not self.skip:
+            self.log.debug("rmtree %s (was %s)", self.tmp_path, self.path)
+            shutil.rmtree(self.tmp_path)
+

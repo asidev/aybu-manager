@@ -62,4 +62,4 @@ class BaseTests(unittest.TestCase):
         self.session.close()
         self.Session.close_all()
         Base.metadata.drop_all()
-#        shutil.rmtree(self.tempdir)
+        shutil.rmtree(self.tempdir)

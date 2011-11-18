@@ -23,7 +23,12 @@ import stat
 import tempfile
 import unittest
 from aybu.manager.activity_log import ActivityLog
-from aybu.manager.activity_log.fs import mkdir, create, copy
+from aybu.manager.activity_log.fs import (mkdir,
+                                          create,
+                                          copy,
+                                          rm,
+                                          rmdir,
+                                          rmtree)
 from aybu.manager.activity_log.exc import TransactionError
 from aybu.manager.activity_log.template import render
 
@@ -143,5 +148,57 @@ class ActivityLogTests(unittest.TestCase):
         self.assertFalse(os.path.exists(target))
         al.commit()
         self.assertTrue(os.path.exists(target))
+
+
+    def test_delete(self):
+        al = ActivityLog()
+        testfile = os.path.join(self.tempdir, 'test.txt')
+
+        with self.assertRaises(OSError):
+            al.add(rm, testfile)
+
+        al.add(rm, testfile, error_on_not_exists=False)
+        al.commit()
+
+        with open(testfile, "w") as f:
+            f.write("###")
+
+        al.add(rm, testfile)
+        self.assertFalse(os.path.exists(testfile))
+
+        al.rollback()
+        self.assertTrue(os.path.exists(testfile))
+
+        al.add(rm, testfile)
+        self.assertFalse(os.path.exists(testfile))
+        al.commit()
+        self.assertFalse(os.path.exists(testfile))
+
+        testdir = os.path.join(self.tempdir, 'test')
+        al.add(mkdir, testdir)
+        al.commit()
+
+        # test rmdir
+        al.add(rmdir, testdir)
+        self.assertFalse(os.path.exists(testdir))
+        al.rollback()
+        self.assertTrue(os.path.exists(testdir))
+        al.add(rmdir, testdir)
+        al.commit()
+        self.assertFalse(os.path.exists(testdir))
+
+        # test rmtree
+        al.add(mkdir, testdir)
+        inner = os.path.join(testdir, 'inner')
+        al.add(mkdir, inner)
+        al.commit()
+
+        al.add(rmtree, testdir)
+        self.assertFalse(os.path.exists(testdir))
+        al.rollback()
+        self.assertTrue(os.path.exists(testdir))
+        al.add(rmtree, testdir)
+        al.commit()
+        self.assertFalse(os.path.exists(testdir))
 
 
