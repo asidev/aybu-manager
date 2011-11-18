@@ -41,4 +41,3 @@ class InstanceTests(BaseTests):
         instance = Instance.deploy(self.session, 'www.example.com', owner,
                                    env, owner)
         self.session.rollback()
-

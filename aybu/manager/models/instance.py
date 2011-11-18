@@ -19,6 +19,7 @@ limitations under the License.
 import atexit
 import collections
 import datetime
+import json
 import os
 import pkg_resources
 import uuid
@@ -30,10 +31,14 @@ from sqlalchemy import (UniqueConstraint,
                         DateTime,
                         Integer,
                         Unicode)
-from sqlalchemy.orm import (relationship,
+from sqlalchemy import engine_from_config
+from sqlalchemy.orm import (sessionmaker,
+                            relationship,
                             backref)
 import pwgen
 
+import aybu.core.models
+from aybu.core.models import Base as AybuCoreBase
 from aybu.manager.activity_log.template import render
 from aybu.manager.activity_log.fs import mkdir, create
 from aybu.manager.activity_log.packages import install
@@ -165,7 +170,7 @@ class Instance(Base):
         options = c['database']['options'] if 'options' in c['database'] \
                                            and c['database']['options'] \
                   else None
-        url = "{}://{}:{}/{}".format(driver, database_user,
+        url = "{}://{}:{}@localhost:3306/{}".format(driver, database_user,
                                      self.database_password, database_name)
         if options:
             url = "{}?{}".format(url, options)
@@ -180,6 +185,23 @@ class Instance(Base):
             sqlalchemy_url=url
         )
         return self._database_config
+
+    @property
+    def database_engine(self):
+        if hasattr(self, "_database_engine"):
+            return self._database_engine
+        self._database_engine = engine_from_config(
+                    {'sqlalchemy.url': self.database_config.sqlalchemy_url},
+                    'sqlalchemy.'
+        )
+        AybuCoreBase.metadata.bind=self._database_engine
+        return self._database_engine
+
+
+    def get_database_session(self):
+        session = sessionmaker()()
+        session.configure(bind=self.database_engine)
+        return session
 
     def create_package(self, session):
         base = self.paths.dir
@@ -227,9 +249,19 @@ class Instance(Base):
     def create_database(self, session):
         session.activity_log.add_group(create_database, session,
                                        self.database_config)
+        self.log.info("Creating tables in instance database")
+        AybuCoreBase.metadata.create_all(self.database_engine)
 
-    def populate_database(self, session):
-        pass
+    def populate_database(self):
+        session = self.get_database_session()
+        data = json.loads(pkg_resources.resource_stream('aybu.manager.data',
+                                                        'default_data.json')\
+                          .read())
+        # TODO: manipulate data to adjust settings, themes, user, etc
+        aybu.core.models.add_default_data(session, data)
+        session.commit()
+        session.close()
+
 
     @classmethod
     def deploy(cls, session, domain, owner, environment,
@@ -239,16 +271,23 @@ class Instance(Base):
         if not database_password:
             database_password = pwgen.pwgen(16, no_symbols=True)
 
-        instance = cls(domain=domain, owner=owner, environment=environment,
-                       theme=theme, technical_contact=technical_contact,
-                       default_language=default_language,
-                       database_password=database_password)
-        session.add(instance)
-        session.flush()
+        try:
+            instance = cls(domain=domain, owner=owner, environment=environment,
+                        theme=theme, technical_contact=technical_contact,
+                        default_language=default_language,
+                        database_password=database_password)
+            session.add(instance)
+            session.flush()
 
-        instance.create_structure(session)
-        instance.create_package(session)
-        instance.install_package(session)
-        instance.create_database(session)
-        instance.populate_database(session)
-        return instance
+            instance.create_structure(session)
+            instance.create_package(session)
+            instance.install_package(session)
+            instance.create_database(session)
+            instance.populate_database()
+
+        except:
+            session.rollback()
+            raise
+
+        else:
+            return instance
