@@ -44,6 +44,8 @@
  {"cls_": "Setting", "name": "disqus", "raw_value": "", "ui_administrable": true, "type": "txt"},
  {"cls_": "Setting", "name": "facebook", "raw_value": "", "ui_administrable": true, "type": "txt"},
  {"cls_": "Setting", "name": "twitter", "raw_value": "", "ui_administrable": true, "type": "txt"},
+ {"cls_": "Setting", "name": "reseller_link", "raw_value": "http://www.asidev.com", "ui_administrable": false, "type": "txt"},
+ {"cls_": "Setting", "name": "reseller_name", "raw_value": "Asidev s.r.l.", "ui_administrable": true, "type": "txt"},
  {"cls_": "View", "id": 1, "name": "GENERIC", "fs_view_path": "/pages/generic_content.mako"},
  {"cls_": "View", "id": 2, "name": "CONTACTS", "fs_view_path": "/pages/contacts.mako"},
  {"cls_": "ViewDescription", "id": 1, "description": "Pagina di contenuto generico", "view": 1, "language": 1},
