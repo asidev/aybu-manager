@@ -52,7 +52,8 @@ DataPaths = collections.namedtuple('DataPaths', ['dir', 'default'])
 SessionConf = collections.namedtuple('SessionConf', ['data_dir', 'lock_dir',
                                                       'key', 'secret'])
 DBConf = collections.namedtuple('DBConf', ['type', 'driver', 'user',
-                                           'password', 'name', 'options'])
+                                           'password', 'name', 'options',
+                                           'sqlalchemy_url'])
 
 
 class Instance(Base):
@@ -147,43 +148,38 @@ class Instance(Base):
         return self._session
 
     @property
-    def database_user(self):
-        if self.id is None:
-            raise ValueError('instance id does not exist yet.')
-        return "{}{}".format(self.environment.config['database']['prefix'],
-                             self.id)
-
-    @property
-    def database_name(self):
-        return self.database_user
-
-
-    @property
-    def database(self):
-        if hasattr(self, '_database'):
-            return self._database
+    def database_config(self):
+        if hasattr(self, '_database_config'):
+            return self._database_config
 
         c = self.environment.config
         if not c:
             raise TypeError('Environment has not been configured')
 
         type_ = c['database']['type']
+        database_user = "{}{}".format(c['database']['prefix'], self.id)
+        database_name = database_user
         driver = type_
         if 'driver' in c['database']:
             driver = "{}+{}".format(driver, c['database']['driver'])
         options = c['database']['options'] if 'options' in c['database'] \
                                            and c['database']['options'] \
                   else None
+        url = "{}://{}:{}/{}".format(driver, database_user,
+                                     self.database_password, database_name)
+        if options:
+            url = "{}?{}".format(url, options)
 
-        self._database = DBConf(
+        self._database_config = DBConf(
             driver=driver,
             type=type_,
-            user=self.database_user,
+            user=database_user,
             password=self.database_password,
-            name=self.database_name,
-            options=options
+            name=database_name,
+            options=options,
+            sqlalchemy_url=url
         )
-        return self._database
+        return self._database_config
 
     def create_package(self, session):
         base = self.paths.dir
@@ -229,7 +225,8 @@ class Instance(Base):
                                  self.domain, self.paths.dir)
 
     def create_database(self, session):
-        session.activity_log.add_group(create_database, session, self.database)
+        session.activity_log.add_group(create_database, session,
+                                       self.database_config)
 
     def populate_database(self, session):
         pass

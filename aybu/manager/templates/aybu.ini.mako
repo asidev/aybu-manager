@@ -9,12 +9,7 @@ reload_templates = false
 reload_assets = false
 debug = false
 
-<%
-   database_uri = "{db.driver}://{db.user}:{db.password}/{db.name}".format(db=instance.database)
-   if instance.database.options:
-      database_uri = "{}?{}".format(database_uri, instance.database.options)
-%>
-sqlalchemy.url = ${database_uri}
+sqlalchemy.url = ${instance.database_config.sqlalchemy_url}
 sqlalchemy.echo = false
 
 # session
