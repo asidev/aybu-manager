@@ -27,7 +27,7 @@ __all__ = ['render']
 class render(Action):
 
     def __init__(self, instance, template_name, target, deferred=False,
-                 perms=None):
+                 skip_rollback=False, perms=None):
         super(render, self).__init__()
         self.instance = instance
         self.template_name = template_name
@@ -36,6 +36,7 @@ class render(Action):
             pkg_resources.resource_stream('aybu.manager.templates',
                                           template_name).read()
         )
+        self.skip_rollback = skip_rollback
         self.target = target
         self.written = False
         if not deferred:
@@ -65,6 +66,10 @@ class render(Action):
             self.write()
 
     def rollback(self):
+        if self.skip_rollback:
+            self.log.debug("Skipping rollback on %s", self.target)
+            return
+
         if self.written:
             self.log.error("ROLLBACK: unlink %s", self.target)
             os.unlink(self.target)

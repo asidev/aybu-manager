@@ -34,10 +34,12 @@ class InstanceTests(BaseTests):
         owner = User(email='info@example.com', password='changeme',
                      name='Example', surname='Com')
         env = Environment.create(self.session, 'testenv', config=self.config,
-                                venv_name=self.config['virtualenv_name'])
+                                 venv_name=self.config['virtualenv_name'])
         instance = Instance.deploy(self.session, 'www.example.com', owner,
                                    env, owner)
 
+        # vassal config is created only upon session commit
+        self.assertFalse(os.path.exists(instance.paths.vassal_config))
         self.session.rollback()
 
         """

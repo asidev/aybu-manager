@@ -36,12 +36,14 @@ from sqlalchemy.orm import (sessionmaker,
                             Session,
                             relationship,
                             backref)
+from sqlalchemy.orm.exc import DetachedInstanceError
+
 import pwgen
 
 import aybu.core.models
 from aybu.core.models import Base as AybuCoreBase
 from aybu.manager.activity_log.template import render
-from aybu.manager.activity_log.fs import mkdir, create
+from aybu.manager.activity_log.fs import mkdir, create, rm
 from aybu.manager.activity_log.packages import install
 from aybu.manager.activity_log.database import create_database
 from . base import Base
@@ -164,8 +166,6 @@ class Instance(Base):
         )
         return self._session_config
 
-
-
     @property
     def database_config(self):
         if hasattr(self, '_database_config'):
@@ -211,13 +211,21 @@ class Instance(Base):
         AybuCoreBase.metadata.bind=self._database_engine
         return self._database_engine
 
-
     def get_database_session(self):
         session = sessionmaker()()
         session.configure(bind=self.database_engine)
         return session
 
-    def create_python_package_paths(self, session):
+    def _write_vassal_ini(self, session=None, skip_rollback=False):
+        session = session or Session.object_session(self)
+        if session is None:
+            raise DetachedInstanceError()
+        session.activity_log.add(render, self, 'vassal.ini.mako',
+                                 self.paths.vassal_config,
+                                 deferred=True,
+                                 skip_rollback=skip_rollback)
+
+    def _create_python_package_paths(self, session):
         base = self.paths.dir
         join = os.path.join
         # add recursive delete so that *.pyc files get erased too
@@ -245,7 +253,7 @@ class Instance(Base):
         session.activity_log.add(create, join(self.paths.instance_dir,
                                               '__init__.py'), content="#")
 
-    def create_structure(self, session):
+    def _create_structure(self, session):
         paths = self.paths
         dirs = sorted((paths.dir,
             paths.cgroup,
@@ -256,23 +264,20 @@ class Instance(Base):
             session.activity_log.add(mkdir, dir_)
 
         session.activity_log.add(render, self, 'aybu.ini.mako', paths.config)
-        session.activity_log.add(render, self, 'vassal.ini.mako',
-                                 paths.vassal_config, deferred=True)
         session.activity_log.add(render, self, 'main.py.mako', paths.wsgi_script,
                                  perms=0644)
-        self.create_python_package_paths(session)
 
-    def install_package(self, session):
+    def _install_package(self, session):
         session.activity_log.add(install, self.paths.virtualenv,
                                  self.python_name, self.paths.dir)
 
-    def create_database(self, session):
+    def _create_database(self, session):
         session.activity_log.add_group(create_database, session,
                                        self.database_config)
         self.log.info("Creating tables in instance database")
         AybuCoreBase.metadata.create_all(self.database_engine)
 
-    def populate_database(self):
+    def _populate_database(self):
         session = self.get_database_session()
         data = json.loads(pkg_resources.resource_stream('aybu.manager.data',
                                                         'default_data.json')\
@@ -282,11 +287,10 @@ class Instance(Base):
         session.commit()
         session.close()
 
-
     @classmethod
     def deploy(cls, session, domain, owner, environment,
                technical_contact, theme=None, default_language=u'it',
-               database_password=None):
+               database_password=None, enabled=True):
 
         if not database_password:
             database_password = pwgen.pwgen(16, no_symbols=True)
@@ -299,10 +303,12 @@ class Instance(Base):
             session.add(instance)
             session.flush()
 
-            instance.create_structure(session)
-            instance.install_package(session)
-            instance.create_database(session)
-            instance.populate_database()
+            instance._create_structure(session)
+            instance._create_python_package_paths(session)
+            instance._install_package(session)
+            instance._create_database(session)
+            instance._populate_database()
+            instance.enable()
 
         except:
             session.rollback()
@@ -310,6 +316,28 @@ class Instance(Base):
 
         else:
             return instance
+
+    def reload(self):
+        if not self.enabled:
+            raise TypeError('Cannot reload a disabled instance')
+        self._write_vassal_ini(skip_rollback=True)
+
+    def enable(self):
+        if not self.enabled:
+            return
+        self.log.debug("Enabling instance %s", self)
+        self.enabled = True
+        self._write_vassal_ini()
+
+    def disable(self):
+        if not self.enabled:
+            return
+        self.log.debug("Disabling %s", self)
+        self.enabled = False
+        session = Session.object_session(self)
+        if session is None:
+            raise DetachedInstanceError()
+        session.activity_log.add(rm, self.paths.vassal_config, deferred=True)
 
     def delete(self):
         session = Session.object_session(self)

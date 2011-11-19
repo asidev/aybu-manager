@@ -41,20 +41,27 @@ class FSAction(Action):
 
 class DeleteAction(FSAction):
 
-    def __init__(self, path, error_on_dirs=False, error_on_not_exists=True):
+    def __init__(self, path, error_on_dirs=False, error_on_not_exists=True,
+                 deferred=False):
         super(DeleteAction, self).__init__(path)
         self.log.info("Removing file %s", self.path)
         self.tmp_name = "._{}".format(os.path.basename(path))
         self.tmp_path = os.path.realpath(
             os.path.join(os.path.dirname(path), self.tmp_name)
         )
+        self.deferred = deferred
 
         if error_on_dirs and os.path.isdir(self.path):
             raise OSError(errno.EISDIR,
                           "Is a directory: '{}'".format(self.path))
 
-        if not error_on_not_exists and not os.path.exists(path):
+        if deferred:
+            self.tmp_path = path
+            self.skip = False
+
+        elif not error_on_not_exists and not os.path.exists(path):
             self.skip = True
+
         else:
             self.skip = False
             os.rename(path, self.tmp_path)
