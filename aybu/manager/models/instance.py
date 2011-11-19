@@ -42,6 +42,10 @@ import pwgen
 
 import aybu.core.models
 from aybu.core.models import Base as AybuCoreBase
+from aybu.core.models import Setting as AybuCoreSetting
+from aybu.core.models import Theme as AybuCoreTheme
+from aybu.core.models import User as AybuCoreUser
+from aybu.controlpanel.proxy import Proxy  # FIXME: move to aybu.core
 from aybu.manager.activity_log.template import render
 from aybu.manager.activity_log.fs import mkdir, create, rm, rmtree
 from aybu.manager.activity_log.packages import install, uninstall
@@ -291,27 +295,27 @@ class Instance(Base):
             # TODO: manipulate data to adjust settings, themes, user, etc
             aybu.core.models.add_default_data(session, data)
 
-            from aybu.core.models import Setting, Theme, User
-            u = User(username=self.owner.email, password=self.owner.password)
+            u = AybuCoreUser(username=self.owner.email, password=self.owner.password)
             session.add(u)
 
-            Setting.get(session, 'debug').raw_value = 'False'
+            AybuCoreSetting.get(session, 'debug').raw_value = 'False'
 
             if self.theme:
                 for setting_name in ('banner_width', 'banner_height',
                                      'logo_width', 'logo_height',
                                      'main_menu_levels', 'template_levels',
                                      'image_full_size'):
-                    setting = Setting.get(session, setting_name)
+                    setting = AybuCoreSetting.get(session, setting_name)
                     setting.value = getattr(self.theme, setting_name)
 
-                session.query(Theme).delete(synchronize_session='fetch')
-                t = Theme(name=self.theme.name,
+                session.query(AybuCoreTheme).delete(synchronize_session='fetch')
+                t = AybuCoreTheme(name=self.theme.name,
                           parent_name=self.theme.parent_name)
                 session.add(t)
                 parent = self.theme.parent
                 while parent:
-                    t = Theme(name=parent.name, parent_name=parent.parent_name)
+                    t = AybuCoreTheme(name=parent.name,
+                                      parent_name=parent.parent_name)
                     session.add(t)
                     parent = parent.parent
 
@@ -406,3 +410,11 @@ class Instance(Base):
             session.query(self.__class__)\
                    .filter(self.__class__.id == self.id)\
                    .delete()
+
+    def flush_cache(self):
+        request = collections.namedtuple('Request', ['db_session', 'host'])(
+            db_session=self.get_database_session(),
+            host="{}:80".format(self.domain)
+        )
+        proxy = Proxy(request)
+        proxy.ban('^/.*')
