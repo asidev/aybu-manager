@@ -24,22 +24,23 @@ import subprocess
 from . action import Action
 
 
-__all__ = ['install']
+__all__ = ['install', 'uninstall']
 
 
-class install(Action):
+class Pip(Action):
 
-    def __init__(self, virtualenv, name, path):
-        super(install, self).__init__()
+    def __init__(self, path, virtualenv, package_name):
+        super(Pip, self).__init__()
         self.python = os.path.join(virtualenv, 'bin', 'python')
         self.script = pkg_resources.resource_filename('aybu.manager.utils',
                                                       'pipwrapper.py')
-        self.path = path
-        self.name = name
-        self.package_name = 'aybu-instances-{}'.format(self.name).replace("_",
-                                                                          "-")
         self.virtualenv = virtualenv
-        command = "{} {} install -e {}".format(self.python, self.script, path)
+        self.path = path
+        self.package_name = package_name
+
+    def install(self):
+        command = "{} {} install -e {}".format(self.python, self.script,
+                                               self.path)
         self.log.debug("INSTALL: %s", command)
         try:
             output = subprocess.check_output(shlex.split(command))
@@ -48,11 +49,7 @@ class install(Action):
             self.log.error(e.output)
             raise e
 
-
-    def commit(self):
-        pass
-
-    def rollback(self):
+    def uninstall(self):
         cmd = "{} {} uninstall -y {}".format(self.python, self.script,
                                           self.package_name)
         self.log.error("UNINSTALL: %s", cmd)
@@ -61,3 +58,25 @@ class install(Action):
         egginfo_dir = "{}.egg-info".format(self.package_name.replace("-", "_"))
         shutil.rmtree(os.path.join(self.path, egginfo_dir))
 
+    def commit(self):
+        pass
+
+
+class install(Pip):
+
+    def __init__(self, path, virtualenv, package_name):
+        super(install, self).__init__(path, virtualenv, package_name)
+        self.install()
+
+    def rollback(self):
+        self.uninstall()
+
+
+class uninstall(Pip):
+
+    def __init__(self, path, virtualenv, package_name):
+        super(uninstall, self).__init__(path, virtualenv, package_name)
+        self.uninstall()
+
+    def rollback(self):
+        self.install()

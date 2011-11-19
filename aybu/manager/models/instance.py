@@ -43,9 +43,10 @@ import pwgen
 import aybu.core.models
 from aybu.core.models import Base as AybuCoreBase
 from aybu.manager.activity_log.template import render
-from aybu.manager.activity_log.fs import mkdir, create, rm
-from aybu.manager.activity_log.packages import install
-from aybu.manager.activity_log.database import create_database
+from aybu.manager.activity_log.fs import mkdir, create, rm, rmtree
+from aybu.manager.activity_log.packages import install, uninstall
+from aybu.manager.activity_log.database import create_database, drop_database
+from aybu.manager.exc import OperationalError
 from . base import Base
 
 
@@ -113,6 +114,10 @@ class Instance(Base):
     @property
     def python_name(self):
         return self.domain.replace(".","_").replace("-","_")
+
+    @property
+    def python_package_name(self):
+        return 'aybu-instances-{}'.format(self.python_name).replace("_", "-")
 
     @property
     def paths(self):
@@ -268,8 +273,8 @@ class Instance(Base):
                                  perms=0644)
 
     def _install_package(self, session):
-        session.activity_log.add(install, self.paths.virtualenv,
-                                 self.python_name, self.paths.dir)
+        session.activity_log.add(install, self.paths.dir, self.paths.virtualenv,
+                                 self.python_package_name)
 
     def _create_database(self, session):
         session.activity_log.add_group(create_database, session,
@@ -337,6 +342,7 @@ class Instance(Base):
             instance._create_database(session)
             instance._populate_database()
             instance.enable()
+            # TODO: flush
 
         except:
             session.rollback()
@@ -347,7 +353,7 @@ class Instance(Base):
 
     def reload(self):
         if not self.enabled:
-            raise TypeError('Cannot reload a disabled instance')
+            raise OperationalError('Cannot reload a disabled instance')
         self._write_vassal_ini(skip_rollback=True)
 
     def enable(self):
@@ -367,11 +373,33 @@ class Instance(Base):
             raise DetachedInstanceError()
         session.activity_log.add(rm, self.paths.vassal_config, deferred=True)
 
-    def delete(self):
-        session = Session.object_session(self)
+    def delete(self, session=None):
+        session = session or Session.object_session(self)
+        if not session:
+            raise DetachedInstanceError()
 
-        # disable instance
-        # flush cache
-        # drop database and user
-        # remove files
+        if self.enabled:
+            raise OperationalError('Cannot delete an enabled instance')
 
+        try:
+            # TODO: flush
+            session.activity_log.add(uninstall, self.paths.dir,
+                                    self.paths.virtualenv,
+                                    self.python_package_name)
+            session.activity_log.add_group(drop_database, session,
+                                        self.database_config)
+
+            session.activity_log.add(rm, self.paths.socket,
+                                    error_on_not_exists=False)
+            session.activity_log.add(rmtree, self.paths.logs.dir)
+            session.activity_log.add(rmtree, self.paths.dir)
+            session.activity_log.add(rmtree, self.paths.cgroup)
+
+        except:
+            session.rollback()
+            raise
+
+        else:
+            session.query(self.__class__)\
+                   .filter(session.__class__.id == self.id)\
+                   .delete()
