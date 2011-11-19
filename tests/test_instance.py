@@ -89,7 +89,6 @@ class InstanceTests(BaseTests):
 
         # todo assert database is not present
 
-        raise Exception("finish")
         """
         self.session.commit()
         venv = os.environ['VIRTUAL_ENV']

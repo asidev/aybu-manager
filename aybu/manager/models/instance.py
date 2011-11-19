@@ -329,6 +329,8 @@ class Instance(Base):
             database_password = pwgen.pwgen(16, no_symbols=True)
 
         try:
+            cls.log.info("Deploying instance for %s in environment %s",
+                         domain, environment)
             instance = cls(domain=domain, owner=owner, environment=environment,
                         theme=theme, technical_contact=technical_contact,
                         default_language=default_language,
@@ -382,6 +384,7 @@ class Instance(Base):
             raise OperationalError('Cannot delete an enabled instance')
 
         try:
+            self.log.debug("Deleting instance %s", self)
             # TODO: flush
             session.activity_log.add(uninstall, self.paths.dir,
                                     self.paths.virtualenv,
