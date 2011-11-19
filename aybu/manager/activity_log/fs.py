@@ -118,8 +118,9 @@ class copy(create):
 
 class rm(DeleteAction):
 
-    def __init__(self, path, error_on_not_exists=True):
-        super(rm, self).__init__(path, True, error_on_not_exists)
+    def __init__(self, path, error_on_not_exists=True, deferred=False):
+        super(rm, self).__init__(path, True, error_on_not_exists,
+                                 deferred=deferred)
 
     def commit(self):
         if not self.skip:
