@@ -341,7 +341,7 @@ class Instance(Base):
             instance._install_package(session)
             instance._create_database(session)
             instance._populate_database()
-            instance.enable()
+            instance._write_vassal_ini()
             # TODO: flush
 
         except:
@@ -357,7 +357,7 @@ class Instance(Base):
         self._write_vassal_ini(skip_rollback=True)
 
     def enable(self):
-        if not self.enabled:
+        if self.enabled:
             return
         self.log.debug("Enabling instance %s", self)
         self.enabled = True
@@ -401,5 +401,5 @@ class Instance(Base):
 
         else:
             session.query(self.__class__)\
-                   .filter(session.__class__.id == self.id)\
+                   .filter(self.__class__.id == self.id)\
                    .delete()

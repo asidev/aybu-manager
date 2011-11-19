@@ -20,6 +20,7 @@ from aybu.manager.models import (Environment,
                                  Instance,
                                  User)
 from . test_base import BaseTests
+from aybu.manager.exc import OperationalError
 import os
 import shlex
 import subprocess
@@ -40,8 +41,55 @@ class InstanceTests(BaseTests):
 
         # vassal config is created only upon session commit
         self.assertFalse(os.path.exists(instance.paths.vassal_config))
-        self.session.rollback()
+        self.session.commit()
+        self.assertTrue(os.path.exists(instance.paths.vassal_config))
 
+        # test reload
+        os.unlink(instance.paths.vassal_config)
+        instance.reload()
+        self.assertFalse(os.path.exists(instance.paths.vassal_config))
+        self.session.commit()
+        self.assertTrue(os.path.exists(instance.paths.vassal_config))
+        self.assertTrue(instance.enabled)
+
+        # test disable
+        instance.disable()
+        self.session.commit()
+        self.assertFalse(os.path.exists(instance.paths.vassal_config))
+        with self.assertRaises(OperationalError):
+            instance.reload()
+
+        # disable an already disable instance is a no-op
+        self.assertFalse(instance.enabled)
+        instance.disable()
+        self.session.rollback()
+        self.assertFalse(instance.enabled)
+
+        # test enable
+        instance.enable()
+        self.assertFalse(os.path.exists(instance.paths.vassal_config))
+        self.session.commit()
+        self.assertTrue(os.path.exists(instance.paths.vassal_config))
+
+        # enabling an already enabled instance is a no-op
+        self.assertTrue(instance.enabled)
+        instance.enable()
+        self.session.rollback()
+        self.assertTrue(instance.enabled)
+
+        # test delete
+        with self.assertRaises(OperationalError):
+            instance.delete()
+        instance.disable()
+        self.session.commit()
+        instance.delete()
+        self.assertFalse(os.path.exists(instance.paths.dir))
+        self.session.commit()
+        self.assertFalse(os.path.exists(instance.paths.dir))
+
+        # todo assert database is not present
+
+        raise Exception("finish")
         """
         self.session.commit()
         venv = os.environ['VIRTUAL_ENV']
