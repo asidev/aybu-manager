@@ -81,41 +81,35 @@ class SQLAction(object):
 
 class MysqlDatabaseAction(SQLAction):
 
-    def __init__(self):
-        super(MysqlDatabaseAction, self).__init__()
-        self.renamed = None
-
     def create(self):
-        self.log.debug("Creating MySQL database")
         stmt = "CREATE DATABASE {config.name} "\
                "DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;"\
                .format(config=self.config)
         self.execute(stmt)
 
     def drop(self):
-        name = self.config.name if not self.renamed else self.renamed
-        self.log.debug("Removing MySQL database")
-        stmt = "DROP DATABASE {name};".format(name=name)
+        stmt = "DROP DATABASE {name};".format(name=self.config.name)
         self.execute(stmt)
 
     def rename(self):
-        self.renamed = "{}__R".format(self.config.name)
-        self.log.debug("Renaming MySQL database to %s", self.renamed)
-        stmt = "RENAME DATABASE {config.name} TO {newname};"\
-                .format(config=self.config, newname=self.renamed)
-        self.execute(stmt)
+        """ MySQL does not support RENAME DATABASE (which indeed was
+            supported between 5.1.7 and 5.1.23), so we do ... nothing.
+
+            a workaround can be:
+                - create the new database
+                - issue N querys like: RENAME TABLE old.xxx TO new.xxx
+                - drop the old database
+            but it can be tricky w.r.t indexes and constraint
+        """
+        self.log.debug("Renaming MySQL database (NoOP)")
 
     def restore(self):
-        self.log.debug("Restoring MySQL database")
-        stmt = "RENAME DATABASE {old} TO {new};"\
-                .format(old=self.renamed, new=self.config.name)
-        self.execute(stmt)
+        self.log.debug("Restoring MySQL database (NoOP)")
 
 
 class MysqlUserAction(SQLAction):
 
     def create(self):
-        self.log.debug("BEGIN: Creating MySQL user")
         statements = ("CREATE USER {config.user}@localhost  IDENTIFIED BY "
                         "'{config.password}';",
                       "GRANT USAGE ON *.* TO {config.user}@localhost;",
@@ -126,7 +120,6 @@ class MysqlUserAction(SQLAction):
         self.execute(statements)
 
     def drop(self):
-        self.log.debug("ROLLBACK: removing MySQL user")
         stmt = "DROP USER {config.user}@localhost;"\
                 .format(config=self.config)
         self.execute(stmt)
