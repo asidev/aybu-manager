@@ -279,13 +279,41 @@ class Instance(Base):
 
     def _populate_database(self):
         session = self.get_database_session()
-        data = json.loads(pkg_resources.resource_stream('aybu.manager.data',
-                                                        'default_data.json')\
-                          .read())
-        # TODO: manipulate data to adjust settings, themes, user, etc
-        aybu.core.models.add_default_data(session, data)
-        session.commit()
-        session.close()
+        try:
+            data = json.loads(pkg_resources.resource_stream('aybu.manager.data',
+                                                            'default_data.json')\
+                            .read())
+            # TODO: manipulate data to adjust settings, themes, user, etc
+            aybu.core.models.add_default_data(session, data)
+
+            from aybu.core.models import Setting, Theme, User
+            u = User(username=self.owner.email, password=self.owner.password)
+            session.add(u)
+
+            Setting.get(session, 'debug').raw_value = 'False'
+
+            if self.theme:
+                for setting_name in ('banner_width', 'banner_height',
+                                     'logo_width', 'logo_height',
+                                     'main_menu_levels', 'template_levels',
+                                     'image_full_size'):
+                    setting = Setting.get(session, setting_name)
+                    setting.value = getattr(self.theme, setting_name)
+
+                session.query(Theme).delete(synchronize_session='fetch')
+                t = Theme(name=self.theme.name,
+                          parent_name=self.theme.parent_name)
+                session.add(t)
+                parent = self.theme.parent
+                while parent:
+                    t = Theme(name=parent.name, parent_name=parent.parent_name)
+                    session.add(t)
+                    parent = parent.parent
+
+                session.commit()
+
+        finally:
+            session.close()
 
     @classmethod
     def deploy(cls, session, domain, owner, environment,
