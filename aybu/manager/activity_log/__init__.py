@@ -78,6 +78,7 @@ class ActivityLog(object):
     def rollback(self, exc=None):
         if not self.active:
             raise TransactionError("Transaction has not been started")
+        self.log.error("Executing ROLLBACK")
 
         self.active = False
         try:
@@ -105,6 +106,7 @@ class ActivityLog(object):
     def commit(self):
         if not self.active:
             raise TransactionError("Transaction has not been started")
+        self.log.info("Executing COMMIT")
 
         exc = None
         self.active = False
