@@ -41,7 +41,7 @@ class Pip(Action):
     def install(self):
         command = "{} {} install -e {}".format(self.python, self.script,
                                                self.path)
-        self.log.debug("INSTALL: %s", command)
+        self.log.info("installing from %s", self.path)
         try:
             output = subprocess.check_output(shlex.split(command))
             self.log.debug("OUTPUT: %s", output)
@@ -52,7 +52,7 @@ class Pip(Action):
     def uninstall(self):
         cmd = "{} {} uninstall -y {}".format(self.python, self.script,
                                           self.package_name)
-        self.log.error("UNINSTALL: %s", cmd)
+        self.log.info("uninstall: %s", self.package_name)
         subprocess.check_call(shlex.split(cmd))
         # remove egg_info directory
         egginfo_dir = "{}.egg-info".format(self.package_name.replace("-", "_"))
