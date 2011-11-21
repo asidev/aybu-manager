@@ -54,6 +54,7 @@ class SQLAction(object):
         if isinstance(statements, basestring):
             statements=(statements, )
         connection = self.get_connection()
+        #connection.execution_options(isolation_level=0)
         for statement in statements:
             self.log.info(statement)
             connection.execute(statement)
