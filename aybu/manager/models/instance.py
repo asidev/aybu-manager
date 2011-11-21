@@ -420,7 +420,7 @@ class Instance(Base):
             instance._create_database(session)
             instance._populate_database()
             instance._write_vassal_ini()
-            # TODO: flush
+            instance.flush_cache(instance_session=session)
 
         except:
             session.rollback()
@@ -469,10 +469,12 @@ class Instance(Base):
                    .delete()
 
 
-    def flush_cache(self):
+    def flush_cache(self, instance_session=None):
         self.log.info("Flushing cache for %s", self)
+        if not instance_session:
+            instance_session = self.get_database_session()
         request = collections.namedtuple('Request', ['db_session', 'host'])(
-            db_session=self.get_database_session(),
+            db_session=instance_session,
             host="{}:80".format(self.domain)
         )
         proxy = Proxy(request)
