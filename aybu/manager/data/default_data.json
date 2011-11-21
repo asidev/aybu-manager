@@ -91,8 +91,4 @@
  {"cls_": "PageInfo", "id": 24, "label": "Solución", "title": "Solución", "url": "/es/solucion.html", "url_part": "solucion", "partial_url": "/es", "content": "<h2>Solución</h2>", "lang": 3, "node": 9},
  {"cls_": "PageInfo", "id": 25, "label": "PEC", "title": "PEC", "url": "/it/soluzioni/pec.html", "url_part": "pec", "partial_url": "/it/soluzioni", "content": "<h2>P.E.C.</h2>", "lang": 1, "node": 10},
  {"cls_": "PageInfo", "id": 26, "label": "ECM", "title": "ECM", "url": "/en/solutions/ecm.html", "url_part": "ecm", "partial_url": "/en/solutions", "content": "<h2>Electronic Certified Mail</h2>", "lang": 2, "node": 10},
- {"cls_": "PageInfo", "id": 27, "label": "CEC", "title": "CEC", "url": "/es/solucion/cec.html", "url_part": "cec", "partial_url": "/es/solucion", "content": "<h2>Correo Electronico Certifigado</h2>", "lang": 3, "node": 10},
-
- {"cls_": "Theme", "name": "base"},
- {"cls_": "Theme", "name": "uffizi", "parent": "base"},
- {"cls_": "Theme", "name": "moma", "parent": "uffizi"}]
+ {"cls_": "PageInfo", "id": 27, "label": "CEC", "title": "CEC", "url": "/es/solucion/cec.html", "url_part": "cec", "partial_url": "/es/solucion", "content": "<h2>Correo Electronico Certifigado</h2>", "lang": 3, "node": 10}]
