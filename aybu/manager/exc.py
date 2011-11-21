@@ -22,4 +22,7 @@ class OperationalError(Exception):
 
 
 class NotSupported(OperationalError):
-    pass
+
+    def __init__(self, operation, msg):
+        self.operation = operation
+        super(NotSupported, self).__init__(msg)

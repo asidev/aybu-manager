@@ -51,7 +51,7 @@ from aybu.manager.activity_log.template import render
 from aybu.manager.activity_log.fs import mkdir, create, rm, rmtree
 from aybu.manager.activity_log.packages import install, uninstall
 from aybu.manager.activity_log.database import create_database, drop_database
-from aybu.manager.exc import OperationalError
+from aybu.manager.exc import OperationalError, NotSupported
 from . base import Base
 
 
@@ -235,6 +235,17 @@ class Instance(Base):
                                  deferred=True,
                                  skip_rollback=skip_rollback)
 
+    def _rewrite_configuration(self, session=None):
+        session = session or Session.object_session(self)
+        if session is None:
+            raise DetachedInstanceError()
+
+        session.activity_log.add(rm, self.paths.config)
+        session.activity_log.add(render, self, 'aybu.ini.mako',
+                                 self.paths.config)
+        if self.enabled:
+            self.reload()
+
     def _create_python_package_paths(self, session):
         base = self.paths.dir
         join = os.path.join
@@ -334,6 +345,57 @@ class Instance(Base):
         finally:
             session.close()
 
+    def _enable(self):
+        self.log.info("Enabling instance %s", self)
+        self._write_vassal_ini()
+
+    def _disable(self):
+        self.log.info("Disabling %s", self)
+        session = Session.object_session(self)
+        session.activity_log.add(rm, self.paths.vassal_config, deferred=True)
+
+    def _on_environment_update(self, env, oldenv, attr):
+        if not self.attribute_changed(env, oldenv, attr):
+            return
+
+        if self.enabled:
+            raise OperationalError('Cannot change environment: '
+                                   ' %s is enabled' % (self))
+
+        self.log.info('Changing environment for instance %s to %s',
+                      self, env)
+
+        if hasattr(self, '_paths'):
+            del self._paths
+
+    def _on_domain_update(self, domain, olddomain, attr):
+        self.log.debug("set on Instance.domain: %s => %s", domain, olddomain)
+        if not self.attribute_changed(domain, olddomain, attr):
+            return
+
+        raise NotSupported('instance_update_domain',
+                           'Cannot change the domain of an instance')
+
+    def _on_theme_update(self, theme, oldtheme, attr):
+        if not self.attribute_changed(theme, oldtheme, attr) or oldtheme is None:
+            return
+
+        raise NotImplementedError
+
+    def _on_attr_update(self, value, oldvalue, attr):
+        if not self.attribute_changed(value, oldvalue, attr) or oldvalue is None:
+            return
+        self._rewrite_configuration()
+
+    def _on_toggle_status(self, value, oldvalue, attr):
+        if not self.attribute_changed(value, oldvalue, attr):
+            return
+
+        if value:
+            self._enable()
+        else:
+            self._disable()
+
     @classmethod
     def deploy(cls, session, domain, owner, environment,
                technical_contact, theme=None, default_language=u'it',
@@ -370,35 +432,20 @@ class Instance(Base):
     def reload(self):
         if not self.enabled:
             raise OperationalError('Cannot reload a disabled instance')
+        self.log.info("Reloading %s", self)
         self._write_vassal_ini(skip_rollback=True)
 
-    def enable(self):
-        if self.enabled:
-            return
-        self.log.debug("Enabling instance %s", self)
-        self.enabled = True
-        self._write_vassal_ini()
-
-    def disable(self):
-        if not self.enabled:
-            return
-        self.log.debug("Disabling %s", self)
-        self.enabled = False
-        session = Session.object_session(self)
-        if session is None:
-            raise DetachedInstanceError()
-        session.activity_log.add(rm, self.paths.vassal_config, deferred=True)
 
     def delete(self, session=None):
         session = session or Session.object_session(self)
         if not session:
             raise DetachedInstanceError()
 
+        self.log.info("Deleting %s", self)
         if self.enabled:
             raise OperationalError('Cannot delete an enabled instance')
 
         try:
-            self.log.debug("Deleting instance %s", self)
             # TODO: flush
             session.activity_log.add(uninstall, self.paths.dir,
                                     self.paths.virtualenv,
@@ -421,19 +468,9 @@ class Instance(Base):
                    .filter(self.__class__.id == self.id)\
                    .delete()
 
-    def change_environ(self, env, oldenv, initiator):
-        if not oldenv or env == oldenv:
-            return
-
-        if self.enabled:
-            raise OperationalError('Cannot change environment: '
-                                   ' %s is enabled' % (self))
-
-        if hasattr(self, '_paths'):
-            del self._paths
-
 
     def flush_cache(self):
+        self.log.info("Flushing cache for %s", self)
         request = collections.namedtuple('Request', ['db_session', 'host'])(
             db_session=self.get_database_session(),
             host="{}:80".format(self.domain)
@@ -442,4 +479,10 @@ class Instance(Base):
         proxy.ban('^/.*')
 
 
-event.listen(Instance.environment, 'set', Instance.change_environ)
+event.listen(Instance.environment, 'set', Instance._on_environment_update)
+event.listen(Instance.domain, 'set', Instance._on_domain_update)
+event.listen(Instance.theme, 'set', Instance._on_theme_update)
+event.listen(Instance.owner, 'set', Instance._on_attr_update)
+event.listen(Instance.technical_contact, 'set', Instance._on_attr_update)
+event.listen(Instance.default_language, 'set', Instance._on_attr_update)
+event.listen(Instance.enabled, 'set', Instance._on_toggle_status)

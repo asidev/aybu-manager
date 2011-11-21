@@ -18,6 +18,7 @@ limitations under the License.
 
 import logging
 import sqlalchemy.ext.declarative
+from sqlalchemy.util.langhelpers import symbol
 from aybu.manager.utils.decorators import classproperty
 
 
@@ -25,6 +26,16 @@ __all__ = ['Base']
 
 
 class AybuManagerBase(object):
+
+    def attribute_changed(self, value, oldvalue, attr):
+
+        if oldvalue == symbol('NEVER_SET')\
+           or value == oldvalue\
+           or (oldvalue == symbol('NO_VALUE')
+               and getattr(self, attr.key) == None):
+            return False
+
+        return True
 
     @classproperty
     @classmethod

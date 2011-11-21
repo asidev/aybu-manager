@@ -21,7 +21,7 @@ from aybu.manager.models import (Environment,
                                  Theme,
                                  User)
 from . test_base import BaseTests
-from aybu.manager.exc import OperationalError
+from aybu.manager.exc import OperationalError, NotSupported
 import os
 import shlex
 import subprocess
@@ -48,6 +48,14 @@ class InstanceTests(BaseTests):
         self.session.commit()
         self.assertTrue(os.path.exists(instance.paths.vassal_config))
 
+        # various asserts for consistency
+        with self.assertRaises(NotSupported):
+            instance.domain = 'www.newdomain.com'
+        with self.assertRaises(NotImplementedError):
+            nt = self.session.query(Theme)\
+                    .filter(Theme.name == 'moma').one()
+            instance.theme = nt
+
         # test reload
         os.unlink(instance.paths.vassal_config)
         instance.reload()
@@ -57,7 +65,7 @@ class InstanceTests(BaseTests):
         self.assertTrue(instance.enabled)
 
         # test disable
-        instance.disable()
+        instance.enabled = False
         self.session.commit()
         self.assertFalse(os.path.exists(instance.paths.vassal_config))
         with self.assertRaises(OperationalError):
@@ -65,19 +73,19 @@ class InstanceTests(BaseTests):
 
         # disable an already disable instance is a no-op
         self.assertFalse(instance.enabled)
-        instance.disable()
+        instance.enabled = False
         self.session.rollback()
         self.assertFalse(instance.enabled)
 
         # test enable
-        instance.enable()
+        instance.enabled = True
         self.assertFalse(os.path.exists(instance.paths.vassal_config))
         self.session.commit()
         self.assertTrue(os.path.exists(instance.paths.vassal_config))
 
         # enabling an already enabled instance is a no-op
         self.assertTrue(instance.enabled)
-        instance.enable()
+        instance.enabled = True
         self.session.rollback()
         self.assertTrue(instance.enabled)
 
@@ -89,7 +97,7 @@ class InstanceTests(BaseTests):
             instance.environment = newenv
         self.assertEqual(instance.environment, env)
 
-        instance.disable()
+        instance.enabled = False
         self.session.commit()
 
         instance.environment = newenv
@@ -97,13 +105,13 @@ class InstanceTests(BaseTests):
         self.session.commit()
 
         self.assertEqual(instance.environment, newenv)
-        instance.enable()
+        instance.enabled = True
         self.session.commit()
 
         # test delete
         with self.assertRaises(OperationalError):
             instance.delete()
-        instance.disable()
+        instance.enabled = False
         self.session.commit()
         instance.delete()
         self.assertFalse(os.path.exists(instance.paths.dir))

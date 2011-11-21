@@ -19,10 +19,11 @@ limitations under the License.
 import configobj
 import os
 import collections
-from . base import Base
 from aybu.manager.activity_log.fs import mkdir
 from sqlalchemy import (Column, Unicode)
-
+from sqlalchemy import event
+from . base import Base
+from aybu.manager.exc import NotSupported
 
 Paths = collections.namedtuple('Paths', ['root', 'configs', 'sites',
                                          'archives', 'cgroups', 'logs', 'run',
@@ -40,6 +41,23 @@ class Environment(Base):
 
     name = Column(Unicode(64), primary_key=True)
     venv_name = Column(Unicode(64))
+
+    def _on_attr_update(self, value, oldvalue, attr, operation, error_msg):
+        self.log.debug(type(oldvalue))
+        if not self.attribute_changed(value, oldvalue, attr):
+            return
+
+        raise NotSupported(operation, error_msg)
+
+    def _on_name_update(self, value, oldvalue, initiator):
+        self._on_attr_update(value, oldvalue, initiator,
+                             'environment_change_name',
+                             "Cannot change Environment name")
+
+    def _on_venv_update(self, value, oldvalue, initiator):
+        self._on_attr_update(value, oldvalue, initiator,
+                             'environment_change_venv',
+                             "Cannot change Environment virtualenv")
 
     @classmethod
     def initialize(cls, config):
@@ -121,3 +139,7 @@ class Environment(Base):
 
     def __repr__(self):
         return '<Environment {self.name}>'.format(self=self)
+
+
+event.listen(Environment.name, 'set', Environment._on_name_update)
+event.listen(Environment.venv_name, 'set', Environment._on_venv_update)
