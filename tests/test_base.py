@@ -19,15 +19,36 @@ limitations under the License.
 import configobj
 import logging
 import os
+import pkg_resources
 import shutil
 import tempfile
 import unittest
 from sqlalchemy import engine_from_config
 from sqlalchemy.orm import sessionmaker
-from aybu.manager.models import Base
+from aybu.manager.models import Base, import_from_json
 from aybu.manager.activity_log import ActivityLog
 
 class BaseTests(unittest.TestCase):
+
+    def import_data(self):
+        session = self.Session()
+        session.configure(bind=self.engine)
+        try:
+            import_from_json(session,
+                            pkg_resources.resource_stream('aybu.manager.data',
+                                                        'manager_themes.json'))
+            session.flush()
+
+        except:
+            self.log.exception("Error while importing data")
+            session.rollback()
+            raise
+
+        else:
+            session.commit()
+
+        finally:
+            session.close()
 
     def setUp(self):
         self.log = logging.getLogger("{}.{}".format(self.__class__.__module__,
@@ -38,12 +59,13 @@ class BaseTests(unittest.TestCase):
         self.config = configobj.ConfigObj(ini, file_error=True)
         self.engine = engine_from_config(self.config['manager'],
                                             'sqlalchemy.')
+        Base.metadata.bind = self.engine
+        Base.metadata.create_all()
+
         self.Session = sessionmaker()
         self.session = self.Session()
         self.session.configure(bind=self.engine)
         ActivityLog.attach_to(self.session)
-        Base.metadata.bind = self.engine
-        Base.metadata.create_all()
 
         self.tempdir = tempfile.mkdtemp()
         self.config['paths']['root'] = self.tempdir

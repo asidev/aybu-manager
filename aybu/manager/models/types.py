@@ -16,6 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import pwgen
 import crypt
 import sqlalchemy.types as types
 
@@ -32,6 +33,8 @@ class Crypt(types.TypeDecorator):
         super(Crypt, self).__init__(length, *args, **kwargs)
 
     def process_bind_param(self, value, dialect):
+        if value is None:
+            value = pwgen.pwgen()
         return crypt.crypt(value, self.saltid)
 
     def process_result_value(self, value, dialect):

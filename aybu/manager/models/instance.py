@@ -307,17 +307,23 @@ class Instance(Base):
                                      'image_full_size'):
                     setting = AybuCoreSetting.get(session, setting_name)
                     setting.value = getattr(self.theme, setting_name)
+                setting = AybuCoreSetting.get(session, "theme_name")
+                setting.value = self.theme.name
 
                 session.query(AybuCoreTheme).delete(synchronize_session='fetch')
+                themes = []
                 t = AybuCoreTheme(name=self.theme.name,
                           parent_name=self.theme.parent_name)
-                session.add(t)
+                themes.insert(0, t)
                 parent = self.theme.parent
                 while parent:
                     t = AybuCoreTheme(name=parent.name,
                                       parent_name=parent.parent_name)
-                    session.add(t)
+                    themes.insert(0, t)
                     parent = parent.parent
+
+                for theme in themes:
+                    session.add(theme)
 
                 session.commit()
 

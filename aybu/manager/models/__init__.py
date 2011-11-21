@@ -16,6 +16,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import json
+
 from . instance import Instance
 from . redirect import Redirect
 from . environment import Environment
@@ -25,6 +27,19 @@ from . base import Base
 
 
 __all__ = ['Instance', 'Environment', 'Redirect', 'User', 'Group', 'Theme',
-           'Base']
+           'Base', 'import_from_json']
 
 
+def import_from_json(session, source):
+
+    source_ = open(source) if isinstance(source, basestring) else source
+    data = json.loads(source_.read())
+    if isinstance(source, basestring):
+        source_.close()
+
+    for obj_data in data:
+        cls = globals()[obj_data.pop('cls_')]
+        if cls == Theme and 'parent_name' not in obj_data:
+            obj_data['parent_name'] = 'base'
+        obj = cls(**obj_data)
+        session.merge(obj)

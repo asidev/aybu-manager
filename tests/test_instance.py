@@ -18,6 +18,7 @@ limitations under the License.
 
 from aybu.manager.models import (Environment,
                                  Instance,
+                                 Theme,
                                  User)
 from . test_base import BaseTests
 from aybu.manager.exc import OperationalError
@@ -32,12 +33,15 @@ class InstanceTests(BaseTests):
 
     def test_deploy(self):
 
-        owner = User(email='info@example.com', password='changeme',
-                     name='Example', surname='Com')
+        self.import_data()
+        owner = self.session.query(User)\
+                .filter(User.email == 'info@asidev.com').one()
+        theme = self.session.query(Theme)\
+                .filter(Theme.name == 'uffizi').one()
         env = Environment.create(self.session, 'testenv', config=self.config,
                                  venv_name=self.config['virtualenv_name'])
         instance = Instance.deploy(self.session, 'www.example.com', owner,
-                                   env, owner)
+                                   env, owner, theme=theme)
 
         # vassal config is created only upon session commit
         self.assertFalse(os.path.exists(instance.paths.vassal_config))
