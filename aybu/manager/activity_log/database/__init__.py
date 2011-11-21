@@ -22,12 +22,15 @@ from . sqlaction import SQLAction
 
 
 def create_database(session, config):
-    return [SQLAction(config.type, "database", init="create", rollback='drop'),
-            SQLAction(config.type, "user", init="create", rollback='drop'),
-            SQLAction(config.type, "privileges", commit="flush")]
+    return [SQLAction(config.type, "user", init="create", rollback='drop'),
+            SQLAction(config.type, "database", init="create", rollback='drop'),
+            SQLAction(config.type, "privileges", init="grant",
+                      rollback='revoke')]
 
 def drop_database(session, config):
-    return [SQLAction(config.type, "user", init="drop", rollback='create'),
+    return [SQLAction(config.type, "privileges", init="revoke",
+                      rollback='grant'),
+            SQLAction(config.type, "user", init="drop", rollback='create'),
             SQLAction(config.type, "database", init="rename",
                       commit='drop', rollback='restore'),
-            SQLAction(config.type, "privileges", commit="flush")]
+            ]

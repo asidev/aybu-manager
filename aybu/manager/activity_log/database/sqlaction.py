@@ -39,7 +39,7 @@ class SQLAction(object):
         self.config = config
         self.session = session
         if self.on_init:
-            getattr(self, self.on_init)()
+            self.execute(getattr(self, self.on_init)())
         return self
 
     def get_connection(self):
@@ -48,6 +48,9 @@ class SQLAction(object):
         return self.session.get_bind(mapper=mapper).connect()
 
     def execute(self, statements):
+        if not statements:
+            return
+
         if isinstance(statements, basestring):
             statements=(statements, )
         connection = self.get_connection()
@@ -58,10 +61,8 @@ class SQLAction(object):
 
     def commit(self):
         if self.on_commit:
-            getattr(self, self.on_commit)()
+            self.execute(getattr(self, self.on_commit)())
 
     def rollback(self):
         if self.on_rollback:
-            getattr(self, self.on_rollback)()
-
-
+            self.execute(getattr(self, self.on_rollback)())

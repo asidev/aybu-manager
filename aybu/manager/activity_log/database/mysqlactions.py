@@ -25,11 +25,11 @@ class MysqlDatabaseAction(SQLAction):
         stmt = "CREATE DATABASE {config.name} "\
                "DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;"\
                .format(config=self.config)
-        self.execute(stmt)
+        return stmt
 
     def drop(self):
         stmt = "DROP DATABASE {name};".format(name=self.config.name)
-        self.execute(stmt)
+        return stmt
 
     def rename(self):
         """ MySQL does not support RENAME DATABASE (which indeed was
@@ -50,44 +50,28 @@ class MysqlDatabaseAction(SQLAction):
 class MysqlUserAction(SQLAction):
 
     def create(self):
-        statements = ("CREATE USER {config.user}@localhost  IDENTIFIED BY "
-                        "'{config.password}';",
-                      "GRANT USAGE ON *.* TO {config.user}@localhost;",
-                      "GRANT ALL PRIVILEGES ON `{config.name}`.* "
-                         "TO {config.user}@localhost;"
-        )
-        statements = (stmt.format(config=self.config) for stmt in statements)
-        self.execute(statements)
+        stmt = "CREATE USER {config.user}@localhost  IDENTIFIED BY "\
+                   "'{config.password}';".format(config=self.config)
+        return stmt
 
     def drop(self):
         stmt = "DROP USER {config.user}@localhost;"\
                 .format(config=self.config)
-        self.execute(stmt)
+        return stmt
 
 
 class MysqlPrivilegesAction(SQLAction):
 
-    def flush(self):
-        self.execute("FLUSH PRIVILEGES;")
-class MysqlUserAction(SQLAction):
-
-    def create(self):
-        statements = ("CREATE USER {config.user}@localhost  IDENTIFIED BY "
-                        "'{config.password}';",
-                      "GRANT USAGE ON *.* TO {config.user}@localhost;",
+    def grant(self):
+        statements = ("GRANT USAGE ON *.* TO {config.user}@localhost;",
                       "GRANT ALL PRIVILEGES ON `{config.name}`.* "
-                         "TO {config.user}@localhost;"
+                         "TO {config.user}@localhost;",
+                      "FLUSH PRIVILEGES"
         )
         statements = (stmt.format(config=self.config) for stmt in statements)
-        self.execute(statements)
+        return statements
 
-    def drop(self):
-        stmt = "DROP USER {config.user}@localhost;"\
-                .format(config=self.config)
-        self.execute(stmt)
-
-
-class MysqlPrivilegesAction(SQLAction):
-
-    def flush(self):
-        self.execute("FLUSH PRIVILEGES;")
+    def revoke(self):
+        stmt = "REVOKE ALL PRIVILEGES, GRANT OPTION FROM {user}@localhost"\
+                .format(user=self.config.user)
+        return stmt
