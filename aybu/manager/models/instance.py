@@ -292,10 +292,10 @@ class Instance(Base):
             data = json.loads(pkg_resources.resource_stream('aybu.manager.data',
                                                             'default_data.json')\
                             .read())
-            # TODO: manipulate data to adjust settings, themes, user, etc
             aybu.core.models.add_default_data(session, data)
 
-            u = AybuCoreUser(username=self.owner.email, password=self.owner.password)
+            u = AybuCoreUser(username=self.owner.email,
+                             password=self.owner.password)
             session.add(u)
 
             AybuCoreSetting.get(session, 'debug').raw_value = 'False'
@@ -326,6 +326,9 @@ class Instance(Base):
                     session.add(theme)
 
                 session.commit()
+        except:
+            session.rollback()
+            raise
 
         finally:
             session.close()
