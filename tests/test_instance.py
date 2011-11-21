@@ -81,6 +81,25 @@ class InstanceTests(BaseTests):
         self.session.rollback()
         self.assertTrue(instance.enabled)
 
+        # test change environment
+        newenv = Environment.create(self.session, 'testenv2',
+                                    config=self.config,
+                                    venv_name=self.config['virtualenv_name'])
+        with self.assertRaises(OperationalError):
+            instance.environment = newenv
+        self.assertEqual(instance.environment, env)
+
+        instance.disable()
+        self.session.commit()
+
+        instance.environment = newenv
+        self.assertFalse(hasattr(instance, "_paths"))
+        self.session.commit()
+
+        self.assertEqual(instance.environment, newenv)
+        instance.enable()
+        self.session.commit()
+
         # test delete
         with self.assertRaises(OperationalError):
             instance.delete()

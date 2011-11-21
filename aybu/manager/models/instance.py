@@ -37,6 +37,7 @@ from sqlalchemy.orm import (sessionmaker,
                             relationship,
                             backref)
 from sqlalchemy.orm.exc import DetachedInstanceError
+from sqlalchemy import event
 
 import pwgen
 
@@ -420,6 +421,18 @@ class Instance(Base):
                    .filter(self.__class__.id == self.id)\
                    .delete()
 
+    def change_environ(self, env, oldenv, initiator):
+        if not oldenv or env == oldenv:
+            return
+
+        if self.enabled:
+            raise OperationalError('Cannot change environment: '
+                                   ' %s is enabled' % (self))
+
+        if hasattr(self, '_paths'):
+            del self._paths
+
+
     def flush_cache(self):
         request = collections.namedtuple('Request', ['db_session', 'host'])(
             db_session=self.get_database_session(),
@@ -427,3 +440,6 @@ class Instance(Base):
         )
         proxy = Proxy(request)
         proxy.ban('^/.*')
+
+
+event.listen(Instance.environment, 'set', Instance.change_environ)
