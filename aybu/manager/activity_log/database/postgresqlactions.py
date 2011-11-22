@@ -18,8 +18,20 @@ limitations under the License.
 
 from . sqlaction import SQLAction
 
+class PostgresAction(SQLAction):
 
-class PostgresqlDatabaseAction(SQLAction):
+    def get_connection(self):
+        """ On postgres you cannot create database within a transaction
+            Since SQLA method Engine.connect() returns a connection which
+            is within a transaction, we ROLLBACK that transaction before
+            returning the connection to be used with execute
+        """
+        conn = super(PostgresAction, self).get_connection()
+        conn.execute("ROLLBACK")
+        return conn
+
+
+class PostgresqlDatabaseAction(PostgresAction):
 
     def create(self):
         return "CREATE DATABASE {config.name} WITH ENCODING = 'UTF8';"\
@@ -42,7 +54,7 @@ class PostgresqlDatabaseAction(SQLAction):
                 .format(renamed=self._renamed, original=self.config.name)
 
 
-class PostgresqlUserAction(SQLAction):
+class PostgresqlUserAction(PostgresAction):
 
     def create(self):
         return "CREATE ROLE {config.user} NOSUPERUSER LOGIN "\
@@ -53,7 +65,7 @@ class PostgresqlUserAction(SQLAction):
         return "DROP ROLE {role};".format(role=self.config.user)
 
 
-class PostgresqlPrivilegesAction(SQLAction):
+class PostgresqlPrivilegesAction(PostgresAction):
 
     def grant(self):
         return "GRANT ALL PRIVILEGES ON DATABASE {config.name} "\

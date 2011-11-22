@@ -30,7 +30,7 @@ def create_database(session, config):
 def drop_database(session, config):
     return [SQLAction(config.type, "privileges", init="revoke",
                       rollback='grant'),
-            SQLAction(config.type, "user", init="drop", rollback='create'),
             SQLAction(config.type, "database", init="rename",
                       commit='drop', rollback='restore'),
+            SQLAction(config.type, "user", init="drop", rollback='create'),
             ]

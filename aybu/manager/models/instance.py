@@ -188,14 +188,16 @@ class Instance(Base):
         type_ = c['database']['type']
         database_user = "{}{}".format(c['database']['prefix'], self.id)
         database_name = database_user
+        database_port = c['database']['port']
         driver = type_
         if 'driver' in c['database']:
             driver = "{}+{}".format(driver, c['database']['driver'])
         options = c['database']['options'] if 'options' in c['database'] \
                                            and c['database']['options'] \
                   else None
-        url = "{}://{}:{}@localhost:3306/{}".format(driver, database_user,
-                                     self.database_password, database_name)
+        url = "{}://{}:{}@localhost:{}/{}".format(driver, database_user,
+                                     self.database_password, database_port,
+                                     database_name)
         if options:
             url = "{}?{}".format(url, options)
 
@@ -214,17 +216,23 @@ class Instance(Base):
     def database_engine(self):
         if hasattr(self, "_database_engine"):
             return self._database_engine
+        self.log.debug("Creating SQLAlchemy engine (%s)",
+                       self.database_config.sqlalchemy_url)
         self._database_engine = engine_from_config(
                     {'sqlalchemy.url': self.database_config.sqlalchemy_url},
                     'sqlalchemy.'
         )
-        AybuCoreBase.metadata.bind=self._database_engine
         return self._database_engine
 
-    def get_database_session(self):
-        session = sessionmaker()()
-        session.configure(bind=self.database_engine)
-        return session
+    def create_database_session(self, *args, **kwargs):
+        if hasattr(self, "_database_session"):
+            return self._database_session(*args, **kwargs)
+
+        self.log.debug("Creating SQLAlchemy session for %s",
+                       self.database_config.sqlalchemy_url)
+        self._database_session = sessionmaker(autocommit=True,
+                                              bind=self.database_engine)
+        return self._database_session(*args, **kwargs)
 
     def _write_vassal_ini(self, session=None, skip_rollback=False):
         session = session or Session.object_session(self)
@@ -296,10 +304,15 @@ class Instance(Base):
         session.activity_log.add_group(create_database, session,
                                        self.database_config)
         self.log.info("Creating tables in instance database")
+        AybuCoreBase.metadata.bind=self.database_engine
         AybuCoreBase.metadata.create_all(self.database_engine)
+        AybuCoreBase.metadata.bind=None
+
+        self.database_engine.dispose()
 
     def _populate_database(self):
-        session = self.get_database_session()
+        session = self.create_database_session()
+        session.begin()
         try:
             data = json.loads(pkg_resources.resource_stream('aybu.manager.data',
                                                             'default_data.json')\
@@ -420,7 +433,7 @@ class Instance(Base):
             instance._create_database(session)
             instance._populate_database()
             instance._write_vassal_ini()
-            instance.flush_cache(instance_session=session)
+            instance.flush_cache()
 
         except:
             session.rollback()
@@ -469,16 +482,19 @@ class Instance(Base):
                    .delete()
 
 
-    def flush_cache(self, instance_session=None):
+    def flush_cache(self):
         self.log.info("Flushing cache for %s", self)
-        if not instance_session:
-            instance_session = self.get_database_session()
-        request = collections.namedtuple('Request', ['db_session', 'host'])(
-            db_session=instance_session,
-            host="{}:80".format(self.domain)
-        )
-        proxy = Proxy(request)
-        proxy.ban('^/.*')
+        instance_session = self.create_database_session()
+        instance_session.begin()
+        try:
+            request = collections.namedtuple('Request', ['db_session', 'host'])(
+                db_session=instance_session,
+                host="{}:80".format(self.domain)
+            )
+            proxy = Proxy(request)
+            proxy.ban('^/.*')
+        finally:
+            instance_session.close()
 
 
 event.listen(Instance.environment, 'set', Instance._on_environment_update)

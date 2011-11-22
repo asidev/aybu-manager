@@ -50,6 +50,14 @@ class BaseTests(unittest.TestCase):
         finally:
             session.close()
 
+    def new_session(self):
+        if hasattr(self, 'session') and self.session:
+            self.session.close()
+            self.Session.close_all()
+        self.session = self.Session()
+        ActivityLog.attach_to(self.session)
+        return self.session
+
     def setUp(self):
         self.log = logging.getLogger("{}.{}".format(self.__class__.__module__,
                                                     self.__class__.__name__))
@@ -61,11 +69,8 @@ class BaseTests(unittest.TestCase):
                                             'sqlalchemy.')
         Base.metadata.bind = self.engine
         Base.metadata.create_all()
-
-        self.Session = sessionmaker()
-        self.session = self.Session()
-        self.session.configure(bind=self.engine)
-        ActivityLog.attach_to(self.session)
+        self.Session = sessionmaker(bind=self.engine)
+        self.new_session()
 
         self.tempdir = tempfile.mkdtemp()
         self.config['paths']['root'] = self.tempdir
