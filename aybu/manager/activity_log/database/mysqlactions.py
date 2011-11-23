@@ -55,9 +55,21 @@ class MysqlUserAction(SQLAction):
         return stmt
 
     def drop(self):
-        stmt = "DROP USER {config.user}@localhost;"\
-                .format(config=self.config)
+        role = self.config.user if not hasattr(self, "_renamed")\
+                else self._renamed
+        stmt = "DROP USER {role}@localhost;"\
+                .format(role=role)
         return stmt
+
+    def rename(self):
+        self._renamed = "{}_tmp_".format(self.config.user)
+        return "RENAME USER {name}@localhost TO {renamed}@localhost;"\
+                .format(name=self.config.user, renamed=self._renamed)
+
+    def restore(self):
+        return "RENAME USER {renamed}@localhost TO {name}@localhost;"\
+                .format(name=self.config.user, renamed=self._renamed)
+
 
 
 class MysqlPrivilegesAction(SQLAction):

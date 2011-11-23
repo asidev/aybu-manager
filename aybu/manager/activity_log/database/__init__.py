@@ -32,5 +32,6 @@ def drop_database(session, config):
                       rollback='grant'),
             SQLAction(config.type, "database", init="rename",
                       commit='drop', rollback='restore'),
-            SQLAction(config.type, "user", init="drop", rollback='create'),
+            SQLAction(config.type, "user", init="rename", commit='drop',
+                      rollback='restore'),
             ]

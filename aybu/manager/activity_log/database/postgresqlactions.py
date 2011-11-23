@@ -30,6 +30,21 @@ class PostgresAction(SQLAction):
         conn.execute("ROLLBACK")
         return conn
 
+    def get_database_connections(self, dbname=None):
+        dbname = dbname or self.config.name
+        res = self.execute("SELECT procpid from pg_stat_activity WHERE "
+                           "datname='{}';".format(dbname))[0]
+        return (row[0] for row in res.fetchall())
+
+    def kill_database_connections(self, dbname=None):
+        dbname = dbname or self.config.name
+        stmts = []
+        for connpid in self.get_database_connections(dbname):
+            stmts.append("SELECT pg_terminate_backend({pid}) "
+                         "FROM pg_stat_activity WHERE datname='{db}';"\
+                         .format(pid=connpid, db=self.config.name))
+        self.execute(stmts)
+
 
 class PostgresqlDatabaseAction(PostgresAction):
 
@@ -42,14 +57,17 @@ class PostgresqlDatabaseAction(PostgresAction):
             name = self._renamed
         else:
             name = self.config.name
+        self.kill_database_connections()
         return "DROP DATABASE {};".format(name)
 
     def rename(self):
         self._renamed = "{}_tmp_".format(self.config.name)
+        self.kill_database_connections()
         return "ALTER DATABASE {config.name} RENAME TO {renamed};"\
                 .format(config=self.config, renamed=self._renamed)
 
     def restore(self):
+        self.kill_database_connections(self._renamed)
         return "ALTER DATABASE {renamed} RENAME TO {original};"\
                 .format(renamed=self._renamed, original=self.config.name)
 
@@ -62,7 +80,18 @@ class PostgresqlUserAction(PostgresAction):
                 .format(config=self.config)
 
     def drop(self):
-        return "DROP ROLE {role};".format(role=self.config.user)
+        role = self.config.user if not hasattr(self, "_renamed") \
+                else self._renamed
+        return "DROP ROLE {role};".format(role=role)
+
+    def rename(self):
+        self._renamed = "{}_tmp_".format(self.config.user)
+        return "ALTER ROLE {name} RENAME TO {renamed};"\
+                .format(name=self.config.user, renamed=self._renamed)
+
+    def restore(self):
+        return "ALTER ROLE {renamed} RENAME TO {name};"\
+                .format(renamed=self._renamed, name=self.config.user)
 
 
 class PostgresqlPrivilegesAction(PostgresAction):

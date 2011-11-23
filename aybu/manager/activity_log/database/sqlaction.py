@@ -51,13 +51,16 @@ class SQLAction(object):
         if not statements:
             return
 
+        res = []
+
         if isinstance(statements, basestring):
             statements=(statements, )
         connection = self.get_connection()
         for statement in statements:
             self.log.info(statement)
-            connection.execute(statement)
+            res.append(connection.execute(statement))
         connection.close()
+        return res
 
     def commit(self):
         if self.on_commit:
