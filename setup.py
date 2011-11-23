@@ -19,7 +19,7 @@ setup(name='aybu-manager',
       zip_safe=False,
       install_requires=(
           'SQLAlchemy>=0.7',
-          'ConfigObj',
+          'pyramid',
           'aybu-core',
           'pwgen',
           'mako',
