@@ -65,25 +65,25 @@ class BaseTests(unittest.TestCase):
                 os.path.join(os.path.dirname(__file__), "..", 'tests.ini'))
 
         self.config = configobj.ConfigObj(ini, file_error=True)
-        self.engine = engine_from_config(self.config['manager'],
-                                            'sqlalchemy.')
+        self.engine = engine_from_config(self.config['app:aybu-manager'],
+                                        'sqlalchemy.')
         Base.metadata.bind = self.engine
         Base.metadata.create_all()
         self.Session = sessionmaker(bind=self.engine)
         self.new_session()
 
         self.tempdir = tempfile.mkdtemp()
-        self.config['paths']['root'] = self.tempdir
-        self.config['paths']['cgroups'] = '%(root)s/cgroups'
-        self.config['paths']['sites'] = '%(root)s/sites'
-        self.config['paths']['configs'] = '%(root)s/configs'
-        self.config['paths']['archives'] = '%(root)s/archives'
-        self.config['paths']['run'] = '%(root)s/run'
-        self.config['paths']['virtualenv'] = \
+        self.config['app:aybu-manager']['paths.root'] = self.tempdir
+        self.config['app:aybu-manager']['paths.cgroups'] = '%(paths.root)s/cgroups'
+        self.config['app:aybu-manager']['paths.sites'] = '%(paths.root)s/sites'
+        self.config['app:aybu-manager']['paths.configs'] = '%(paths.root)s/configs'
+        self.config['app:aybu-manager']['paths.archives'] = '%(paths.root)s/archives'
+        self.config['app:aybu-manager']['paths.run'] = '%(paths.root)s/run'
+        self.config['app:aybu-manager']['paths.virtualenv'] = \
                             os.path.dirname(os.environ['VIRTUAL_ENV'])
-        self.config['virtualenv_name'] = \
+        self.config['app:aybu-manager']['virtualenv_name'] = \
                             os.path.basename(os.environ['VIRTUAL_ENV'])
-        self.config['paths']['logs'] = '%(root)s/logs'
+        self.config['app:aybu-manager']['paths.logs'] = '%(paths.root)s/logs'
 
     def tearDown(self):
         self.session.close()

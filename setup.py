@@ -5,9 +5,9 @@ setup(name='aybu-manager',
       description="AyBU instances manager daemon",
       long_description="""AyBU instances manager daemon""",
       classifiers=('License :: OSI Approved :: Apache Software License',
-          'Operating System :: POSIX :: Linux',
-          'Programming Language :: Python :: 2.7',
-          'Topic :: System :: Systems Administration'),
+                   'Operating System :: POSIX :: Linux',
+                   'Programming Language :: Python :: 2.7',
+                   'Topic :: System :: Systems Administration'),
       keywords='',
       author='Giacomo Bagnoli',
       author_email='g.bagnoli@asidev.com',
@@ -24,10 +24,13 @@ setup(name='aybu-manager',
           'pwgen',
           'mako',
       ),
+      entry_points = """\
+      [paste.app_factory]
+        main = aybu.controlpanel.rest:main
+      [paste.paster_command]
+        uwsgi = pasteuwsgi.serve:ServeCommand
+      """,
       tests_require=('nose', 'coverage'),
       setup_requires=('versiontools >= 1.8',),
       test_suite='tests',
-      entry_points="""
-      # -*- Entry points: -*-
-      """,
-      )
+)

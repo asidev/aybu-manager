@@ -181,20 +181,20 @@ class Instance(Base):
         if hasattr(self, '_database_config'):
             return self._database_config
 
-        c = self.environment.config
-        if not c:
+        settings = self.environment.settings
+        if not settings:
             raise TypeError('Environment has not been configured')
 
-        type_ = c['database']['type']
-        database_user = "{}{}".format(c['database']['prefix'], self.id)
+        c = {k.replace('instance.database.', ''): settings[k]
+             for k in settings if k.startswith('instance.database.')}
+        type_ = c['type']
+        database_user = "{}{}".format(c['prefix'], self.id)
         database_name = database_user
-        database_port = c['database']['port']
+        database_port = c['port']
         driver = type_
-        if 'driver' in c['database']:
-            driver = "{}+{}".format(driver, c['database']['driver'])
-        options = c['database']['options'] if 'options' in c['database'] \
-                                           and c['database']['options'] \
-                  else None
+        if 'driver' in c:
+            driver = "{}+{}".format(driver, c['driver'])
+        options = c['options'] if 'options' in c and c['options'] else None
         url = "{}://{}:{}@localhost:{}/{}".format(driver, database_user,
                                      self.database_password, database_port,
                                      database_name)

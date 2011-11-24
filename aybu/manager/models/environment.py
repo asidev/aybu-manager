@@ -16,7 +16,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import configobj
 import os
 import collections
 from aybu.manager.activity_log.fs import mkdir
@@ -43,7 +42,6 @@ class Environment(Base):
     venv_name = Column(Unicode(64))
 
     def _on_attr_update(self, value, oldvalue, attr, operation, error_msg):
-        self.log.debug(type(oldvalue))
         if not self.attribute_changed(value, oldvalue, attr):
             return
 
@@ -60,12 +58,9 @@ class Environment(Base):
                              "Cannot change Environment virtualenv")
 
     @classmethod
-    def initialize(cls, config):
-        if isinstance(config, basestring):
-            cls.config = configobj.ConfigObj(config, file_error=True)
-        else:
-            cls.config = config
-        cls.log.debug("Initialized environment with config %s", config)
+    def initialize(cls, settings, section='app:aybu-manager'):
+        cls.settings = settings[section]
+        cls.log.debug("Initialized environment with config %s", settings)
 
     @classmethod
     def create(cls, session, name, venv_name=None, config=None):
@@ -93,21 +88,21 @@ class Environment(Base):
             return env
 
     def check_initialized(self):
-        if not hasattr(self, 'config') or not self.config:
+        if not hasattr(self, 'settings') or not self.settings:
             self.log.error('%s has not been initialized', self)
             raise TypeError('%s class has not been initialized' % (self))
 
     @property
     def os_config(self):
         self.check_initialized()
-        return OsConf(user=self.config['os']['user'],
-                    group=self.config['os']['group'])
+        return OsConf(user=self.settings['os.user'],
+                    group=self.settings['os.group'])
 
     @property
     def smtp_config(self):
         self.check_initialized()
-        return SmtpConfig(host=self.config['os']['smtp_host'],
-                            port=self.config['os']['smtp_port'])
+        return SmtpConfig(host=self.settings['os.smtp_host'],
+                            port=self.settings['os.smtp_port'])
 
     @property
     def paths(self):
@@ -116,7 +111,8 @@ class Environment(Base):
 
         self.check_initialized()
         join = os.path.join
-        c = self.config['paths']
+        c = {k.replace('paths.', ''): self.settings[k]
+             for k in self.settings if k.startswith('paths.')}
         configs = join(c['configs'], self.name)
         if self.venv_name:
             virtualenv = join(c['virtualenv'], self.venv_name)

@@ -26,11 +26,15 @@ class EnvironmentTests(BaseTests):
 
     def test_create(self):
         env = Environment.create(self.session, 'testenv', config=self.config)
-        for path in self.config['paths']:
-            if path == 'virtualenv':
+        keys = {k.replace('paths.', ''): self.config['app:aybu-manager'][k]
+                          for k in self.config['app:aybu-manager'] if
+                          k.startswith('paths.')}
+
+        for key, path in keys.iteritems():
+            if key == 'virtualenv':
                 continue
-            self.log.debug("%s: %s", path, self.config['paths'][path])
-            self.assertTrue(os.path.isdir(self.config['paths'][path]))
+            self.log.debug("%s: %s", key, path)
+            self.assertTrue(os.path.isdir(path))
 
         self.session.commit()
         for key, path in env.paths._asdict().iteritems():
