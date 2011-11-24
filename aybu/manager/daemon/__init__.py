@@ -38,7 +38,8 @@ def start():
         try:
             configp = ConfigParser.ConfigParser()
             with open(configfile) as f:
-                config = configp.readfp(f)
+                configp.readfp(f)
+            config = {k: v for k,v in configp.items('app:aybu-manager')}
             logging.config.fileConfig(configfile)
 
         except Exception as e:
