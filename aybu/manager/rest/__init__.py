@@ -28,7 +28,8 @@ def main(global_config, **settings):
     engine = engine_from_config(settings, 'sqlalchemy.')
     Base.metadata.create_all(engine)
     BaseRequest.set_db_engine(engine)
-    authentication_policy = AuthenticationPolicy()
+    authentication_policy = AuthenticationPolicy(
+                            realm=settings['authentication.realm'])
     config = Configurator(settings=settings, request_factory=BaseRequest,
                           authentication_policy=authentication_policy)
 
@@ -44,6 +45,8 @@ def includeme(config):
 def add_routes(config):
     config.add_route('instances', '/instances')
     config.add_route('instance', '/instances/{domain}')
+    config.add_route('archives', '/archives')
+    config.add_route('archive', '/archives/{name}')
     config.add_route('themes', '/themes')
     config.add_route('theme', '/themes/{name}')
     config.add_route('redirects', '/redirects')
