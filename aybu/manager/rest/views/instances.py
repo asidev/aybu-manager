@@ -41,7 +41,7 @@ def enable(context, request):
 
 
 @view_config(route_name='instance', request_method='PUT',
-             request_params='action=disable')
+             request_param='action=disable')
 def disable(context, request):
     raise NotImplementedError
 
@@ -59,19 +59,19 @@ def kill(context, request):
 
 
 @view_config(route_name='instance', request_method='PUT',
-             request_params='action=sentence')
+             request_param='action=sentence')
 def sentence(context, request):
     raise NotImplementedError
 
 
 @view_config(route_name='instance', request_method='PUT',
-             request_params='action=flush')
+             request_param='action=flush')
 def flush(context, request):
     raise NotImplementedError
 
 
 @view_config(route_name='instance', request_method='PUT',
-             request_params='action=restore')
+             request_param='action=restore')
 def restore(context, request):
     raise NotImplementedError
 

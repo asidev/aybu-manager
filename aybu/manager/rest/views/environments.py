@@ -30,7 +30,7 @@ def create(context, request):
     raise NotImplementedError
 
 
-@view_config(route_name='theme', request_method=('HEAD', 'GET'))
+@view_config(route_name='environment', request_method=('HEAD', 'GET'))
 def info(context, request):
     raise NotImplementedError
 
