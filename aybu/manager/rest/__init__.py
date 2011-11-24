@@ -18,6 +18,8 @@ limitations under the License.
 
 from sqlalchemy import engine_from_config
 from pyramid.config import Configurator
+import zmq
+from zmq.devices.basedevice import ThreadDevice
 from aybu.core.request import BaseRequest
 from aybu.manager.models import Base
 from . authentication import AuthenticationPolicy
@@ -34,6 +36,13 @@ def main(global_config, **settings):
                           authentication_policy=authentication_policy)
 
     config.include(includeme)
+
+    device = ThreadDevice(zmq.QUEUE, zmq.REP, zmq.REQ)
+    device.bind_in(settings['zmq.queue_addr'])
+    device.connect_out(settings['zmq.daemon_addr'])
+    device.setsockopt_in(zmq.IDENTITY, 'REP')
+    device.setsockopt_out(zmq.IDENTITY, 'REQ')
+    device.start()
 
     return config.make_wsgi_app()
 
