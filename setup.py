@@ -26,7 +26,7 @@ setup(name='aybu-manager',
       ),
       entry_points = """\
       [paste.app_factory]
-        main = aybu.controlpanel.rest:main
+        main = aybu.manager.rest:main
       [paste.paster_command]
         uwsgi = pasteuwsgi.serve:ServeCommand
       """,
