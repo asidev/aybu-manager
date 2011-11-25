@@ -21,6 +21,7 @@ from sqlalchemy.orm import (sessionmaker,
                             scoped_session)
 from aybu.manager.models import Base
 from aybu.manager.activity_log import ActivityLog
+from aybu.manager.task import Task
 import logging
 import threading
 import zmq
@@ -56,7 +57,7 @@ class AybuManagerDaemonWorker(threading.Thread):
         self.socket.connect('inproc://tasks')
 
         while True:
-            message = self.socket.recv_pyobj()
-            self.log.info("Received task %s", message)
+            task = Task.from_dict(self.socket.recv_pyobj())
+            self.log.info("Received task %s", task)
 
         self.socket.close()

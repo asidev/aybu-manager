@@ -19,6 +19,7 @@ limitations under the License.
 import logging
 import zmq
 from aybu.manager.utils.decorators import classproperty
+from aybu.manager.task import Task
 
 
 class ZmqTaskSender(object):
@@ -47,6 +48,8 @@ class ZmqTaskSender(object):
 
     def submit(self, data, flags=0):
         try:
+            if isinstance(data, Task):
+                data = data.to_dict()
             self.log.info("Sending message: %s (flags=%s)", data, flags)
             self.socket.send_json(data, flags)
         except:
@@ -62,6 +65,3 @@ class ZmqTaskSender(object):
             except:
                 self.log.exception('Error reading response from zmq')
                 return None
-
-
-

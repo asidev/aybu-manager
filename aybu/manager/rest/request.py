@@ -19,6 +19,7 @@ limitations under the License.
 import zmq
 from aybu.core.request import BaseRequest
 from aybu.manager.rest.zmq_util import ZmqTaskSender
+from aybu.manager.task import Task
 
 
 class Request(BaseRequest):
@@ -29,7 +30,5 @@ class Request(BaseRequest):
 
     def submit_task(self, resource, action, **data):
         s = ZmqTaskSender(self)
-        message = dict(resource=resource,
-                       action=action)
-        message.update(data)
-        return s.submit(message)
+        task = Task(resource=resource, action=action, **data)
+        return s.submit(task)
