@@ -16,26 +16,31 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from sqlalchemy import engine_from_config
-from pyramid.config import Configurator
+import logging
 import zmq
+from pyramid.config import Configurator
+from sqlalchemy import engine_from_config
 from zmq.devices.basedevice import ThreadDevice
-from aybu.core.request import BaseRequest
+
 from aybu.manager.models import Base
 from . authentication import AuthenticationPolicy
+from . request import Request
 
 
 def main(global_config, **settings):
 
     engine = engine_from_config(settings, 'sqlalchemy.')
     Base.metadata.create_all(engine)
-    BaseRequest.set_db_engine(engine)
+    Request.set_db_engine(engine)
     authentication_policy = AuthenticationPolicy(
                             realm=settings['authentication.realm'])
-    config = Configurator(settings=settings, request_factory=BaseRequest,
+    config = Configurator(settings=settings, request_factory=Request,
                           authentication_policy=authentication_policy)
 
     config.include(includeme)
+    log = logging.getLogger(__name__)
+    log.info("Starting zmq QUEUE (%s ==> |QUEUE| ==> %s)",
+             settings['zmq.queue_addr'], settings['zmq.daemon_addr'])
 
     device = ThreadDevice(zmq.QUEUE, zmq.REP, zmq.REQ)
     device.bind_in(settings['zmq.queue_addr'])

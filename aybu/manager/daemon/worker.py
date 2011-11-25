@@ -22,13 +22,17 @@ from sqlalchemy.orm import (sessionmaker,
 from aybu.manager.models import Base
 from aybu.manager.activity_log import ActivityLog
 import logging
+import threading
+import zmq
 
 
-class AybuManagerWorker(object):
+class AybuManagerDaemonWorker(threading.Thread):
 
-    def __init__(self, config):
+    def __init__(self, context, config):
+        super(AybuManagerDaemonWorker, self).__init__(name='worker')
         self.config = config
         self.log = logging.getLogger(__name__)
+        self.context = context
         self.engine = engine_from_config(self.config, 'sqlalchemy.')
         self.Session = scoped_session(sessionmaker(bind=self.engine))
         Base.metadata.bind = self.engine
@@ -44,8 +48,15 @@ class AybuManagerWorker(object):
         self.__db = db
         return db
 
-    def start(self):
-        self.log.info("Starting daemon")
-        db = self._new_database_session()
-        from aybu.manager.models import Instance
-        self.log.info(db.query(Instance).all())
+    def run(self):
+
+        self.log.debug("Worker starting ... ")
+        self.socket = self.context.socket(zmq.SUB)
+        self.socket.setsockopt(zmq.SUBSCRIBE, "")  # subscribe to all
+        self.socket.connect('inproc://tasks')
+
+        while True:
+            message = self.socket.recv_pyobj()
+            self.log.info("Received task %s", message)
+
+        self.socket.close()

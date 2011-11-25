@@ -22,10 +22,10 @@ import os
 import logging
 import logging.config
 import sys
-from . worker import AybuManagerWorker
+from . daemon import AybuManagerDaemon
 
 
-__all__ = ['start']
+__all__ = ['start', 'AybuManagerDaemon']
 
 
 def start():
@@ -52,17 +52,21 @@ def start():
 
     log = logging.getLogger("{}:start".format(__name__))
     try:
-        worker = AybuManagerWorker(config)
-        worker.start()
+        daemon = AybuManagerDaemon(config)
+        daemon.start()
 
     except KeyboardInterrupt:
         log.info("Interrupted")
-        sys.exit(0)
+        exit_status = 0
 
     except:
         log.exception('Error')
-        sys.exit(1)
+        exit_status = 1
 
     else:
         log.info("Quitting")
-        sys.exit(0)
+        exit_status = 0
+
+    finally:
+        daemon.worker._Thread__stop()
+

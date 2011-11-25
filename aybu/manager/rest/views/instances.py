@@ -21,7 +21,8 @@ from pyramid.view import view_config
 
 @view_config(route_name='instances', request_method='GET')
 def list(context, request):
-    raise NotImplementedError
+    request.response.text = request.submit_task('instance', 'list')['message']
+    return request.response
 
 
 @view_config(route_name='instances', request_method='POST')
