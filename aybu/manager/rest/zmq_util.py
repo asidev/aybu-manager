@@ -19,11 +19,10 @@ limitations under the License.
 import logging
 import zmq
 from aybu.manager.utils.decorators import classproperty
-from aybu.manager.task import Task
+from aybu.manager.task import ERROR, QUEUED, TaskResponse
 
 
 class ZmqTaskSender(object):
-
 
     @classproperty
     @classmethod
@@ -46,22 +45,31 @@ class ZmqTaskSender(object):
         self.poller = zmq.Poller()
         self.poller.register(self.socket, zmq.POLLIN)
 
-    def submit(self, data, flags=0):
+    def submit(self, task, flags=0):
         try:
-            if isinstance(data, Task):
-                data = data.to_dict()
-            self.log.info("Sending message: %s (flags=%s)", data, flags)
+            data = task.to_dict()
+            self.log.debug("Sending message: %s (flags=%s)", data, flags)
             self.socket.send_json(data, flags)
         except:
             self.log.exception('Error sending message to zmq')
 
         else:
             try:
-                self.log.info("Awaiting response from daemon")
+                self.log.debug("Awaiting response from daemon")
                 if self.poller.poll(self.timeout):
                     response = self.socket.recv_json()
-                    self.log.info("Received response from daemon: %s", response)
-                    return response
-            except:
+                    self.log.debug("Received response from daemon: %s", response)
+                    return TaskResponse(task, response)
+
+                self.log.error("%s: Timeout while reading from daemon", task)
+                return TaskResponse(
+                        task,
+                        dict(success=True,
+                             message='Message enququed to be delivered'),
+                        status=QUEUED,
+                )
+
+            except Exception as e:
                 self.log.exception('Error reading response from zmq')
-                return None
+                return TaskResponse(task, dict(success=False, message=str(e)),
+                                    status=ERROR)

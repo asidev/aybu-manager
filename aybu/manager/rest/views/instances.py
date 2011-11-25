@@ -21,7 +21,8 @@ from pyramid.view import view_config
 
 @view_config(route_name='instances', request_method='GET')
 def list(context, request):
-    request.response.text = request.submit_task('instance', 'list')['message']
+    request.response.body = "<pre>{}</pre>"\
+                            .format(request.submit_task('instance', 'list'))
     return request.response
 
 

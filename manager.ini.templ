@@ -40,9 +40,14 @@ paths.logs = /var/logs/sites/
 paths.run = /var/run/aybu/
 paths.virtualenv = /srv/.virtualenvs/aybu
 
-zmq.queue_addr = tcp://127.0.0.1:8998
-zmq.daemon_addr = tcp://127.0.0.1:8999
+zmq.queue_addr = tcp://127.0.0.1:8997
+zmq.daemon_addr = tcp://127.0.0.1:8998
+zmq.status_pub_addr = tcp://127.0.0.1:8999
 zmq.timeout = 1000
+zmq.result_ttl = 43200
+redis.host = localhost
+redis.port = 6379
+
 
 [pipeline:main]
 # add  egg:WebError#evalerror to the pipeline for debugging

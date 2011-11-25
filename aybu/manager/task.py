@@ -16,14 +16,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import uuid
+
+DELIVERED = "DELIVERED"
+QUEUED = "QUEUED"
+ERROR = "ERROR"
+
 
 class Task(object):
 
     def __init__(self, resource, action, **kwargs):
+        self.uuid = uuid.uuid4().hex \
+                    if 'uuid' not in kwargs \
+                    else kwargs['uuid']
         self.resource = resource
         self.action = action
         self.kwargs = kwargs
-        self.kwargs.update(dict(action=action, resource=resource))
+        self.kwargs.update(dict(uuid=self.uuid,
+                                action=action,
+                                resource=resource))
         for arg, value in kwargs.iteritems():
             setattr(self, arg, value)
 
@@ -32,14 +43,34 @@ class Task(object):
 
     @classmethod
     def from_dict(cls, data):
-        return cls(**data)
+        t = cls(**data)
+        t.uuid = str(t.uuid)
+        return t
 
     def __str__(self):
         return self.__repr__()
 
     def __repr__(self):
-        return "<Task {}.{}({})>"\
-            .format(self.resource, self.action, ", ".join(
+        return "<Task {} {}.{}({})>"\
+            .format(self.uuid, self.resource, self.action, ", ".join(
                 ["{}={}".format(k, v)
                  for k, v in self.kwargs.iteritems()
-                 if k not in ("resource", "action")]))
+                 if k not in ("uuid", "resource", "action")]))
+
+
+class TaskResponse(object):
+
+    def __init__(self, task, values, status=DELIVERED):
+        self.success = values['success']
+        self.message = values['message']
+        self.task = task
+        self.status = status
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __repr__(self):
+        return "<TaskResponse ({}) {}: {}>".format(self.task.uuid,
+                                                   self.status,
+                                                   self.message)
+

@@ -22,9 +22,12 @@ from sqlalchemy.orm import (sessionmaker,
 from aybu.manager.models import Base
 from aybu.manager.activity_log import ActivityLog
 from aybu.manager.task import Task
+from . handlers import RedisPUBHandler
 import logging
 import threading
 import zmq
+
+import time
 
 
 class AybuManagerDaemonWorker(threading.Thread):
@@ -55,9 +58,17 @@ class AybuManagerDaemonWorker(threading.Thread):
         self.socket = self.context.socket(zmq.SUB)
         self.socket.setsockopt(zmq.SUBSCRIBE, "")  # subscribe to all
         self.socket.connect('inproc://tasks')
+        log = logging.getLogger()
+        handler = RedisPUBHandler(self.config, self.context)
+        log.addHandler(handler)
 
         while True:
             task = Task.from_dict(self.socket.recv_pyobj())
+            handler.root_topic = task.uuid
+
             self.log.info("Received task %s", task)
+            for i in xrange(5):
+                time.sleep(1)
+                self.log.debug("%s: %d/5", task, i)
 
         self.socket.close()

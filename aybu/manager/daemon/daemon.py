@@ -55,9 +55,9 @@ class AybuManagerDaemon(object):
                 response = str(e)
 
             else:
-                self.log.info("received message: %s", message)
+                self.log.debug("received message: %s", message)
                 success = True
-                response = 'Queued'
+                response = 'Task enqueued'
 
                 try:
                     self.client_socket.send_json(dict(success=success,
