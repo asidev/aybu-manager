@@ -16,6 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import datetime
 import redis
 import zmq
 from aybu.core.request import BaseRequest
@@ -45,10 +46,10 @@ class Request(BaseRequest):
         self._redis = redis.StrictRedis(**redis_opts)
         return self._redis
 
-    def submit_task(self, resource, action, **data):
+    def submit_task(self, command, **data):
         s = ZmqTaskSender(self)
-        task = Task(resource=resource, redis_client=self.redis,
-                    action=action, **data)
+        task = Task(redis_client=self.redis, requested=datetime.datetime.now(),
+                    command=command, **data)
         return s.submit(task)
 
 

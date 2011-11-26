@@ -22,7 +22,7 @@ from pyramid.view import view_config
 @view_config(route_name='instances', request_method='GET')
 def list(context, request):
     request.response.body = "<pre>{}</pre>"\
-                            .format(request.submit_task('instance', 'list'))
+                            .format(request.submit_task(command='instance'))
     return request.response
 
 

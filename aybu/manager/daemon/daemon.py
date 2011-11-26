@@ -16,6 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import datetime
 import logging
 import redis
 import zmq
@@ -57,7 +58,8 @@ class AybuManagerDaemon(object):
             try:
                 message = self.client_socket.recv()
                 self.worker_socket.send(message)
-                task = Task(uuid=message, redis_client=self.redis)
+                task = Task(uuid=message, redis_client=self.redis,
+                            queued=datetime.datetime.now())
                 task.status = taskstatus.QUEUED
 
             except Exception as e:

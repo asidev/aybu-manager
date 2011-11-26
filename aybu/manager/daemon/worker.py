@@ -23,6 +23,7 @@ from aybu.manager.models import Base
 from aybu.manager.activity_log import ActivityLog
 from aybu.manager.task import Task, taskstatus
 from . handlers import RedisPUBHandler
+import datetime
 import logging
 import redis
 import threading
@@ -73,7 +74,8 @@ class AybuManagerDaemonWorker(threading.Thread):
 
         while True:
             task = Task(uuid=self.socket.recv(),
-                        redis_client=self.redis)
+                        redis_client=self.redis,
+                        started=datetime.datetime.now())
             handler.set_task(task)
 
             log.info("Received task %s", task)
@@ -83,6 +85,7 @@ class AybuManagerDaemonWorker(threading.Thread):
                 log.debug("%s: %d/5", task, i)
 
             task.status = taskstatus.FINISHED
+            task['finished'] = datetime.datetime.now()
             log.debug("%s: end.", task)
 
         self.socket.close()
