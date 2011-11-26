@@ -58,17 +58,18 @@ class AybuManagerDaemonWorker(threading.Thread):
         self.socket = self.context.socket(zmq.SUB)
         self.socket.setsockopt(zmq.SUBSCRIBE, "")  # subscribe to all
         self.socket.connect('inproc://tasks')
-        log = logging.getLogger()
         handler = RedisPUBHandler(self.config, self.context)
+        log = logging.getLogger('aybu')
         log.addHandler(handler)
+        log.setLevel(logging.DEBUG)
 
         while True:
             task = Task.from_dict(self.socket.recv_pyobj())
-            handler.root_topic = task.uuid
+            handler.set_task(task)
 
-            self.log.info("Received task %s", task)
+            log.info("Received task %s", task)
             for i in xrange(5):
                 time.sleep(1)
-                self.log.debug("%s: %d/5", task, i)
+                log.debug("%s: %d/5", task, i)
 
         self.socket.close()

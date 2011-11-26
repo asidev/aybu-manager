@@ -56,7 +56,7 @@ def start():
         daemon.start()
 
     except KeyboardInterrupt:
-        log.info("Interrupted")
+        log.info("Quitting..")
         exit_status = 0
 
     except:
@@ -69,4 +69,5 @@ def start():
 
     finally:
         daemon.worker._Thread__stop()
+        sys.exit(exit_status)
 

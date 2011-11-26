@@ -30,14 +30,20 @@ class RedisPUBHandler(PUBHandler):
         socket = self.context.socket(zmq.PUB)
         socket.bind(self.config['zmq.status_pub_addr'])
 
-        redis_opts = {k:self.config[k] for k in self.config
+        redis_opts = {k.replace('redis.', ''): self.config[k]
+                      for k in self.config
                       if k.startswith('redis.')}
         if 'port' in redis_opts:
             redis_opts['port'] = int(redis_opts['port'])
 
         self.redis = redis.StrictRedis(**redis_opts)
-        self.ttl = self.config['zmq.result_ttl']
+        self.ttl = self.config.get('zmq.result_ttl')
         super(RedisPUBHandler, self).__init__(socket, context)
+        self.task = None
+
+    def set_task(self, task):
+        self.task = task
+        self.root_topic = task.uuid
 
     def emit(self, record):
         """Emit a log message on my socket."""
@@ -66,7 +72,7 @@ class RedisPUBHandler(PUBHandler):
 
         # map str, since sometimes we get unicode, and zmq can't deal with it
         self.socket.send_multipart([topic,msg])
-        self.redis.rpush(topic, msg)
-        self.redis.expire(topic, self.ttl)
-
+        if self.task:
+            self.task.log(self.redis, msg, record.levelname, self.ttl,
+                          levelno=record.levelno)
 
