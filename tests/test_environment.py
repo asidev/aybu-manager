@@ -25,6 +25,7 @@ from . test_base import BaseTests
 class EnvironmentTests(BaseTests):
 
     def test_create(self):
+        self.config = {'app:aybu-manager': self.config}
         env = Environment.create(self.session, 'testenv', config=self.config)
         keys = {k.replace('paths.', ''): self.config['app:aybu-manager'][k]
                           for k in self.config['app:aybu-manager'] if

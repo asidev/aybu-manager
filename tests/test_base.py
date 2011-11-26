@@ -77,16 +77,16 @@ class BaseTests(unittest.TestCase):
 
         self.tempdir = tempfile.mkdtemp()
         self.config['paths.root'] = self.tempdir
-        self.config['paths.cgroups'] = '%(paths.root)s/cgroups'
-        self.config['paths.sites'] = '%(paths.root)s/sites'
-        self.config['paths.configs'] = '%(paths.root)s/configs'
-        self.config['paths.archives'] = '%(paths.root)s/archives'
-        self.config['paths.run'] = '%(paths.root)s/run'
+        self.config['paths.cgroups'] = '{}/cgroups'.format(self.tempdir)
+        self.config['paths.sites'] = '{}/sites'.format(self.tempdir)
+        self.config['paths.configs'] = '{}/configs'.format(self.tempdir)
+        self.config['paths.archives'] = '{}/archives'.format(self.tempdir)
+        self.config['paths.run'] = '{}/run'.format(self.tempdir)
         self.config['paths.virtualenv'] = \
                             os.path.dirname(os.environ['VIRTUAL_ENV'])
         self.config['virtualenv_name'] = \
                             os.path.basename(os.environ['VIRTUAL_ENV'])
-        self.config['paths.logs'] = '%(paths.root)s/logs'
+        self.config['paths.logs'] = '{}/logs'.format(self.tempdir)
 
     def tearDown(self):
         self.session.close()

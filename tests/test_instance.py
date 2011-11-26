@@ -40,7 +40,7 @@ class InstanceTests(BaseTests):
         theme = self.session.query(Theme)\
                 .filter(Theme.name == 'uffizi').one()
         env = Environment.create(self.session, 'testenv',
-                                 config=self.config,
+                                 config={'app:aybu-manager': self.config},
                                  venv_name=venv_name)
         instance = Instance.deploy(self.session, 'www.example.com', owner,
                                    env, owner, theme=theme)
@@ -93,7 +93,7 @@ class InstanceTests(BaseTests):
 
         # test change environment
         newenv = Environment.create(self.session, 'testenv2',
-                                    config=self.config,
+                                    config={'app:aybu-manager': self.config},
                                     venv_name=venv_name)
         with self.assertRaises(OperationalError):
             instance.environment = newenv
