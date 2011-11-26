@@ -16,7 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import configobj
+import ConfigParser
 import logging
 import os
 import pkg_resources
@@ -64,8 +64,11 @@ class BaseTests(unittest.TestCase):
         ini = os.path.realpath(
                 os.path.join(os.path.dirname(__file__), "..", 'tests.ini'))
 
-        self.config = configobj.ConfigObj(ini, file_error=True)
-        self.engine = engine_from_config(self.config['app:aybu-manager'],
+        config = ConfigParser.ConfigParser()
+        with open(ini) as f:
+            config.readfp(f)
+        self.config = {k: v for k,v in config.items('app:aybu-manager')}
+        self.engine = engine_from_config(self.config,
                                         'sqlalchemy.')
         Base.metadata.bind = self.engine
         Base.metadata.create_all()
@@ -73,17 +76,17 @@ class BaseTests(unittest.TestCase):
         self.new_session()
 
         self.tempdir = tempfile.mkdtemp()
-        self.config['app:aybu-manager']['paths.root'] = self.tempdir
-        self.config['app:aybu-manager']['paths.cgroups'] = '%(paths.root)s/cgroups'
-        self.config['app:aybu-manager']['paths.sites'] = '%(paths.root)s/sites'
-        self.config['app:aybu-manager']['paths.configs'] = '%(paths.root)s/configs'
-        self.config['app:aybu-manager']['paths.archives'] = '%(paths.root)s/archives'
-        self.config['app:aybu-manager']['paths.run'] = '%(paths.root)s/run'
-        self.config['app:aybu-manager']['paths.virtualenv'] = \
+        self.config['paths.root'] = self.tempdir
+        self.config['paths.cgroups'] = '%(paths.root)s/cgroups'
+        self.config['paths.sites'] = '%(paths.root)s/sites'
+        self.config['paths.configs'] = '%(paths.root)s/configs'
+        self.config['paths.archives'] = '%(paths.root)s/archives'
+        self.config['paths.run'] = '%(paths.root)s/run'
+        self.config['paths.virtualenv'] = \
                             os.path.dirname(os.environ['VIRTUAL_ENV'])
-        self.config['app:aybu-manager']['virtualenv_name'] = \
+        self.config['virtualenv_name'] = \
                             os.path.basename(os.environ['VIRTUAL_ENV'])
-        self.config['app:aybu-manager']['paths.logs'] = '%(paths.root)s/logs'
+        self.config['paths.logs'] = '%(paths.root)s/logs'
 
     def tearDown(self):
         self.session.close()

@@ -34,7 +34,7 @@ class InstanceTests(BaseTests):
     def test_deploy(self):
 
         self.import_data()
-        venv_name = self.config['app:aybu-manager']['virtualenv_name']
+        venv_name = self.config['virtualenv_name']
         owner = self.session.query(User)\
                 .filter(User.email == 'info@asidev.com').one()
         theme = self.session.query(Theme)\
