@@ -16,39 +16,109 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from redis import WatchError
+import collections
 import logging
-import uuid
+import redis
+import uuid as uuid_module
 
-DELIVERED = "DELIVERED"
-QUEUED = "QUEUED"
-ERROR = "ERROR"
+TaskStatus = collections.namedtuple('TaskStatus', ['ERROR', 'UNDEF', 'DEFERRED',
+                                                   'QUEUED', 'STARTED',
+                                                   'FINISHED'])
+taskstatus = TaskStatus(
+                ERROR="ERROR",
+                UNDEF="UNDEF",
+                DEFERRED="DEFERRED",
+                QUEUED="QUEUED",
+                STARTED="STARTED",
+                FINISHED="FINISHED"
+)
+__all__ = ['Task', 'taskstatus', 'TaskResponse']
 
 
-class Task(object):
+class Task(collections.MutableMapping):
+    """ A dict mapped on redis that models a task.
+        tasks are referred by uuid
+    """
+    def __init__(self, redis_client=None, redis_conf=None, **kwargs):
 
-    def __init__(self, resource, action, **kwargs):
-        self.uuid = uuid.uuid4().hex \
-                    if 'uuid' not in kwargs \
-                    else kwargs['uuid']
-        self.resource = resource
-        self.action = action
-        self.kwargs = kwargs
-        self.kwargs.update(dict(uuid=self.uuid,
-                                action=action,
-                                resource=resource))
-        for arg, value in kwargs.iteritems():
-            setattr(self, arg, value)
+        if redis_conf is None and not redis_client:
+            raise TypeError("redis_conf and redis_client cannot be both empty")
 
-        # these are not in kwargs, so they will not serialized
-        self.logs_key = "task:{uuid}:logs".format(uuid=self.uuid)
+        elif redis_client:
+            object.__setattr__(self, 'redis', redis_client)
+        else:
+            object.__setattr__(self, 'redis', redis.StrictRedis(**redis_conf))
+
+        uid = uuid_module.uuid4().hex \
+               if 'uuid' not in kwargs \
+               else kwargs.pop('uuid')
+
+        object.__setattr__(self, 'uuid', uid)
+        self.key = "task:{uuid}".format(uuid=uid)
+        self.logs_key = "{key}:logs".format(key=self.key)
         self.logs_counter_key = "{key}:index".format(key=self.logs_key)
         self.logs_levels_key = "logs:levels"
+
+        for k, v in kwargs.items():
+            self[k] = v
+
+    @property
+    def status(self):
+        try:
+            return self['status']
+        except KeyError:
+            return taskstatus.UNDEF
+
+    @status.setter
+    def status(self, st):
+        self['status'] = st
+
+    def __setattr__(self, attr, value):
+        if attr == 'uuid':
+            raise TypeError('Cannot reset uuid of an existing task')
+        super(Task, self).__setattr__(attr, value)
+
+    def keys(self):
+        return self.redis.hkeys(self.key)
+
+    def values(self):
+        return self.redis.hvals(self.key)
+
+    def items(self):
+        return self.redis.hgetall(self.key).items()
+
+    def __iter__(self):
+        return iter(self.redis.hkeys(self.key))
+
+    def __len__(self):
+        return self.redis.hlen(self.key)
+
+    def __contains__(self, item):
+        return self.redis.hexists(self.key, item)
+
+    def __getitem__(self, item):
+        value = self.redis.hget(self.key, item)
+        if not value:
+            raise KeyError(item)
+        return value
+
+    def __delitem__(self, item):
+        if item not in self:
+            raise KeyError(item)
+        self.redis.hdel(self.key, item)
+
+    def __setitem__(self, item, value):
+        self.redis.hset(self.key, item, value)
+
+    def remove(self):
+        """ remove the task and all its logs from redis """
+        for key in self.redis.keys("{}*".format(self.key)):
+            self.redis.delete(key)
 
     def log_level_list_key(self, levelname):
         return "{key}:{level}".format(key=self.logs_key, level=levelname)
 
-    def log(self, redis, msg, levelname, ttl=None, levelno=None):
+    def log(self, msg, levelname, ttl=None, levelno=None):
         """ Logs a message into redis.
             logs are organized inside redis as multiple keys
 
@@ -65,28 +135,29 @@ class Task(object):
             lost replicate messages with the same score (members in sorted sets
             are unique while score can be replicated)
         """
+        try:
+            lno = getattr(logging, levelname) if levelno is None else levelno
+        except AttributeError:
+            raise ValueError("Invalid levelname {}".format(levelname))
 
-        lno = levelno if not levelno is None else getattr(logging, levelname)
-
-
-        index = redis.incr(self.logs_counter_key)
+        index = self.redis.incr(self.logs_counter_key)
         level_key = self.log_level_list_key(levelname)
-        redis.hset(self.logs_key, index, msg)
-        redis.rpush(level_key, index)
-        redis.zadd(self.logs_levels_key, lno, levelname)
+        self.redis.hset(self.logs_key, index, msg)
+        self.redis.rpush(level_key, index)
+        self.redis.zadd(self.logs_levels_key, lno, levelname)
         if ttl:
-            redis.expire(self.logs_counter_key, ttl)
-            redis.expire(level_key, ttl)
-            redis.expire(self.logs_key, ttl)
+            self.redis.expire(self.logs_counter_key, ttl)
+            self.redis.expire(level_key, ttl)
+            self.redis.expire(self.logs_key, ttl)
 
-    def get_logs(self, redis, level):
+    def get_logs(self, level):
         if not isinstance(level, int):
             level = getattr(logging, level)
 
         # use the levelno as score to get the wanted levels.
         # if we ask for DEBUG, we get all levels
         # if we ask for WARN, we get WARN, ERROR and CRITICAL
-        levels = redis.zrangebyscore(self.logs_levels_key,
+        levels = self.redis.zrangebyscore(self.logs_levels_key,
                                      float(level),
                                      float(logging.CRITICAL))
 
@@ -94,39 +165,29 @@ class Task(object):
         msg_ids = []
         for level in levels:
             key = self.log_level_key(level)
-            msg_ids.extend([int(k) for k in redis.lrange(key, 0, -1)])
+            msg_ids.extend([int(k) for k in self.redis.lrange(key, 0, -1)])
 
         # now we have all the keys we are interested in so we can
         # return the log levels in the right order.
-        return redis.hmget(self.logs_key, sorted(msg_ids))
-
-    def to_dict(self):
-        return self.kwargs
-
-    @classmethod
-    def from_dict(cls, data):
-        t = cls(**data)
-        t.uuid = str(t.uuid)
-        return t
+        return self.redis.hmget(self.logs_key, sorted(msg_ids))
 
     def __str__(self):
         return self.__repr__()
 
     def __repr__(self):
-        return "<Task {} {}.{}({})>"\
-            .format(self.uuid, self.resource, self.action, ", ".join(
-                ["{}={}".format(k, v)
-                 for k, v in self.kwargs.iteritems()
-                 if k not in ("uuid", "resource", "action")]))
+        return "<Task uuid='{}' status='{}'>".format(self.uuid, self.status)
 
 
 class TaskResponse(object):
 
-    def __init__(self, task, values, status=DELIVERED):
+    def __init__(self, task, values):
         self.success = values['success']
         self.message = values['message']
         self.task = task
-        self.status = status
+
+    @property
+    def status(self):
+        return self.task.status
 
     def __str__(self):
         return self.__repr__()

@@ -16,6 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import redis
 import zmq
 from aybu.core.request import BaseRequest
 from aybu.manager.rest.zmq_util import ZmqTaskSender
@@ -24,13 +25,30 @@ from aybu.manager.task import Task
 
 class Request(BaseRequest):
 
+    _redis = None
+
     def __init__(self, *args, **kwargs):
         super(Request, self).__init__(*args, **kwargs)
         self.zmq_context = zmq.Context()
 
+    @property
+    def redis(self):
+        if self._redis:
+            return self._redis
+
+        redis_opts = {k.replace('redis.', ''): self.registry.settings[k]
+                      for k in self.registry.settings
+                      if k.startswith('redis.')}
+        if 'port' in redis_opts:
+            redis_opts['port'] = int(redis_opts['port'])
+
+        self._redis = redis.StrictRedis(**redis_opts)
+        return self._redis
+
     def submit_task(self, resource, action, **data):
         s = ZmqTaskSender(self)
-        task = Task(resource=resource, action=action, **data)
+        task = Task(resource=resource, redis_client=self.redis,
+                    action=action, **data)
         return s.submit(task)
 
 

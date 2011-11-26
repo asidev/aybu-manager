@@ -17,7 +17,9 @@ limitations under the License.
 """
 
 import logging
+import redis
 import zmq
+from aybu.manager.task import Task, taskstatus
 from . worker import AybuManagerDaemonWorker
 
 
@@ -29,6 +31,13 @@ class AybuManagerDaemon(object):
         self.log = logging.getLogger(__name__)
         self.context = zmq.Context()
         self.worker = AybuManagerDaemonWorker(self.context, self.config)
+        redis_opts = {k.replace('redis.', ''): self.config[k]
+                      for k in self.config
+                      if k.startswith('redis.')}
+        if 'port' in redis_opts:
+            redis_opts['port'] = int(redis_opts['port'])
+
+        self.redis = redis.StrictRedis(**redis_opts)
 
     def start(self):
         self.log.info("Starting daemon")
@@ -46,8 +55,10 @@ class AybuManagerDaemon(object):
 
         while True:
             try:
-                message = self.client_socket.recv_json()
-                self.worker_socket.send_pyobj(message)
+                message = self.client_socket.recv()
+                self.worker_socket.send(message)
+                task = Task(uuid=message, redis_client=self.redis)
+                task.status = taskstatus.QUEUED
 
             except Exception as e:
                 self.log.exception(e)

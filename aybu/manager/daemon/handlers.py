@@ -16,7 +16,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import redis
 import zmq
 from zmq.log.handlers import (TOPIC_DELIM,
                               PUBHandler)
@@ -30,13 +29,6 @@ class RedisPUBHandler(PUBHandler):
         socket = self.context.socket(zmq.PUB)
         socket.bind(self.config['zmq.status_pub_addr'])
 
-        redis_opts = {k.replace('redis.', ''): self.config[k]
-                      for k in self.config
-                      if k.startswith('redis.')}
-        if 'port' in redis_opts:
-            redis_opts['port'] = int(redis_opts['port'])
-
-        self.redis = redis.StrictRedis(**redis_opts)
         self.ttl = self.config.get('zmq.result_ttl')
         super(RedisPUBHandler, self).__init__(socket, context)
         self.task = None
@@ -73,6 +65,6 @@ class RedisPUBHandler(PUBHandler):
         # map str, since sometimes we get unicode, and zmq can't deal with it
         self.socket.send_multipart([topic,msg])
         if self.task:
-            self.task.log(self.redis, msg, record.levelname, self.ttl,
+            self.task.log(msg, record.levelname, self.ttl,
                           levelno=record.levelno)
 

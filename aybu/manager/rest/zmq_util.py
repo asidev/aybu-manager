@@ -19,7 +19,7 @@ limitations under the License.
 import logging
 import zmq
 from aybu.manager.utils.decorators import classproperty
-from aybu.manager.task import ERROR, QUEUED, TaskResponse
+from aybu.manager.task import taskstatus, TaskResponse
 
 
 class ZmqTaskSender(object):
@@ -47,9 +47,9 @@ class ZmqTaskSender(object):
 
     def submit(self, task, flags=0):
         try:
-            data = task.to_dict()
+            data = task.uuid
             self.log.debug("Sending message: %s (flags=%s)", data, flags)
-            self.socket.send_json(data, flags)
+            self.socket.send(data, flags)
         except:
             self.log.exception('Error sending message to zmq')
 
@@ -62,14 +62,14 @@ class ZmqTaskSender(object):
                     return TaskResponse(task, response)
 
                 self.log.error("%s: Timeout while reading from daemon", task)
+                task.status = taskstatus.DEFERRED
                 return TaskResponse(
                         task,
                         dict(success=True,
-                             message='Message enququed to be delivered'),
-                        status=QUEUED,
+                             message='Message enququed to be delivered')
                 )
 
             except Exception as e:
                 self.log.exception('Error reading response from zmq')
-                return TaskResponse(task, dict(success=False, message=str(e)),
-                                    status=ERROR)
+                task.status = taskstatus.ERROR
+                return TaskResponse(task, dict(success=False, message=str(e)))

@@ -21,9 +21,10 @@ from sqlalchemy.orm import (sessionmaker,
                             scoped_session)
 from aybu.manager.models import Base
 from aybu.manager.activity_log import ActivityLog
-from aybu.manager.task import Task
+from aybu.manager.task import Task, taskstatus
 from . handlers import RedisPUBHandler
 import logging
+import redis
 import threading
 import zmq
 
@@ -41,6 +42,13 @@ class AybuManagerDaemonWorker(threading.Thread):
         self.Session = scoped_session(sessionmaker(bind=self.engine))
         Base.metadata.bind = self.engine
         Base.metadata.create_all()
+        redis_opts = {k.replace('redis.', ''): self.config[k]
+                      for k in self.config
+                      if k.startswith('redis.')}
+        if 'port' in redis_opts:
+            redis_opts['port'] = int(redis_opts['port'])
+
+        self.redis = redis.StrictRedis(**redis_opts)
 
     def _new_database_session(self):
         if hasattr(self, '__db'):
@@ -64,12 +72,17 @@ class AybuManagerDaemonWorker(threading.Thread):
         log.setLevel(logging.DEBUG)
 
         while True:
-            task = Task.from_dict(self.socket.recv_pyobj())
+            task = Task(uuid=self.socket.recv(),
+                        redis_client=self.redis)
             handler.set_task(task)
 
             log.info("Received task %s", task)
+            task.status = taskstatus.STARTED
             for i in xrange(5):
                 time.sleep(1)
                 log.debug("%s: %d/5", task, i)
+
+            task.status = taskstatus.FINISHED
+            log.debug("%s: end.", task)
 
         self.socket.close()
