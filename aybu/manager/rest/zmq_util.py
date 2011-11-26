@@ -61,8 +61,8 @@ class ZmqTaskSender(object):
                     self.log.debug("Received response from daemon: %s", response)
                     return TaskResponse(task, response)
 
-                self.log.error("%s: Timeout while reading from daemon", task)
                 task.status = taskstatus.DEFERRED
+                self.log.error("%s: Timeout while reading from daemon", task)
                 return TaskResponse(
                         task,
                         dict(success=True,
