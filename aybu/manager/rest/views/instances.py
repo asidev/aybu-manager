@@ -16,14 +16,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+from aybu.manager.models import Instance
 from pyramid.view import view_config
 
 
-@view_config(route_name='instances', request_method='GET')
+@view_config(route_name='instances', request_method='GET', renderer='json')
 def list(context, request):
-    request.response.body = "<pre>{}</pre>"\
-                            .format(request.submit_task(command='instance'))
-    return request.response
+    return dict(instances=[i.to_dict() for i in
+                           Instance.all(request.db_session)])
 
 
 @view_config(route_name='instances', request_method='POST')
