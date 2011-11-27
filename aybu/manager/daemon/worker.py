@@ -40,7 +40,8 @@ class AybuManagerDaemonWorker(threading.Thread):
         self.log = logging.getLogger(__name__)
         self.context = context
         self.engine = engine_from_config(self.config, 'sqlalchemy.')
-        self.Session = scoped_session(sessionmaker(bind=self.engine))
+        self.Session = scoped_session(sessionmaker(bind=self.engine,
+                                                   autocommit=False))
         Base.metadata.bind = self.engine
         Base.metadata.create_all()
         redis_opts = {k.replace('redis.', ''): self.config[k]
@@ -51,16 +52,6 @@ class AybuManagerDaemonWorker(threading.Thread):
 
         self.redis = redis.StrictRedis(**redis_opts)
 
-    def _new_database_session(self):
-        if hasattr(self, '__db'):
-            self.__db.close()
-            self.Session.remove()
-
-        db = self.Session()
-        ActivityLog.attach_to(db)
-        self.__db = db
-        return db
-
     def run(self):
 
         self.log.debug("Worker starting ... ")
@@ -70,22 +61,50 @@ class AybuManagerDaemonWorker(threading.Thread):
         handler = RedisPUBHandler(self.config, self.context)
         log = logging.getLogger('aybu')
         log.addHandler(handler)
-        log.setLevel(logging.DEBUG)
 
         while True:
             task = Task(uuid=self.socket.recv(),
                         redis_client=self.redis,
                         started=datetime.datetime.now())
             handler.set_task(task)
+            db = self.Session()
+            db.begin()
+            ActivityLog.attach_to(db)
+            log.setLevel(task.get('log_level', logging.INFO))
 
-            log.info("Received task %s", task)
-            task.status = taskstatus.STARTED
-            for i in xrange(5):
-                time.sleep(1)
-                log.debug("%s: %d/5", task, i)
+            try:
+                module = __import__(task.command_module)
+                function = getattr(module, task.command_name)
+                result = function(db, **task.command_args)
+                db.commit()
 
-            task.status = taskstatus.FINISHED
-            task['finished'] = datetime.datetime.now()
-            log.debug("%s: end.", task)
+            except ImportError as e:
+                db.rollback()
+                task.status = taskstatus.FAILED
+                task.result = "Cannot found resource {}"\
+                        .format(task.command_module)
+                log.critical(task.result)
+
+            except AttributeError as e:
+                db.rollback()
+                task.status = taskstatus.FAILED
+                task.result = "Cannot found action {} on {}"\
+                        .format(task.command_name, task.command_module)
+                log.critical(task.result)
+
+            except Exception as e:
+                db.rollback()
+                log.exception('Error while executing task')
+                task.status = taskstatus.FAILED
+                task.result = str(e)
+
+            else:
+                task.status = taskstatus.FINISHED
+                task.result = result or ''
+                log.info("Task completed successfully")
+
+            finally:
+                task['finished'] = datetime.datetime.now()
+                db.close()
 
         self.socket.close()

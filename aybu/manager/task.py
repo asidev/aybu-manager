@@ -23,14 +23,15 @@ import uuid as uuid_module
 
 TaskStatus = collections.namedtuple('TaskStatus', ['ERROR', 'UNDEF', 'DEFERRED',
                                                    'QUEUED', 'STARTED',
-                                                   'FINISHED'])
+                                                   'FINISHED', 'FAILED'])
 taskstatus = TaskStatus(
                 ERROR="ERROR",
                 UNDEF="UNDEF",
                 DEFERRED="DEFERRED",
                 QUEUED="QUEUED",
                 STARTED="STARTED",
-                FINISHED="FINISHED"
+                FINISHED="FINISHED",
+                FAILED="FAILED"
 )
 __all__ = ['Task', 'taskstatus', 'TaskResponse']
 
@@ -72,6 +73,35 @@ class Task(collections.MutableMapping):
     @status.setter
     def status(self, st):
         self['status'] = st
+
+    @property
+    def command(self):
+        return self['command']
+
+    @command.setter
+    def command(self, cmd):
+        self['command'] = cmd
+
+    @property
+    def result(self):
+        return self['result']
+
+    @result.setter
+    def result(self, value):
+        self['result'] = value
+
+    @property
+    def command_name(self, cmd):
+        return self['command'].split('.')[1]
+
+    @property
+    def command_module(self, cmd):
+        return self['command'].split('.')[0]
+
+    @property
+    def command_args(self):
+        return {k.replace('_arg.', ''): v for k, v in self.iteritems()
+                if k.startswith('_arg.')}
 
     def __setattr__(self, attr, value):
         if attr == 'uuid':

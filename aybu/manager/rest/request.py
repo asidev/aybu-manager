@@ -48,8 +48,11 @@ class Request(BaseRequest):
 
     def submit_task(self, command, **data):
         s = ZmqTaskSender(self)
-        task = Task(redis_client=self.redis, requested=datetime.datetime.now(),
-                    command=command, **data)
+        args = {"_arg.{}".format(k): v for k, v in data.iteritems()}
+
+        task = Task(redis_client=self.redis,
+                    requested=datetime.datetime.now(),
+                    command=command, **args)
         return s.submit(task)
 
 
