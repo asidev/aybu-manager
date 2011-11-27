@@ -20,12 +20,13 @@ import logging
 import sqlalchemy.ext.declarative
 from sqlalchemy.util.langhelpers import symbol
 from aybu.manager.utils.decorators import classproperty
+from aybu.core.models.base import AybuBase
 
 
 __all__ = ['Base']
 
 
-class AybuManagerBase(object):
+class AybuManagerBase(AybuBase):
 
     def attribute_changed(self, value, oldvalue, attr):
 
