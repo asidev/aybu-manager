@@ -26,3 +26,15 @@ class NotSupported(OperationalError):
     def __init__(self, operation, msg):
         self.operation = operation
         super(NotSupported, self).__init__(msg)
+
+
+class RestError(Exception):
+    pass
+
+
+class TaskExistsError(RestError):
+    pass
+
+
+class ParamsError(RestError):
+    pass
