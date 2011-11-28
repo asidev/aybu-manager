@@ -20,6 +20,7 @@ import collections
 import logging
 import redis
 import uuid as uuid_module
+from aybu.manager.exc import TaskExistsError
 
 TaskStatus = collections.namedtuple('TaskStatus', ['ERROR', 'UNDEF', 'DEFERRED',
                                                    'QUEUED', 'STARTED',
@@ -40,7 +41,7 @@ class Task(collections.MutableMapping):
     """ A dict mapped on redis that models a task.
         tasks are referred by uuid
     """
-    def __init__(self, redis_client=None, redis_conf=None, **kwargs):
+    def __init__(self, redis_client=None, redis_conf=None, new=False, **kwargs):
 
         if redis_conf is None and not redis_client:
             raise TypeError("redis_conf and redis_client cannot be both empty")
@@ -59,6 +60,10 @@ class Task(collections.MutableMapping):
         self.logs_key = "{key}:logs".format(key=self.key)
         self.logs_counter_key = "{key}:index".format(key=self.logs_key)
         self.logs_levels_key = "logs:levels"
+
+
+        if new and self.redis_client.exists(self.key):
+            raise TaskExistsError('a task with uuid %s already exists' % (uid))
 
         for k, v in kwargs.items():
             self[k] = v
@@ -102,6 +107,12 @@ class Task(collections.MutableMapping):
     def command_args(self):
         return {k.replace('_arg.', ''): v for k, v in self.iteritems()
                 if k.startswith('_arg.')}
+
+    def __getattr__(self, attr):
+        if attr.startswith("is_"):
+            attr = attr.replace("is_", "")
+            return self.status == getattr(taskstatus, attr.upper())
+        return super(Task, self).__getattr__(attr)
 
     def __setattr__(self, attr, value):
         if attr == 'uuid':
