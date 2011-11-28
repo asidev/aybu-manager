@@ -66,7 +66,7 @@ class ZmqTaskSender(object):
                 return TaskResponse(
                         task,
                         dict(success=True,
-                             message='Message enququed to be delivered')
+                             message='Message enqueued to be delivered')
                 )
 
             except Exception as e:
