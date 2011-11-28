@@ -54,6 +54,7 @@ def main(global_config, **settings):
 
 def includeme(config):
     config.include(add_routes)
+    config.scan()
 
 
 def add_routes(config):
@@ -69,4 +70,3 @@ def add_routes(config):
     config.add_route('environment', '/environments/{name}')
     config.add_route('users', '/users')
     config.add_route('user', '/users/{email}')
-    config.scan()
