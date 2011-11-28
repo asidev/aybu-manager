@@ -29,8 +29,6 @@ import redis
 import threading
 import zmq
 
-import time
-
 
 class AybuManagerDaemonWorker(threading.Thread):
 
@@ -41,7 +39,7 @@ class AybuManagerDaemonWorker(threading.Thread):
         self.context = context
         self.engine = engine_from_config(self.config, 'sqlalchemy.')
         self.Session = scoped_session(sessionmaker(bind=self.engine,
-                                                   autocommit=False))
+                                                   autocommit=True))
         Base.metadata.bind = self.engine
         Base.metadata.create_all()
         redis_opts = {k.replace('redis.', ''): self.config[k]
@@ -70,12 +68,15 @@ class AybuManagerDaemonWorker(threading.Thread):
             db = self.Session()
             db.begin()
             ActivityLog.attach_to(db)
-            log.setLevel(task.get('log_level', logging.INFO))
+            log.setLevel(task.get('log_level', logging.DEBUG))
 
             try:
-                module = __import__(task.command_module)
+                module_name = 'aybu.manager.daemon.commands.{}'\
+                        .format(task.command_module)
+                module = __import__(module_name,
+                                    fromlist=[task.command_name])
                 function = getattr(module, task.command_name)
-                result = function(db, **task.command_args)
+                result = function(db, task, **task.command_args)
                 db.commit()
 
             except ImportError as e:
@@ -83,7 +84,7 @@ class AybuManagerDaemonWorker(threading.Thread):
                 task.status = taskstatus.FAILED
                 task.result = "Cannot found resource {}"\
                         .format(task.command_module)
-                log.critical(task.result)
+                log.exception(task.result)
 
             except AttributeError as e:
                 db.rollback()
@@ -96,7 +97,7 @@ class AybuManagerDaemonWorker(threading.Thread):
                 db.rollback()
                 log.exception('Error while executing task')
                 task.status = taskstatus.FAILED
-                task.result = str(e)
+                task.result = str('Error')
 
             else:
                 task.status = taskstatus.FINISHED

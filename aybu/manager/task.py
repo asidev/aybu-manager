@@ -41,7 +41,8 @@ class Task(collections.MutableMapping):
     """ A dict mapped on redis that models a task.
         tasks are referred by uuid
     """
-    def __init__(self, redis_client=None, redis_conf=None, new=False, **kwargs):
+    def __init__(self, redis_client=None, redis_conf=None, new=False,
+                 uuid=None, **kwargs):
 
         if redis_conf is None and not redis_client:
             raise TypeError("redis_conf and redis_client cannot be both empty")
@@ -51,19 +52,16 @@ class Task(collections.MutableMapping):
         else:
             object.__setattr__(self, 'redis', redis.StrictRedis(**redis_conf))
 
-        uid = uuid_module.uuid4().hex \
-               if 'uuid' not in kwargs \
-               else kwargs.pop('uuid')
+        uuid = uuid or uuid_module.uuid4().hex
 
-        object.__setattr__(self, 'uuid', uid)
-        self.key = "task:{uuid}".format(uuid=uid)
+        object.__setattr__(self, 'uuid', uuid)
+        self.key = "task:{uuid}".format(uuid=uuid)
         self.logs_key = "{key}:logs".format(key=self.key)
         self.logs_counter_key = "{key}:index".format(key=self.logs_key)
         self.logs_levels_key = "logs:levels"
 
-
         if new and self.redis_client.exists(self.key):
-            raise TaskExistsError('a task with uuid %s already exists' % (uid))
+            raise TaskExistsError('a task with uuid %s already exists' % (uuid))
 
         for k, v in kwargs.items():
             self[k] = v
@@ -96,11 +94,11 @@ class Task(collections.MutableMapping):
         self['result'] = value
 
     @property
-    def command_name(self, cmd):
+    def command_name(self):
         return self['command'].split('.')[1]
 
     @property
-    def command_module(self, cmd):
+    def command_module(self):
         return self['command'].split('.')[0]
 
     @property

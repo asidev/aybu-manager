@@ -48,13 +48,12 @@ class Request(BaseRequest):
 
     def submit_task(self, command, **data):
         s = ZmqTaskSender(self)
-        if 'uuid' in data and not data['uuid']:
-            data.pop('uuid')
+        uuid = data.pop('uuid', None)
         args = {"_arg.{}".format(k): v for k, v in data.iteritems()}
 
         task = Task(redis_client=self.redis,
                     requested=datetime.datetime.now(),
-                    command=command, **args)
+                    command=command, uuid=uuid, **args)
         return s.submit(task)
 
 

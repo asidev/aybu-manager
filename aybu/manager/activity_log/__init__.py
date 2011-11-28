@@ -30,7 +30,6 @@ class ActivityLog(object):
 
     def __init__(self, autobegin=True):
         self.log = logging.getLogger("{}.ActivityLog".format(__name__))
-        self.log.debug(": created")
         self._actions = collections.deque()
         self.active = False
         self.autobegin = autobegin

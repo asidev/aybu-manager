@@ -33,6 +33,7 @@ setup(name='aybu-manager',
         uwsgi = pasteuwsgi.serve:ServeCommand
       [console_scripts]
         aybu_manager_worker = aybu.manager.daemon:start
+        aybu_manager_cli = aybu.manager.cli:main
       """,
       tests_require=('nose', 'coverage'),
       setup_requires=('versiontools >= 1.8',),

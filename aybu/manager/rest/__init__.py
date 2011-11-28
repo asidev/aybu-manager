@@ -54,6 +54,8 @@ def main(global_config, **settings):
 
 def includeme(config):
     config.include(add_routes)
+    config.add_renderer('taskresponse',
+                        'aybu.manager.rest.renderers.TaskResponseRender')
     config.scan()
 
 

@@ -68,7 +68,6 @@ class AybuManagerDaemon(object):
                 response = str(e)
 
             else:
-                self.log.debug("received message: %s", message)
                 success = True
                 response = 'Task enqueued'
 

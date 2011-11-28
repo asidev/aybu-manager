@@ -25,32 +25,34 @@ from pyramid.view import view_config
 log = logging.getLogger(__name__)
 
 
-@view_config(route_name='instances', request_method='GET', renderer='json')
+@view_config(route_name='instances', request_method='GET')
 def list(context, request):
     return dict(instances=[i.to_dict() for i in
                            Instance.all(request.db_session)])
 
 
 @view_config(route_name='instances', request_method='POST',
-             renderer='json')
+             renderer='taskresponse')
 def deploy(context, request):
-    log.info("received request for %s", request.current_url())
-    log.debug("request: %s", request)
-    uuid = request.headers.request.get('X-Task-UUID'),
+    log.info("received request for %s", request.current_route_url())
+    uuid = request.headers.get('X-Task-UUID')
     try:
         params = dict(
             domain=request.params['domain'],
             owner_email=request.params['owner_email'],
             environment_name=request.params['environment_name'],
-            tech_contact_email=request.params['tech_contact_email'],
-            theme_name=request.params.get('theme_name'),
+            technical_contact_email=request.params['technical_contact_email'],
+            theme_name=request.params.get('theme_name') or None,
             default_language=request.params.get('default_language', u'it'),
             database_password=request.params.get('database_password'),
             enabled=True if request.params.get('enabled') else False,
         )
         if uuid:
             params['uuid'] = uuid
+        log.debug("params: %s", params)
+
     except KeyError as e:
+        log.exception("Error validating params")
         raise ParamsError(e)
 
     return request.submit_task('instance.deploy', **params)

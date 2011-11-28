@@ -20,15 +20,12 @@ limitations under the License.
 from aybu.manager.exc import (ParamsError, TaskExistsError)
 from aybu.manager.task import TaskResponse
 from pyramid.view import view_config
-from pyramid.httpexceptions import (HTTPAccepted,
-                                    HTTPBadRequest,
+from pyramid.httpexceptions import (HTTPBadRequest,
                                     HTTPNotFound,
                                     HTTPMethodNotAllowed,
                                     HTTPConflict,
                                     HTTPInternalServerError,
-                                    HTTPNotImplemented,
-                                    HTTPBadGateway,
-                                    HTTPGatewayTimeout)
+                                    HTTPNotImplemented)
 
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -63,21 +60,6 @@ def params_error(context, request):
 @view_config(context=TaskExistsError)
 def task_exists(context, request):
     return HTTPConflict()
-
-
-@view_config(context=TaskResponse)
-def accepted(context, request):
-    if context.success == False:
-        return HTTPBadGateway()
-
-    headers = [('X-Task-UUID', context.task.uuid)]
-
-    if context.task.is_deferred:
-        return HTTPGatewayTimeout(headers=headers)
-
-    response = HTTPAccepted(headers=headers)
-    return response
-
 
 @view_config(context=NotImplementedError)
 def not_implemented(contex, request):

@@ -20,16 +20,24 @@ from aybu.manager.models import (Environment,
                                  Instance,
                                  Theme,
                                  User)
+import logging
+log = logging.getLogger(__name__)
 
 
-def deploy(session, domain, owner_email, environment_name, tech_contact_email,
-           theme_name=None, default_language=u'it', database_password=None,
-           enabled=True):
+def deploy(session, task, domain, owner_email, environment_name,
+           technical_contact_email, theme_name=None, default_language=u'it',
+           database_password=None, enabled=True):
+
+    import time
+    for i in xrange(5):
+        log.info("%s: %d/4", task, i)
+        time.sleep(1)
+    return i
 
     env = Environment.get(session, environment_name)
     theme = None if not theme_name else Theme.get(session, theme_name)
     owner = User.get(session, owner_email)
-    technical_contact = User.get(session, tech_contact_email)
+    technical_contact = User.get(session, technical_contact_email)
 
     instance = Instance.deploy(domain, owner, env, technical_contact, theme,
                                default_language, database_password, enabled)
