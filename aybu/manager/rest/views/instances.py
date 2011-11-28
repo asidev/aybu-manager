@@ -16,8 +16,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import logging
 from aybu.manager.models import Instance
+from aybu.manager.exc import ParamsError
 from pyramid.view import view_config
+
+
+log = logging.getLogger(__name__)
 
 
 @view_config(route_name='instances', request_method='GET', renderer='json')
@@ -26,9 +31,29 @@ def list(context, request):
                            Instance.all(request.db_session)])
 
 
-@view_config(route_name='instances', request_method='POST')
+@view_config(route_name='instances', request_method='POST',
+             renderer='json')
 def deploy(context, request):
-    raise NotImplementedError
+    log.info("received request for %s", request.current_url())
+    log.debug("request: %s", request)
+    uuid = request.headers.request.get('X-Task-UUID'),
+    try:
+        params = dict(
+            domain=request.params['domain'],
+            owner_email=request.params['owner_email'],
+            environment_name=request.params['environment_name'],
+            tech_contact_email=request.params['tech_contact_email'],
+            theme_name=request.params.get('theme_name'),
+            default_language=request.params.get('default_language', u'it'),
+            database_password=request.params.get('database_password'),
+            enabled=True if request.params.get('enabled') else False,
+        )
+        if uuid:
+            params['uuid'] = uuid
+    except KeyError as e:
+        raise ParamsError(e)
+
+    return request.submit_task('instance.deploy', **params)
 
 
 @view_config(route_name='instance', request_method=('HEAD', 'GET'))
