@@ -18,13 +18,11 @@ limitations under the License.
 
 
 from aybu.manager.exc import (ParamsError, TaskExistsError)
-from aybu.manager.task import TaskResponse
 from pyramid.view import view_config
 from pyramid.httpexceptions import (HTTPBadRequest,
                                     HTTPNotFound,
                                     HTTPMethodNotAllowed,
                                     HTTPConflict,
-                                    HTTPInternalServerError,
                                     HTTPNotImplemented)
 
 from sqlalchemy.orm.exc import NoResultFound

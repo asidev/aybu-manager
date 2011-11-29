@@ -56,6 +56,7 @@ def includeme(config):
     config.include(add_routes)
     config.add_renderer('taskresponse',
                         'aybu.manager.rest.renderers.TaskResponseRender')
+    config.add_renderer(None, 'pyramid.renderers.json_renderer_factory')
     config.scan()
 
 

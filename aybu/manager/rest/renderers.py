@@ -17,8 +17,7 @@ limitations under the License.
 """
 
 from pyramid.httpexceptions import (HTTPAccepted,
-                                    HTTPBadGateway,
-                                    HTTPGatewayTimeout)
+                                    HTTPBadGateway)
 
 
 class TaskResponseRender(object):
