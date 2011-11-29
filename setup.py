@@ -1,9 +1,9 @@
 from setuptools import setup, find_packages
 
 setup(name='aybu-manager',
-      version=':versiontools:aybu.manager:',
-      description="AyBU instances manager daemon",
-      long_description="""AyBU instances manager daemon""",
+      version=':versiontools:aybu.manager.version:',
+      description="AyBU instances manager ReST API and daemon",
+      long_description="""AyBU instances manager ReST API and daemon""",
       classifiers=('License :: OSI Approved :: Apache Software License',
                    'Operating System :: POSIX :: Linux',
                    'Programming Language :: Python :: 2.7',
@@ -14,7 +14,7 @@ setup(name='aybu-manager',
       url='http://code.asidev.net/projects/aybu',
       license='Apache Software License',
       packages=find_packages(),
-      namespace_packages=('aybu',),
+      namespace_packages=('aybu', 'aybu.manager'),
       include_package_data=True,
       zip_safe=False,
       install_requires=(
@@ -33,7 +33,6 @@ setup(name='aybu-manager',
         uwsgi = pasteuwsgi.serve:ServeCommand
       [console_scripts]
         aybu_manager_worker = aybu.manager.daemon:start
-        aybu_manager_cli = aybu.manager.cli:main
       """,
       tests_require=('nose', 'coverage'),
       setup_requires=('versiontools >= 1.8',),

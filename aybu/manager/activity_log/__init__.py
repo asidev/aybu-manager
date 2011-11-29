@@ -30,6 +30,7 @@ class ActivityLog(object):
 
     def __init__(self, autobegin=True):
         self.log = logging.getLogger("{}.ActivityLog".format(__name__))
+        self.log.debug("Created an activitylog")
         self._actions = collections.deque()
         self.active = False
         self.autobegin = autobegin
@@ -37,8 +38,11 @@ class ActivityLog(object):
             self.begin()
 
     @classmethod
-    def attach_to(cls, session, autobegin=True):
-        session.activity_log = ActivityLog(autobegin)
+    def attach_to(cls, session, activity_log=None, **kwargs):
+        if not activity_log:
+            session.activity_log = ActivityLog(**kwargs)
+        else:
+            session.activity_log = activity_log
         listen(session, 'before_commit',
             lambda session: session.activity_log.commit())
         listen(session, 'after_rollback',
