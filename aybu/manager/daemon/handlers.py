@@ -16,18 +16,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import zmq
 from zmq.log.handlers import (TOPIC_DELIM,
                               PUBHandler)
 
 
 class RedisPUBHandler(PUBHandler):
 
-    def __init__(self, config, context):
-        self.config = config
+    def __init__(self, config, socket, context):
         self.context = context
-        socket = self.context.socket(zmq.PUB)
-        socket.bind(self.config['zmq.status_pub_addr'])
+        self.config = config
 
         self.ttl = self.config.get('zmq.result_ttl')
         super(RedisPUBHandler, self).__init__(socket, context)
@@ -40,18 +37,21 @@ class RedisPUBHandler(PUBHandler):
     def emit(self, record):
         """Emit a log message on my socket."""
         try:
-            topic, record.msg = record.msg.split(TOPIC_DELIM,1)
+            topic, record.msg = record.msg.split(TOPIC_DELIM, 1)
             topic = topic.encode()
         except:
             topic = "".encode()
+
         try:
             msg = self.format(record).encode()
+
         except (KeyboardInterrupt, SystemExit):
             raise
+
         except:
             self.handleError(record)
-        topic_list = []
 
+        topic_list = []
         if self.root_topic:
             topic_list.append(self.root_topic)
 
@@ -63,7 +63,7 @@ class RedisPUBHandler(PUBHandler):
         topic = '.'.encode().join(topic_list)
 
         # map str, since sometimes we get unicode, and zmq can't deal with it
-        self.socket.send_multipart([topic,msg])
+        self.socket.send_multipart([topic, msg])
         if self.task:
             self.task.log(msg, record.levelname, self.ttl,
                           levelno=record.levelno)

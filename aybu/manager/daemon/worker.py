@@ -49,6 +49,8 @@ class AybuManagerDaemonWorker(threading.Thread):
             redis_opts['port'] = int(redis_opts['port'])
 
         self.redis = redis.StrictRedis(**redis_opts)
+        self.pub_socket = self.context.socket(zmq.PUB)
+        self.pub_socket.bind(self.config['zmq.status_pub_addr'])
 
     def run(self):
 
@@ -56,7 +58,7 @@ class AybuManagerDaemonWorker(threading.Thread):
         self.socket = self.context.socket(zmq.SUB)
         self.socket.setsockopt(zmq.SUBSCRIBE, "")  # subscribe to all
         self.socket.connect('inproc://tasks')
-        handler = RedisPUBHandler(self.config, self.context)
+        handler = RedisPUBHandler(self.config, self.pub_socket, self.context)
         log = logging.getLogger('aybu')
         log.addHandler(handler)
 
@@ -67,7 +69,8 @@ class AybuManagerDaemonWorker(threading.Thread):
             handler.set_task(task)
             db = self.Session()
             db.begin()
-            ActivityLog.attach_to(db)
+            if not hasattr(db, 'activity_log'):
+                ActivityLog.attach_to(db)
             log.setLevel(task.get('log_level', logging.DEBUG))
 
             try:
@@ -106,6 +109,8 @@ class AybuManagerDaemonWorker(threading.Thread):
 
             finally:
                 task['finished'] = datetime.datetime.now()
+                self.pub_socket.send_multipart(["{}.finished".format(task.uuid),
+                                                "task endend"])
                 db.close()
 
         self.socket.close()
