@@ -58,12 +58,13 @@ def not_found(context, request):
 
 @view_config(context=ParamsError)
 def params_error(context, request):
-    return HTTPBadRequest()
+    return HTTPBadRequest(headers={'X-Request-Error': str(context)})
 
 
 @view_config(context=TaskExistsError)
 def task_exists(context, request):
     return HTTPConflict()
+
 
 @view_config(context=NotImplementedError)
 def not_implemented(contex, request):
