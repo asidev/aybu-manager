@@ -39,34 +39,34 @@ def deploy(session, task, domain, owner_email, environment_name,
     return instance.id
 
 
-def reload(session, id_):
+def reload(session, task, id_):
     instance = Instance.get(session, id_)
     instance.reload()
 
 
-def delete(session, id_):
+def delete(session, task, id_):
     instance = Instance.get(session, id_)
     instance.delete()
 
 
-def enable(session, id_):
+def enable(session, task, id_):
     instance = Instance.get(session, id_)
     instance.enabled = True
 
 
-def disable(session, id_):
+def disable(session, task, id_):
     instance = Instance.get(session, id_)
     instance.disabled = False
 
 
-def flush_cache(session, id_):
+def flush_cache(session, task, id_):
     instance = Instance.get(session, id_)
     instance.flush_cache()
 
 
-def sentence(session, id_):
+def sentence(session, task, id_):
     raise NotImplementedError
 
 
-def kill(session, id_):
+def kill(session, task, id_):
     raise NotImplementedError
