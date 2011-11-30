@@ -38,3 +38,7 @@ class TaskExistsError(RestError):
 
 class ParamsError(RestError):
     pass
+
+
+class TaskNotFoundError(RestError):
+    pass

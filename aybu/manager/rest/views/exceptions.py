@@ -17,7 +17,9 @@ limitations under the License.
 """
 
 
-from aybu.manager.exc import (ParamsError, TaskExistsError)
+from aybu.manager.exc import (ParamsError,
+                              TaskExistsError,
+                              TaskNotFoundError)
 from pyramid.view import view_config
 from pyramid.httpexceptions import (HTTPBadRequest,
                                     HTTPNotFound,
@@ -38,6 +40,9 @@ from sqlalchemy.orm.exc import NoResultFound
 @view_config(route_name='redirect', request_method='POST')
 @view_config(route_name='users', request_method=('DELETE', 'HEAD', 'PUT'))
 @view_config(route_name='user', request_method='POST')
+@view_config(route_name='tasks', request_method=('POST', 'PUT', 'HEAD'))
+@view_config(route_name='task', request_method=('POST', 'PUT'))
+@view_config(route_name='tasklogs', request_method=('HEAD', 'POST', 'PUT'))
 @view_config(route_name='environments',
              request_method=('DELETE', 'HEAD', 'PUT'))
 @view_config(route_name='environment', request_method='POST')
@@ -45,6 +50,7 @@ def method_not_allowed(context, request):
     return HTTPMethodNotAllowed()
 
 
+@view_config(context=TaskNotFoundError)
 @view_config(context=NoResultFound)
 def not_found(context, request):
     return HTTPNotFound()

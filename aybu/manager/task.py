@@ -20,7 +20,7 @@ import collections
 import logging
 import redis
 import uuid as uuid_module
-from aybu.manager.exc import TaskExistsError
+from aybu.manager.exc import TaskExistsError, TaskNotFoundError
 
 TaskStatus = collections.namedtuple('TaskStatus', ['ERROR', 'UNDEF', 'DEFERRED',
                                                    'QUEUED', 'STARTED',
@@ -44,14 +44,7 @@ class Task(collections.MutableMapping):
     def __init__(self, redis_client=None, redis_conf=None, new=False,
                  uuid=None, **kwargs):
 
-        if redis_conf is None and not redis_client:
-            raise TypeError("redis_conf and redis_client cannot be both empty")
-
-        elif redis_client:
-            object.__setattr__(self, 'redis', redis_client)
-        else:
-            object.__setattr__(self, 'redis', redis.StrictRedis(**redis_conf))
-
+        self.redis = self.redis_client_from_params(redis_conf, redis_client)
         uuid = uuid or uuid_module.uuid4().hex
 
         object.__setattr__(self, 'uuid', uuid)
@@ -62,9 +55,37 @@ class Task(collections.MutableMapping):
 
         if new and self.redis_client.exists(self.key):
             raise TaskExistsError('a task with uuid %s already exists' % (uuid))
+        else:
+            self.redis.sadd("tasks", self.uuid)
 
         for k, v in kwargs.items():
             self[k] = v
+
+    def to_dict(self):
+        return {k: v for k, v in self.iteritems()}
+
+    @classmethod
+    def redis_client_from_params(cls, redis_conf=None, redis_client=None):
+        if not redis_conf and not redis_client:
+            raise TypeError("redis_conf and redis_client cannot be both empty")
+
+        elif not redis_client:
+            redis_client = redis.StrictRedis(**redis_conf)
+
+        return redis_client
+
+    @classmethod
+    def get(cls, uuid, redis_conf=None, redis_client=None):
+        redis_client = cls.redis_client_from_params(redis_conf, redis_client)
+        if not redis_client.sismember('tasks', uuid):
+            raise TaskNotFoundError(uuid)
+        return cls(uuid=uuid, redis_client=redis_client)
+
+    @classmethod
+    def all(cls, redis_conf=None, redis_client=None):
+        redis_client = cls.redis_client_from_params(redis_conf, redis_client)
+        return (cls.get(redis_client=redis_client, uuid=uuid)
+                for uuid in redis_client.smembers('tasks'))
 
     @property
     def status(self):
@@ -110,7 +131,7 @@ class Task(collections.MutableMapping):
         if attr.startswith("is_"):
             attr = attr.replace("is_", "")
             return self.status == getattr(taskstatus, attr.upper())
-        return super(Task, self).__getattr__(attr)
+        raise AttributeError(attr)
 
     def __setattr__(self, attr, value):
         if attr == 'uuid':
@@ -151,6 +172,7 @@ class Task(collections.MutableMapping):
 
     def remove(self):
         """ remove the task and all its logs from redis """
+        self.redis.srem('tasks', self.uuid)
         for key in self.redis.keys("{}*".format(self.key)):
             self.redis.delete(key)
 
@@ -203,11 +225,13 @@ class Task(collections.MutableMapping):
         # get all hash keys in the selected log levels
         msg_ids = []
         for level in levels:
-            key = self.log_level_key(level)
+            key = self.log_level_list_key(level)
             msg_ids.extend([int(k) for k in self.redis.lrange(key, 0, -1)])
 
         # now we have all the keys we are interested in so we can
         # return the log levels in the right order.
+        if not msg_ids:
+            return []
         return self.redis.hmget(self.logs_key, sorted(msg_ids))
 
     def __str__(self):

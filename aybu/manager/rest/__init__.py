@@ -73,3 +73,6 @@ def add_routes(config):
     config.add_route('environment', '/environments/{name}')
     config.add_route('users', '/users')
     config.add_route('user', '/users/{email}')
+    config.add_route('tasks', '/tasks')
+    config.add_route('task', '/tasks/{uuid}')
+    config.add_route('tasklogs', '/tasks/{uuid}/logs')
