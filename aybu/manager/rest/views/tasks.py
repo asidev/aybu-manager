@@ -18,13 +18,14 @@ limitations under the License.
 
 import logging
 from pyramid.view import view_config
+from pyramid.httpexceptions import HTTPNoContent
 from aybu.manager.task import Task
 
 
 log = logging.getLogger(__name__)
 
 def get_task(request):
-    return Task.get(uuid=request.matchdict['uuid'],
+    return Task.retrieve(uuid=request.matchdict['uuid'],
                     redis_client=request.redis)
 
 @view_config(route_name='tasks', request_method='GET')
@@ -34,7 +35,9 @@ def list(context, request):
 
 @view_config(route_name='tasks', request_method='DELETE')
 def flush(context, request):
-    raise NotImplementedError
+    for task in Task.all(redis_client=request.redis):
+        task.remove()
+    return HTTPNoContent()
 
 
 @view_config(route_name='task', request_method=('HEAD', 'GET'))
@@ -55,4 +58,5 @@ def get_logs(context, request):
 
 @view_config(route_name='tasklogs', request_method='DELETE')
 def flush_logs(context, request):
-    raise NotImplementedError
+    get_task(request).flush_logs()
+    return HTTPNoContent()

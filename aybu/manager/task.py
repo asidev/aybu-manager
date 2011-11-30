@@ -75,7 +75,7 @@ class Task(collections.MutableMapping):
         return redis_client
 
     @classmethod
-    def get(cls, uuid, redis_conf=None, redis_client=None):
+    def retrieve(cls, uuid, redis_conf=None, redis_client=None):
         redis_client = cls.redis_client_from_params(redis_conf, redis_client)
         if not redis_client.sismember('tasks', uuid):
             raise TaskNotFoundError(uuid)
@@ -84,7 +84,7 @@ class Task(collections.MutableMapping):
     @classmethod
     def all(cls, redis_conf=None, redis_client=None):
         redis_client = cls.redis_client_from_params(redis_conf, redis_client)
-        return (cls.get(redis_client=redis_client, uuid=uuid)
+        return (cls.retrieve(redis_client=redis_client, uuid=uuid)
                 for uuid in redis_client.smembers('tasks'))
 
     @property
@@ -174,6 +174,11 @@ class Task(collections.MutableMapping):
         """ remove the task and all its logs from redis """
         self.redis.srem('tasks', self.uuid)
         for key in self.redis.keys("{}*".format(self.key)):
+            self.redis.delete(key)
+
+    def flush_logs(self):
+        """ remove all logs for the task """
+        for key in self.redis.keys("{}*".format(self.logs_key)):
             self.redis.delete(key)
 
     def log_level_list_key(self, levelname):
