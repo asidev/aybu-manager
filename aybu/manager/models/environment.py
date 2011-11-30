@@ -16,13 +16,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import os
 import collections
-from aybu.manager.activity_log.fs import mkdir
+import os
+import re
 from sqlalchemy import (Column, Unicode)
 from sqlalchemy import event
-from . base import Base
+from sqlalchemy.orm import validates
+from aybu.manager.activity_log.fs import mkdir
 from aybu.manager.exc import NotSupported
+from . base import Base
 
 Paths = collections.namedtuple('Paths', ['root', 'configs', 'sites',
                                          'archives', 'cgroups', 'logs', 'run',
@@ -40,6 +42,7 @@ class Environment(Base):
 
     name = Column(Unicode(64), primary_key=True)
     venv_name = Column(Unicode(64))
+    name_re = re.compile(r'^[A-Za-z_][\w]*$')
 
     def _on_attr_update(self, value, oldvalue, attr, operation, error_msg):
         if not self.attribute_changed(value, oldvalue, attr):
@@ -56,10 +59,18 @@ class Environment(Base):
         self._on_attr_update(value, oldvalue, initiator,
                              'environment_change_venv',
                              "Cannot change Environment virtualenv")
+    @validates('name')
+    def validate_name(self, key, name):
+        if self.name_re.match(name) is None:
+            raise ValueError("Invalid name {} for environmet".format(name))
+        return name
 
     @classmethod
     def initialize(cls, settings, section='app:aybu-manager'):
-        cls.settings = settings[section]
+        if section is None:
+            cls.settings = settings
+        else:
+            cls.settings = settings[section]
         cls.log.debug("Initialized environment with config %s", settings)
 
     @classmethod
@@ -118,6 +129,7 @@ class Environment(Base):
             virtualenv = join(c['virtualenv'], self.venv_name)
         else:
             virtualenv = join(c['virtualenv'], self.name)
+
 
         self._paths = Paths(root=c['root'],
                             configs=configs,

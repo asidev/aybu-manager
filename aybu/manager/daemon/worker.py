@@ -19,7 +19,7 @@ limitations under the License.
 from sqlalchemy import engine_from_config
 from sqlalchemy.orm import (sessionmaker,
                             scoped_session)
-from aybu.manager.models import Base
+from aybu.manager.models import Base, Environment
 from aybu.manager.activity_log import ActivityLog
 from aybu.manager.task import Task, taskstatus
 from . handlers import RedisPUBHandler
@@ -51,6 +51,7 @@ class AybuManagerDaemonWorker(threading.Thread):
         self.redis = redis.StrictRedis(**redis_opts)
         self.pub_socket = self.context.socket(zmq.PUB)
         self.pub_socket.bind(self.config['zmq.status_pub_addr'])
+        Environment.initialize(self.config, section=None)
 
     def run(self):
 
