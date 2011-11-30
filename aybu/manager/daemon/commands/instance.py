@@ -28,12 +28,6 @@ def deploy(session, task, domain, owner_email, environment_name,
            technical_contact_email, theme_name=None, default_language=u'it',
            database_password=None, enabled=True):
 
-    import time
-    for i in xrange(5):
-        log.info("%s: %d/4", task, i)
-        time.sleep(1)
-    return i
-
     env = Environment.get(session, environment_name)
     theme = None if not theme_name else Theme.get(session, theme_name)
     owner = User.get(session, owner_email)
@@ -45,27 +39,34 @@ def deploy(session, task, domain, owner_email, environment_name,
     return instance.id
 
 
-def reload(session, domain):
-
-    instance = Instance.get(session, domain)
+def reload(session, id_):
+    instance = Instance.get(session, id_)
     instance.reload()
 
 
-def delete(session, domain):
-    instance = Instance.get(session, domain)
+def delete(session, id_):
+    instance = Instance.get(session, id_)
     instance.delete()
 
 
-def enable(session, domain):
-    instance = Instance.get(session, domain)
+def enable(session, id_):
+    instance = Instance.get(session, id_)
     instance.enabled = True
 
 
-def disable(session, domain):
-    instance = Instance.get(session, domain)
+def disable(session, id_):
+    instance = Instance.get(session, id_)
     instance.disabled = False
 
 
-def flush(session, domain):
-    instance = Instance.get(session, domain)
+def flush_cache(session, id_):
+    instance = Instance.get(session, id_)
     instance.flush_cache()
+
+
+def sentence(session, id_):
+    raise NotImplementedError
+
+
+def kill(session, id_):
+    raise NotImplementedError

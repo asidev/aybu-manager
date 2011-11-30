@@ -116,6 +116,12 @@ class Instance(Base):
         return "<Instance [{self.id}] {self.domain} (enabled: {self.enabled})>"\
                 .format(self=self)
 
+    @classmethod
+    def get_by_domain(cls, session, domain):
+        cls.search(session,
+                   filters=(Instance.domain == domain,),
+                   return_query=True).one()
+
     @property
     def python_name(self):
         return self.domain.replace(".","_").replace("-","_")
