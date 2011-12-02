@@ -37,7 +37,7 @@ class Redirect(Base):
                                              onupdate='cascade',
                                              ondelete='cascade'))
     instance = relationship('Instance', backref='redirects')
-    target_path = Column(Unicode(256))
+    target_path = Column(Unicode(256), default='')
     http_code = Column(Integer, default=301)
 
     def __repr__(self):
