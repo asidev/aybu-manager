@@ -29,7 +29,7 @@ log = logging.getLogger(__name__)
 
 @view_config(route_name='instances', request_method='GET')
 def list(context, request):
-    return [i.to_dict() for i in Instance.all(request.db_session)]
+    return {i.domain: i.to_dict() for i in Instance.all(request.db_session)}
 
 
 @view_config(route_name='instances', request_method='POST',

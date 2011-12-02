@@ -30,7 +30,8 @@ def get_task(request):
 
 @view_config(route_name='tasks', request_method='GET')
 def list(context, request):
-    return [task.uuid for task in Task.all(redis_client=request.redis)]
+    return {task.uuid: task.to_dict() for task in
+            Task.all(redis_client=request.redis)}
 
 
 @view_config(route_name='tasks', request_method='DELETE')

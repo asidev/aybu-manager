@@ -26,7 +26,7 @@ from pyramid.httpexceptions import HTTPConflict
 
 @view_config(route_name='environments', request_method='GET')
 def list(context, request):
-    return [e.to_dict() for e in Environment.all(request.db_session)]
+    return {e.name: e.to_dict() for e in Environment.all(request.db_session)}
 
 
 @view_config(route_name='environments', request_method='POST',
