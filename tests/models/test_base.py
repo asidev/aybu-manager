@@ -62,7 +62,8 @@ class BaseTests(unittest.TestCase):
         self.log = logging.getLogger("{}.{}".format(self.__class__.__module__,
                                                     self.__class__.__name__))
         ini = os.path.realpath(
-                os.path.join(os.path.dirname(__file__), "..", 'tests.ini'))
+                os.path.join(os.path.dirname(__file__), "..", "..",
+                             'tests.ini'))
 
         config = ConfigParser.ConfigParser()
         with open(ini) as f:
