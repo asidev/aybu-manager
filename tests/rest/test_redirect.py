@@ -40,19 +40,6 @@ class TestRedirectsViews(unittest.TestCase):
         req.db_session = mock.Mock()
         return testing.DummyResource(), req
 
-    def __test_params_validation(self, imock, rmock):
-
-        params = dict(destination='www.example.com', source='invalid')
-        ctx, req = self.get_request(params=params)
-        self.assertRaises(ParamsError, views.create, ctx, req)
-
-        req.params['source'] = 'www.pippo.it.'
-        self.assertRaises(ParamsError, views.create, ctx, req)
-
-        req.params['source'] = 'a' * 255 + ".com"
-#        self.assertRaises(ParamsError, views.create, ctx, req)
-
-
     @mock.patch('aybu.manager.models.Instance')
     @mock.patch('aybu.manager.models.Redirect')
     def test_create(self, imock, rmock):
@@ -97,38 +84,4 @@ class TestRedirectsViews(unittest.TestCase):
         self.assertTrue(req.db_session.flush.called)
 
         req.params.clear()
-
-    def test_validate_http_code(self):
-        from aybu.manager.rest.views.redirects import validate_http_code
-
-        for code in ('a', '', '404', '200', 'a23', -1, 405, 304, 305, 306):
-            self.assertRaises(ParamsError, validate_http_code, code)
-
-        for code in ('301', 301, '302', 302, '303', 303, '307', 307):
-            self.assertEqual(int(code), validate_http_code(code))
-
-    def test_validate_target_path(self):
-        from aybu.manager.rest.views.redirects import validate_target_path
-
-        for path in ('abc', 'abc/cd'):
-            self.assertRaises(ParamsError, validate_target_path, path)
-
-        for path in ('', '/a', '/asjfr/kejrkejr'):
-            self.assertEqual(path, validate_target_path(path))
-
-        self.assertEqual('', validate_target_path(None))
-
-    def test_validate_hostname(self):
-        from aybu.manager.rest.views.redirects import validate_hostname
-
-        long_string = 'a' * 512
-        for hname in ('www.example.com.', 'invalid', 'www.a&b.com',
-                      'www.a/b.com', long_string):
-            self.assertRaises(ParamsError, validate_hostname, hname)
-
-        for hname in ('www.example.com', 'example.com', 'sub.sub.example.com',
-                      'www.42.com'):
-            self.assertEqual(hname, validate_hostname(hname))
-
-
 

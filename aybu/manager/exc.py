@@ -27,6 +27,9 @@ class NotSupported(OperationalError):
         self.operation = operation
         super(NotSupported, self).__init__(msg)
 
+class ValidationError(Exception):
+    pass
+
 
 class RestError(Exception):
     pass

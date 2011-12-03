@@ -20,8 +20,13 @@ from sqlalchemy import (ForeignKey,
                         Column,
                         Integer,
                         Unicode)
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import (relationship,
+                            validates)
+
 from . base import Base
+from . validators import (validate_hostname,
+                          validate_redirect_http_code,
+                          validate_redirect_target_path)
 
 
 __all__ = ['Redirect']
@@ -37,8 +42,21 @@ class Redirect(Base):
                                              onupdate='cascade',
                                              ondelete='cascade'))
     instance = relationship('Instance', backref='redirects')
-    target_path = Column(Unicode(256), default='')
+    target_path = Column(Unicode(256), default=u'')
     http_code = Column(Integer, default=301)
+
+
+    @validates('source')
+    def validate_source(self, key, source):
+        return validate_hostname(source)
+
+    @validates('target_path')
+    def validate_target_path(self, key, target_path):
+        return validate_redirect_target_path(target_path)
+
+    @validates('http_code')
+    def validates_http_code(self, key, http_code):
+        return validate_redirect_http_code(http_code)
 
     def __repr__(self):
         target = "{}{}".format(self.instance.domain, self.target_path)

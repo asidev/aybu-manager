@@ -16,7 +16,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import re
 
 from aybu.manager.exc import ParamsError
 from aybu.manager.models import (Instance,
@@ -25,46 +24,6 @@ from pyramid.httpexceptions import HTTPConflict, HTTPCreated
 from pyramid.view import view_config
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.exc import IntegrityError
-import urllib
-
-
-def validate_http_code(http_code):
-    try:
-        http_code = int(http_code)
-        assert http_code in (301, 302, 303, 307)
-
-    except (ValueError, AssertionError):
-        raise ParamsError("Invalid http_code {}".format(http_code))
-
-    else:
-        return http_code
-
-
-def validate_target_path(target_path):
-    try:
-        target_path = urllib.quote(target_path)
-        assert not target_path or target_path.startswith('/')
-
-    except AssertionError:
-        raise ParamsError("Target must be an absolute path")
-
-    except TypeError:
-        target_path = ''
-
-    return target_path
-
-
-def validate_hostname(source):
-    if len(source) > 255:
-        raise ParamsError('hostname too long')
-
-    allowed = re.compile("(?!-)[A-Z\d-]{1,63}(?<!-)$", re.IGNORECASE)
-    if not '.' in source\
-      or source[-1:] == "."\
-      or not all(allowed.match(x) for x in source.split(".")):
-        raise ParamsError("{} is not a valid hostname".format(source))
-
-    return source
 
 
 @view_config(route_name='redirects', request_method='GET')
@@ -80,10 +39,6 @@ def create(context, request):
                                         request.params['destination'])
         http_code = request.params.get('http_code', 301)
         target_path = request.params.get('target_path', '')
-
-        http_code = validate_http_code(http_code)
-        target_path = validate_target_path(target_path)
-        source = validate_hostname(source)
 
         r = Redirect(source=source, instance=instance, http_code=http_code,
                 target_path=target_path)
@@ -129,14 +84,17 @@ def update(context, request):
 
     specs = (
        ('destination', Instance.get_by_domain, [request.db_session]),
-       ('http_code', validate_http_code, []),
-       ('target_path', validate_target_path, [])
+       ('http_code', None, None),
+       ('target_path', None, None)
     )
     try:
         for attr, validate_fun, fun_args in specs:
             if attr in request.params:
-                fun_args.append(request.params[attr])
-                params[attr] = validate_fun(*fun_args)
+                if validate_fun:
+                    fun_args.append(request.params[attr])
+                    params[attr] = validate_fun(*fun_args)
+                else:
+                    params[attr] = request.params[attr]
 
     except NoResultFound:
         raise ParamsError("No instance for domain {}"\

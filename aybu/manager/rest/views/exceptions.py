@@ -19,7 +19,8 @@ limitations under the License.
 
 from aybu.manager.exc import (ParamsError,
                               TaskExistsError,
-                              TaskNotFoundError)
+                              TaskNotFoundError,
+                              ValidationError)
 from pyramid.view import view_config
 from pyramid.httpexceptions import (HTTPBadRequest,
                                     HTTPNotFound,
@@ -57,6 +58,7 @@ def not_found(context, request):
 
 
 @view_config(context=ParamsError)
+@view_config(context=ValidationError)
 def params_error(context, request):
     return HTTPBadRequest(headers={'X-Request-Error': str(context)})
 
