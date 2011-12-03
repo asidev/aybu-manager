@@ -26,6 +26,7 @@ setup(name='aybu-manager',
           'pwgen',
           'mako',
       ),
+      paster_plugins=['pyramid'],
       entry_points = """\
       [paste.app_factory]
         main = aybu.manager.rest:main
@@ -34,7 +35,7 @@ setup(name='aybu-manager',
       [console_scripts]
         aybu_manager_worker = aybu.manager.daemon:start
       """,
-      tests_require=('nose', 'coverage'),
+      tests_require=('nose', 'coverage', 'mock'),
       setup_requires=('versiontools >= 1.8',),
       test_suite='tests',
 )
