@@ -35,7 +35,8 @@ from sqlalchemy import engine_from_config
 from sqlalchemy.orm import (sessionmaker,
                             Session,
                             relationship,
-                            backref)
+                            backref,
+                            validates)
 from sqlalchemy.orm.exc import DetachedInstanceError
 from sqlalchemy import event
 
@@ -53,6 +54,9 @@ from aybu.manager.activity_log.packages import install, uninstall
 from aybu.manager.activity_log.database import create_database, drop_database
 from aybu.manager.exc import OperationalError, NotSupported
 from . base import Base
+from . validators import (validate_hostname,
+                          validate_language,
+                          validate_password)
 
 
 __all__ = ['Instance']
@@ -115,6 +119,18 @@ class Instance(Base):
     def __repr__(self):
         return "<Instance [{self.id}] {self.domain} (enabled: {self.enabled})>"\
                 .format(self=self)
+
+    @validates('domain')
+    def validates_domain(self, key, domain):
+        return validate_hostname(domain)
+
+    @validates('default_language')
+    def validates_language(self, key, lang):
+        return validate_language(lang)
+
+    @validates('database_password')
+    def validates_database_password(self, key, pwd):
+        return validate_password(pwd)
 
     @classmethod
     def get_by_domain(cls, session, domain):

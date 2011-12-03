@@ -21,9 +21,13 @@ from sqlalchemy import (Column,
                         Integer,
                         Unicode)
 from sqlalchemy.orm import backref
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import (relationship,
+                            validates)
 
 from . base import Base
+from . validators import (validate_name,
+                          validate_version,
+                          validate_positive_int)
 
 
 class Theme(Base):
@@ -61,6 +65,19 @@ class Theme(Base):
     main_menu_levels = Column(Integer, nullable=False)
     template_levels = Column(Integer, nullable=False)
     image_full_size = Column(Integer, nullable=False)
+
+    @validates('name')
+    def validates_name(self, key, name):
+        return validate_name(name)
+
+    @validates('version')
+    def validates_version(self, key, version):
+        return validate_version(version)
+
+    @validates('banner_width', 'banner_height', 'logo_width', 'logo_height',
+               'main_menu_levels', 'template_levels', 'image_full_size')
+    def validate_sizes(self, key, size):
+        return validate_positive_int(size)
 
     def __repr__(self):
         return "<Theme {t.name} (parent: {t.parent_name}) by {t.author}>"\

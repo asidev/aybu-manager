@@ -26,8 +26,14 @@ from sqlalchemy import Unicode
 from sqlalchemy import Table
 from sqlalchemy.orm import (relationship,
                             object_session,
+                            validates,
                             joinedload)
 
+from . validators import (validate_email,
+                          validate_password,
+                          validate_web_address,
+                          validate_twitter,
+                          validate_name)
 
 __all__ = []
 
@@ -62,6 +68,22 @@ class User(Base):
     twitter = Column(Unicode(128))
 
     groups = relationship('Group', secondary=users_groups, backref='users')
+
+    @validates('email')
+    def validate_email(self, key, email):
+        return validate_email(email)
+
+    @validates('password')
+    def validate_password(self, key, password):
+        return validate_password(password)
+
+    @validates('web')
+    def validate_web(self, key, web_address):
+        return validate_web_address(web_address)
+
+    @validates('twitter')
+    def validate_twitter(self, key, twitter):
+        return validate_twitter(twitter)
 
     @classmethod
     def get(cls, session, pkey):
@@ -99,6 +121,10 @@ class Group(Base):
     __table_args__ = ({'mysql_engine': 'InnoDB'})
 
     name = Column(Unicode(32), primary_key=True)
+
+    @validates('name')
+    def validate_name(self, key, name):
+        return validate_name(name)
 
     def __repr__(self):
         return "<Group {}>".format(self.name)

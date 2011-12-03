@@ -18,17 +18,43 @@ limitations under the License.
 
 import re
 import urllib
+from distutils.version import StrictVersion
 from .. exc import ValidationError
+
+name_re = re.compile(r'^[A-Za-z_][\w]*$')
+
+# hostname_re and email_re shamelessly stolen from django.core.validators
+hostname_re = re.compile(
+r"(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|"
+r'localhost|'
+r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
+r'(?::\d+)?'
+r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+email_re = re.compile(
+r"(^[-!#$%&'*+/=?^_`{}|~0-9A-Z]+(\.[-!#$%&'*+/=?^_`{}|~0-9A-Z]+)*"
+r'|^"([\001-\010\013\014\016-\037!#-\[\]-\177]|\\[\001-011\013\014\016-\177])*"'
+r')@((?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?$)'
+r'|\[(25[0-5]|2[0-4]\d|[0-1]?\d?\d)(\.(25[0-5]|2[0-4]\d|[0-1]?\d?\d)){3}\]$',
+re.IGNORECASE)
+
+
+def validate_name(name):
+    if name_re.match(name) is None:
+        raise ValidationError("Invalid name {}".format(name))
+    return name
+
+
+def validate_password(password):
+    # nothing as of now
+    return password
 
 
 def validate_hostname(source):
     if len(source) > 255:
         raise ValidationError('hostname too long')
 
-    allowed = re.compile("(?!-)[A-Z\d-]{1,63}(?<!-)$", re.IGNORECASE)
-    if not '.' in source\
-      or source[-1:] == "."\
-      or not all(allowed.match(x) for x in source.split(".")):
+    if source.endswith('.') or \
+      not hostname_re.match(source):
         raise ValidationError("{} is not a valid hostname".format(source))
 
     return source
@@ -59,3 +85,66 @@ def validate_redirect_target_path(target_path):
         target_path = ''
 
     return unicode(target_path)
+
+
+def validate_version(version):
+    validator = StrictVersion()
+    try:
+        validator.parse(version)
+
+    except:
+        raise ValidationError('invalid version %s')
+
+    return version
+
+
+def validate_positive_int(number):
+    try:
+        number = int(number)
+        assert number > 0
+
+    except:
+        raise ValidationError('{} is not a positive integer'.format(number))
+
+    return number
+
+
+def validate_web_address(address):
+    error = 'Invalid http link {}'.format(address)
+    if not isinstance(address, basestring):
+        raise ValidationError(error)
+
+    if not address.startswith('http://'):
+        address = 'http://{}'.format(address)
+
+    parts = address.split('//')[1].split('/', 1)
+    hostname = parts[0]
+
+    try:
+        hostname = validate_hostname(hostname)
+        if len(parts) > 1:
+            target_path = validate_redirect_target_path(parts[1])
+    except:
+        raise ValidationError(error)
+
+    return 'http://{}{}'.format(hostname, target_path)
+
+
+def validate_twitter(twitter):
+    error = 'Invalid twitter name {}'.format(twitter)
+    try:
+        return "@{}".format(validate_name(twitter.split('@')[1]))
+
+    except:
+        raise ValidationError(error)
+
+
+def validate_email(email):
+    if not email_re.match(email):
+        raise ValidationError('Invalid email addres {}'.format(email))
+
+
+def validate_language(lang):
+    if not len(lang) == 2:
+        raise ValidationError('Invalid language {}'.format(lang))
+    return lang

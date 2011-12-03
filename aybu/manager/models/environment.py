@@ -18,13 +18,13 @@ limitations under the License.
 
 import collections
 import os
-import re
 from sqlalchemy import (Column, Unicode)
 from sqlalchemy import event
 from sqlalchemy.orm import validates
 from aybu.manager.activity_log.fs import mkdir
 from aybu.manager.exc import NotSupported
 from . base import Base
+from . validators import validate_name
 
 Paths = collections.namedtuple('Paths', ['root', 'configs', 'sites',
                                          'archives', 'cgroups', 'logs', 'run',
@@ -42,7 +42,6 @@ class Environment(Base):
 
     name = Column(Unicode(64), primary_key=True)
     venv_name = Column(Unicode(64))
-    name_re = re.compile(r'^[A-Za-z_][\w]*$')
 
     def _on_attr_update(self, value, oldvalue, attr, operation, error_msg):
         if not self.attribute_changed(value, oldvalue, attr):
@@ -59,11 +58,10 @@ class Environment(Base):
         self._on_attr_update(value, oldvalue, initiator,
                              'environment_change_venv',
                              "Cannot change Environment virtualenv")
+
     @validates('name')
     def validate_name(self, key, name):
-        if self.name_re.match(name) is None:
-            raise ValueError("Invalid name {} for environmet".format(name))
-        return name
+        return validate_name(name)
 
     @classmethod
     def initialize(cls, settings, section='app:aybu-manager'):
