@@ -19,36 +19,22 @@ limitations under the License.
 import ConfigParser
 import logging
 import os
-import pkg_resources
 import shutil
 import tempfile
 import unittest
 from sqlalchemy import engine_from_config
 from sqlalchemy.orm import sessionmaker
-from aybu.manager.models import Base, import_from_json
 from aybu.manager.activity_log import ActivityLog
+
+from .. import (import_data,
+                setup_metadata,
+                create_tables,
+                drop_tables)
 
 class BaseTests(unittest.TestCase):
 
     def import_data(self):
-        session = self.Session()
-        session.configure(bind=self.engine)
-        try:
-            import_from_json(session,
-                            pkg_resources.resource_stream('aybu.manager.data',
-                                                        'manager_themes.json'))
-            session.flush()
-
-        except:
-            self.log.exception("Error while importing data")
-            session.rollback()
-            raise
-
-        else:
-            session.commit()
-
-        finally:
-            session.close()
+        import_data(self.engine, self.Session)
 
     def new_session(self):
         if hasattr(self, 'session') and self.session:
@@ -71,10 +57,10 @@ class BaseTests(unittest.TestCase):
         self.config = {k: v for k,v in config.items('app:aybu-manager')}
         self.engine = engine_from_config(self.config,
                                         'sqlalchemy.')
-        Base.metadata.bind = self.engine
-        Base.metadata.create_all()
         self.Session = sessionmaker(bind=self.engine)
         self.new_session()
+        setup_metadata(self.engine)
+        create_tables()
 
         self.tempdir = tempfile.mkdtemp()
         self.config['paths.root'] = self.tempdir
@@ -92,5 +78,5 @@ class BaseTests(unittest.TestCase):
     def tearDown(self):
         self.session.close()
         self.Session.close_all()
-        Base.metadata.drop_all()
+        drop_tables()
         shutil.rmtree(self.tempdir)

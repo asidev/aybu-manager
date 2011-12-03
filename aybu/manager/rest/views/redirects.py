@@ -16,14 +16,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import re
 
 from aybu.manager.exc import ParamsError
 from aybu.manager.models import (Instance,
                                  Redirect)
+from pyramid.httpexceptions import HTTPConflict, HTTPCreated
 from pyramid.view import view_config
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.exc import IntegrityError
-from pyramid.httpexceptions import HTTPConflict, HTTPCreated
 
 
 def validate_http_code(http_code):
@@ -31,7 +32,7 @@ def validate_http_code(http_code):
         http_code = int(http_code)
         assert http_code in (301, 302, 303, 307)
 
-    except (ValueError, AssertionError) as e:
+    except (ValueError, AssertionError):
         raise ParamsError("Invalid http_code {}".format(http_code))
 
     else:
@@ -50,13 +51,13 @@ def validate_target_path(target_path):
 
 
 def validate_hostname(source):
-    if len(hostname) > 255:
+    if len(source) > 255:
         return False
-    if hostname[-1:] == ".":
-        hostname = hostname[:-1]
 
     allowed = re.compile("(?!-)[A-Z\d-]{1,63}(?<!-)$", re.IGNORECASE)
-    if not all(allowed.match(x) for x in hostname.split(".")):
+    if not '.' in source\
+      or source[-1:] == "."\
+      or not all(allowed.match(x) for x in source.split(".")):
         raise ParamsError("{} is not a valid hostname".format(source))
 
     return source
@@ -85,7 +86,7 @@ def create(context, request):
 
     http_code = validate_http_code(http_code)
     target_path = validate_target_path(target_path)
-    source = validate_source(source)
+    source = validate_hostname(source)
 
     try:
         r = Redirect(source=source, instance=instance, http_code=http_code,
