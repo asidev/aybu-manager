@@ -25,6 +25,7 @@ from pyramid.httpexceptions import HTTPConflict, HTTPCreated
 from pyramid.view import view_config
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.exc import IntegrityError
+import urllib
 
 
 def validate_http_code(http_code):
@@ -41,18 +42,21 @@ def validate_http_code(http_code):
 
 def validate_target_path(target_path):
     try:
+        target_path = urllib.quote(target_path)
         assert not target_path or target_path.startswith('/')
 
     except AssertionError:
         raise ParamsError("Target must be an absolute path")
 
-    else:
-        return target_path
+    except TypeError:
+        target_path = ''
+
+    return target_path
 
 
 def validate_hostname(source):
     if len(source) > 255:
-        return False
+        raise ParamsError('hostname too long')
 
     allowed = re.compile("(?!-)[A-Z\d-]{1,63}(?<!-)$", re.IGNORECASE)
     if not '.' in source\
@@ -73,29 +77,29 @@ def create(context, request):
     try:
         source = request.params['source']
         instance = Instance.get_by_domain(request.db_session,
-                                          request.params['destination'])
+                                        request.params['destination'])
         http_code = request.params.get('http_code', 301)
         target_path = request.params.get('target_path', '')
+
+        http_code = validate_http_code(http_code)
+        target_path = validate_target_path(target_path)
+        source = validate_hostname(source)
+
+        r = Redirect(source=source, instance=instance, http_code=http_code,
+                target_path=target_path)
+        request.db_session.add(r)
+        request.db_session.flush()
 
     except KeyError as e:
         raise ParamsError(e)
 
     except NoResultFound:
         raise ParamsError('No instance for domain {}'\
-                          .format(request.params['destination']))
-
-    http_code = validate_http_code(http_code)
-    target_path = validate_target_path(target_path)
-    source = validate_hostname(source)
-
-    try:
-        r = Redirect(source=source, instance=instance, http_code=http_code,
-                 target_path=target_path)
-        request.db_session.add(r)
-        request.db_session.flush()
+                        .format(request.params['destination']))
 
     except IntegrityError:
         error = 'redirect for source {} already exists'.format(source)
+        request.db_session.rollback()
         raise HTTPConflict(headers={'X-Request-Error': error})
 
     else:
@@ -122,8 +126,8 @@ def update(context, request):
 
     params = dict()
     redirect = Redirect.get(request.db_session, request.matchdict['source'])
+
     specs = (
-       ('source', validate_hostname, []),
        ('destination', Instance.get_by_domain, [request.db_session]),
        ('http_code', validate_http_code, []),
        ('target_path', validate_target_path, [])
@@ -132,7 +136,7 @@ def update(context, request):
         for attr, validate_fun, fun_args in specs:
             if attr in request.params:
                 fun_args.append(request.params[attr])
-                params[request.params[attr]] = validate_fun(*fun_args)
+                params[attr] = validate_fun(*fun_args)
 
     except NoResultFound:
         raise ParamsError("No instance for domain {}"\
@@ -148,13 +152,10 @@ def update(context, request):
         request.db_session.flush()
 
     except IntegrityError as e:
+        request.db_session.rollback()
         raise HTTPConflict(headers={'X-Request-Error': str(e)})
 
     else:
         request.db_session.commit()
 
     return redirect.to_dict()
-
-
-
-
