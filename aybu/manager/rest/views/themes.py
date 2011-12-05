@@ -22,6 +22,7 @@ from aybu.manager.models import (Theme,
                                  User)
 from pyramid.view import view_config
 from pyramid.httpexceptions import (HTTPCreated,
+                                    HTTPNoContent,
                                     HTTPConflict,
                                     HTTPPreconditionFailed)
 from sqlalchemy.exc import IntegrityError
@@ -110,12 +111,16 @@ def delete(context, request):
         name = request.matchdict['theme']
         theme = Theme.get(request.db_session, name)
         theme.delete()
-        request.db_session.commit()
+        request.db_session.flush()
 
     except IntegrityError:
         Theme.log.exception('Error deleting theme {}'.format(name))
+        request.db_session.rollback()
         raise HTTPPreconditionFailed(
             headers={'X-Request-Error': 'Theme {} is in use'.format(name)})
+    else:
+        request.db_session.commit()
+        return HTTPNoContent()
 
 
 @view_config(route_name='theme', request_method='PUT')
