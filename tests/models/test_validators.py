@@ -111,7 +111,15 @@ class TestValidators(unittest.TestCase):
             self.assertEqual(tw, validators.validate_twitter(tw))
 
     def test_validate_email(self):
-        pass
+        for email in ('mail@example.com.', 'mail@example/.com',
+                      '@example.com'):
+            self.assertRaises(ValidationError, validators.validate_email,
+                              email)
+
+        for email in ('mail@example.com', 'mail&mail@example.com',
+                      'mail+mail@example.com'):
+            self.assertEqual(email, validators.validate_email(email))
+
 
     def test_validate_language(self):
         for lang in ('it_IT', 'ita', '__', 'i-'):

@@ -143,8 +143,9 @@ def validate_twitter(twitter):
 
 
 def validate_email(email):
-    if not email_re.match(email):
+    if not email_re.match(email) or email.endswith('.'):
         raise ValidationError('Invalid email addres {}'.format(email))
+    return email
 
 
 def validate_language(lang):
