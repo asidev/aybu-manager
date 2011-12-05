@@ -18,6 +18,7 @@ limitations under the License.
 
 import os
 
+from aybu.manager.exc import ValidationError
 from aybu.manager.models import Environment
 from . test_base import BaseTests
 
@@ -26,7 +27,7 @@ class EnvironmentTests(BaseTests):
 
     def test_create(self):
         self.config = {'app:aybu-manager': self.config}
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValidationError):
             env = Environment.create(self.session, 'test-env',
                                         config=self.config)
         env = Environment.create(self.session, 'testenv', config=self.config)
