@@ -74,13 +74,13 @@ def create(context, request):
 
 @view_config(route_name='user', request_method=('HEAD', 'GET'))
 def info(context, request):
-    return User.get(request.db_session, request.matchdict['user']).to_dict()
+    return User.get(request.db_session, request.matchdict['email']).to_dict()
 
 
 @view_config(route_name='user', request_method='DELETE')
 def delete(context, request):
     try:
-        email = request.matchdict['user']
+        email = request.matchdict['email']
         user = User.get(request.db_session, email)
         user.delete()
         request.db_session.flush()
@@ -98,7 +98,7 @@ def delete(context, request):
 
 @view_config(route_name='user', request_method='PUT')
 def update(context, request):
-    email = request.matchdict['user']
+    email = request.matchdict['email']
     user = User.get(request.db_session, email)
     params = {}
 

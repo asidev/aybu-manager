@@ -101,14 +101,14 @@ def create_no_upload(context, request):
 @view_config(route_name='theme', request_method=('HEAD', 'GET'))
 def info(context, request):
     return Theme.get(request.db_session,
-                     request.matchdict['theme']).to_dict()
+                     request.matchdict['name']).to_dict()
 
 
 @view_config(route_name='theme', request_method='DELETE')
 def delete(context, request):
 
     try:
-        name = request.matchdict['theme']
+        name = request.matchdict['name']
         theme = Theme.get(request.db_session, name)
         theme.delete()
         request.db_session.flush()
@@ -127,7 +127,7 @@ def delete(context, request):
 def update(context, request):
 
     params = dict()
-    theme = Theme.get(request.db_session, request.matchdict(['theme']))
+    theme = Theme.get(request.db_session, request.matchdict(['name']))
 
     try:
         for attr in ('owner', 'author'):
