@@ -17,30 +17,119 @@ limitations under the License.
 """
 
 
+from aybu.manager.exc import ParamsError
+from aybu.manager.models import (User,
+                                 Group)
+from sqlalchemy.exc import IntegrityError
+
+from pyramid.httpexceptions import (HTTPCreated,
+                                    HTTPNoContent,
+                                    HTTPConflict,
+                                    HTTPPreconditionFailed)
 from pyramid.view import view_config
 
 
 @view_config(route_name='users', request_method='GET')
 def list(context, request):
-    raise NotImplementedError
+    return {u.email: u.to_dict() for u in User.all(request.db_session)}
 
 
 @view_config(route_name='users', request_method='POST')
 def create(context, request):
-    raise NotImplementedError
+    try:
+        email = request.params['email']
+        password = request.params['password']
+        name = request.params['name']
+        surname = request.params['surname']
+        organization = request.params.get('organization')
+        web = request.params.get('web')
+        twitter = request.params.get('twitter')
+        groups = Group.search(
+            filters=(Group.name.in_(request.params.getall('groups')), )
+        )
+        if len(groups) != len(request.params.getall('groups')):
+            raise ParamsError('Invalid groups {}'\
+                              .format(request.params.getall('groups')))
+
+        u = User(email=email, password=password, name=name,
+                 surname=surname, organization=organization,
+                 web=web, twitter=twitter, groups=groups)
+        request.db_session.add(u)
+        request.db_session.flush()
+
+
+    except KeyError as e:
+        raise ParamsError(e)
+
+    except IntegrityError as e:
+        error = 'User with email {} already exists'\
+                .format(request.params['email'])
+        request.db_session.rollback()
+        raise HTTPConflict(headers={'X-Request-Error': error})
+
+    else:
+        request.db_session.commit()
+        return HTTPCreated()
 
 
 @view_config(route_name='user', request_method=('HEAD', 'GET'))
 def info(context, request):
-    raise NotImplementedError
+    return User.get(request.db_session, request.matchdict['user']).to_dict()
 
 
 @view_config(route_name='user', request_method='DELETE')
-def remove(context, request):
-    raise NotImplementedError
+def delete(context, request):
+    try:
+        email = request.matchdict['user']
+        user = User.get(request.db_session, email)
+        user.delete()
+        request.db_session.flush()
+
+    except IntegrityError as e:
+        User.log.exception('Error deleting user {}'.format(email))
+        request.db_session.rollback()
+        raise HTTPPreconditionFailed(
+            headers={'X-Request-Error': 'Cannot delete user {}:{}'\
+                     .format(email, e)})
+    else:
+        request.db_session.commit()
+        return HTTPNoContent()
 
 
 @view_config(route_name='user', request_method='PUT')
 def update(context, request):
-    raise NotImplementedError
+    email = request.matchdict['user']
+    user = User.get(request.db_session, email)
+    params = {}
 
+    for attr in ('email', 'password', 'name', 'surname', 'organization',
+                    'web', 'twitter'):
+        value = request.params.get(attr)
+        if value:
+            params[attr] = value
+
+    if 'groups' in request.params:
+        groups = request.params.getall('groups')
+        params['groups'] = User.search(
+            filters=(Group.name.in_(groups), )
+        )
+        if len(groups) != len(params['groups']):
+            raise ParamsError('Invalid groups {}'.format(groups))
+
+    if not params:
+        raise ParamsError('Missing update fields')
+
+    try:
+        for param in params:
+            setattr(user, param, params[param])
+
+        request.db_session.flush()
+
+    except IntegrityError:
+        error = 'An user with email {} already exists'.format(params['email'])
+        raise HTTPPreconditionFailed(eaders={'X-Request-Error': error})
+
+    else:
+        request.db_session.commit()
+
+    return user.to_dict()
