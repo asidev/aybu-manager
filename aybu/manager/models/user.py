@@ -126,6 +126,10 @@ class Group(Base):
     def validate_name(self, key, name):
         return validate_name(name)
 
+    def to_dict(self):
+        return {'name': self.name,
+                'users': [u.email for u in self.users]}
+
     def __repr__(self):
         return "<Group {}>".format(self.name)
 
