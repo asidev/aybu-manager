@@ -100,6 +100,8 @@ class TestValidators(unittest.TestCase):
             self.assertEqual("http://" + addr,
                              validators.validate_web_address(addr))
 
+        self.assertEqual('', validators.validate_web_address(''))
+
     def test_validate_twitter(self):
         for tw in ('#hastag', 'name', '99name'):
             self.assertRaises(ValidationError, validators.validate_twitter, tw)

@@ -110,6 +110,9 @@ def validate_positive_int(number):
 
 
 def validate_web_address(address):
+    if not address:
+        return ''
+
     error = 'Invalid http link {}'.format(address)
     if not isinstance(address, basestring):
         raise ValidationError(error)
