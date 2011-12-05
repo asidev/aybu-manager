@@ -80,8 +80,12 @@ def create_no_upload(context, request):
         request.db_session.add(t)
         request.db_session.flush()
 
-    except (KeyError, NoResultFound, ImportError) as e:
+    except (KeyError, NoResultFound) as e:
         raise ParamsError(e)
+
+    except ImportError as e:
+        error = 'Theme {} does not exists in aybu.themes package'.format(name)
+        raise HTTPPreconditionFailed(headers={'X-Request-Error': error})
 
     except IntegrityError as e:
         error = 'Theme with name {} already exists'.format(name)
@@ -151,7 +155,8 @@ def update(context, request):
         raise ParamsError('Missing update fields')
 
     try:
-        if 'name' in params:
+        if 'name' in params and params['name'] != theme.name:
+            raise NotImplementedError('Changing theme name is not supported')
             __import__('aybu.themes.{}'.format(params['name']))
 
         for param in params:
@@ -160,7 +165,9 @@ def update(context, request):
         request.db_session.flush()
 
     except ImportError as e:
-        raise ParamsError(e)
+        error = 'Theme {} does not exists in aybu.themes package'\
+                .format(params['name'])
+        raise HTTPPreconditionFailed(headers={'X-Request-Error': error})
 
     except IntegrityError as e:
         request.db_session.rollback()
