@@ -57,4 +57,66 @@ class TestValidators(unittest.TestCase):
             self.assertEqual(hname, validators.validate_hostname(hname))
 
 
+    def test_validate_name(self):
+        for name in ('èlker', 'test-name', '9name'):
+            self.assertRaises(ValidationError, validators.validate_name, name)
 
+        for name in ('test', 'test_name', 'test_9_name'):
+            self.assertEqual(name, validators.validate_name(name))
+
+    def test_validate_password(self):
+        for psw in ('password', 'l666238%% `£àà%%%$©»»', '  9 l3 00 '):
+            self.assertEqual(psw, validators.validate_password(psw))
+
+    def test_validate_version(self):
+        for version in ('1', '2.7.2.2', '1.5.a4', '1.5p4', '1.3c4'):
+            self.assertRaises(ValidationError, validators.validate_version,
+                              version)
+        for version in ('0.4', '0.4.1', '0.5a2', '0.5b3', '0.9.12', '1.0.4b3',
+                        '1.0.2a1'):
+            self.assertEqual(version, validators.validate_version(version))
+
+    def test_validate_positive_int(self):
+        for i in ('-1', 'a', 0):
+            self.assertRaises(ValidationError,
+                              validators.validate_positive_int,
+                              i)
+
+        for i in ('1', 1, 10):
+            self.assertEqual(int(i), validators.validate_positive_int(i))
+
+    def test_validate_web_address(self):
+        for addr in (3, 'www.a&b.com/test', 'www.a//b.com/it/index'
+                     'www.example.com./it/index'):
+            self.assertRaises(ValidationError, validators.validate_web_address,
+                              addr)
+
+        for addr in ('http://www.example.com', 'http://www.example.com/',
+                     'http://www.example.com/it'):
+            self.assertEqual(addr, validators.validate_web_address(addr))
+
+        for addr in ('www.example.com', 'www.example.com/',
+                     'www.example.com/it'):
+            self.assertEqual("http://" + addr,
+                             validators.validate_web_address(addr))
+
+    def test_validate_twitter(self):
+        for tw in ('#hastag', 'name', '99name'):
+            self.assertRaises(ValidationError, validators.validate_twitter, tw)
+
+        for tw in ('', None, False):
+            self.assertEqual('', validators.validate_twitter(tw))
+
+        for tw in ('@gbagnoli', '@asidev'):
+            self.assertEqual(tw, validators.validate_twitter(tw))
+
+    def test_validate_email(self):
+        pass
+
+    def test_validate_language(self):
+        for lang in ('it_IT', 'ita', '__', 'i-'):
+            self.assertRaises(ValidationError, validators.validate_language,
+                              lang)
+
+        for lang in ('it', 'nn', 'ex', 'EN', 'IT'):
+            self.assertEqual(lang.lower(), validators.validate_language(lang))

@@ -119,11 +119,12 @@ def validate_web_address(address):
 
     parts = address.split('//')[1].split('/', 1)
     hostname = parts[0]
+    target_path = ''
 
     try:
         hostname = validate_hostname(hostname)
         if len(parts) > 1:
-            target_path = validate_redirect_target_path(parts[1])
+            target_path = validate_redirect_target_path('/' + parts[1])
     except:
         raise ValidationError(error)
 
@@ -133,6 +134,8 @@ def validate_web_address(address):
 def validate_twitter(twitter):
     error = 'Invalid twitter name {}'.format(twitter)
     try:
+        if not twitter:
+            return ''
         return "@{}".format(validate_name(twitter.split('@')[1]))
 
     except:
@@ -145,6 +148,9 @@ def validate_email(email):
 
 
 def validate_language(lang):
-    if not len(lang) == 2:
+    try:
+        assert re.match("^[a-zA-Z][\w]$", lang)
+        return lang.lower()
+
+    except:
         raise ValidationError('Invalid language {}'.format(lang))
-    return lang
