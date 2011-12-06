@@ -44,7 +44,7 @@ def create(context, request):
         request.db_session.flush()
 
     except KeyError as e:
-        raise ParamsError(e)
+        raise ParamsError('Missing parameter: {}'.format(e))
 
     except IntegrityError as e:
         error = 'Group {} already exists'.format(name)
