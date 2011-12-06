@@ -44,12 +44,14 @@ def create(context, request):
         organization = request.params.get('organization')
         web = request.params.get('web')
         twitter = request.params.get('twitter')
-        groups = Group.search(
-            filters=(Group.name.in_(request.params.getall('groups')), )
+        request_groups = request.params.getall('groups')
+        groups = Group.search(request.db_session,
+            filters=(Group.name.in_(request_groups), )
         )
-        if len(groups) != len(request.params.getall('groups')):
-            raise ParamsError('Invalid groups {}'\
-                              .format(request.params.getall('groups')))
+        if len(groups) != len(request_groups):
+            raise HTTPPreconditionFailed(
+                headers={'X-Request-Error': 'Invalid groups "{}"'\
+                                            .format(', '.join(request_groups))})
 
         u = User(email=email, password=password, name=name,
                  surname=surname, organization=organization,
@@ -111,10 +113,13 @@ def update(context, request):
     if 'groups' in request.params:
         groups = request.params.getall('groups')
         params['groups'] = User.search(
+            request.db_session,
             filters=(Group.name.in_(groups), )
         )
         if len(groups) != len(params['groups']):
-            raise ParamsError('Invalid groups {}'.format(groups))
+            raise HTTPPreconditionFailed(
+                headers={'X-Request-Error': 'Invalid groups {}'\
+                                            .format(','.join(groups))})
 
     if not params:
         raise ParamsError('Missing update fields')
