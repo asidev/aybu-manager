@@ -96,9 +96,9 @@ def upgrade():
 
 def downgrade():
     op.drop_table(u'redirects')
-    op.drop_table(u'users')
     op.drop_table(u'users_groups')
-    op.drop_table(u'environments')
-    op.drop_table(u'themes')
-    op.drop_table(u'instances')
     op.drop_table(u'groups')
+    op.drop_table(u'instances')
+    op.drop_table(u'themes')
+    op.drop_table(u'users')
+    op.drop_table(u'environments')
