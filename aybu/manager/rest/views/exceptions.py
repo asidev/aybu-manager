@@ -39,7 +39,7 @@ def generate_empty_response(context, request, status, add_headers={}):
     if hasattr(context, 'headers') and context.headers:
         response.headers = context.headers
     response.headers.update({'Content-Length': 0,
-                             'Content-Type': 'application/json'})
+                             'Content-Type': 'application/json; charset=UTF-8'})
     response.headers.update(add_headers)
     return response
 
