@@ -1,3 +1,7 @@
+[DEFAULT]
+sqlalchemy_url = sqlite:/// 
+sqlalchemy_echo = false
+
 [app:aybu-manager]
 use = egg:aybu-manager
 
@@ -11,8 +15,8 @@ reload_templates = false
 reload_assets = false
 debug = false
 
-sqlalchemy.url = sqlite:///
-sqlalchemy.echo = false
+sqlalchemy.url = %(sqlalchemy_url)s
+sqlalchemy.echo = %(sqlalchemy_echo)s
 
 authentication.realm = 'Aybu Manager'
 
@@ -59,8 +63,13 @@ use = egg:Paste#http
 host = 0.0.0.0
 port = 6543
 
+[alembic]
+script_location = %(here)s/migrations
+sqlalchemy.url = %(sqlalchemy_url)s
+sqlalchemy.echo = %(sqlalchemy_echo)s
+
 [loggers]
-keys = root, aybu, exc_logger
+keys = root, aybu, exc_logger, alembic, sqlalchemy
 
 [handlers]
 keys = console, exc_handler
@@ -76,6 +85,16 @@ handlers = console
 level = WARN
 handlers =
 qualname = aybu
+
+[logger_sqlalchemy]
+level = WARN
+handlers = console
+qualname = sqlalchemy.engine
+
+[logger_alembic]
+level = INFO
+handlers =
+qualname = alembic
 
 [logger_exc_logger]
 level = ERROR
