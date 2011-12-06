@@ -24,7 +24,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from pyramid.httpexceptions import HTTPConflict
 
 
-@view_config(route_name='environments', request_method='GET')
+@view_config(route_name='environments', request_method=('HEAD', 'GET'))
 def list(context, request):
     return {e.name: e.to_dict() for e in Environment.all(request.db_session)}
 
@@ -49,7 +49,7 @@ def create(context, request):
     else:
         # found instance, give conflict
         error = 'environment {} already exists'.format(name)
-        return HTTPConflict(headers={'X-Request-Error': error})
+        raise HTTPConflict(headers={'X-Request-Error': error})
 
 
 @view_config(route_name='environment', request_method=('HEAD', 'GET'))

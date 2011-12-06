@@ -26,7 +26,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.exc import IntegrityError
 
 
-@view_config(route_name='redirects', request_method='GET')
+@view_config(route_name='redirects', request_method=('HEAD', 'GET'))
 def list(context, request):
     return {r.source: r.to_dict() for r in Redirect.all(request.db_session)}
 
@@ -59,7 +59,7 @@ def create(context, request):
 
     else:
         request.db_session.commit()
-        return HTTPCreated()
+        raise HTTPCreated()
 
 
 @view_config(route_name='redirect', request_method=('HEAD', 'GET'))

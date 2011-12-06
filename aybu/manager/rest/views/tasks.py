@@ -28,7 +28,7 @@ def get_task(request):
     return Task.retrieve(uuid=request.matchdict['uuid'],
                     redis_client=request.redis)
 
-@view_config(route_name='tasks', request_method='GET')
+@view_config(route_name='tasks', request_method=('HEAD', 'GET'))
 def list(context, request):
     return {task.uuid: task.to_dict() for task in
             Task.all(redis_client=request.redis)}
@@ -38,7 +38,7 @@ def list(context, request):
 def flush(context, request):
     for task in Task.all(redis_client=request.redis):
         task.remove()
-    return HTTPNoContent()
+    raise HTTPNoContent()
 
 
 @view_config(route_name='task', request_method=('HEAD', 'GET'))
@@ -60,4 +60,4 @@ def get_logs(context, request):
 @view_config(route_name='tasklogs', request_method='DELETE')
 def flush_logs(context, request):
     get_task(request).flush_logs()
-    return HTTPNoContent()
+    raise HTTPNoContent()

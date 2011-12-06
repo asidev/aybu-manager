@@ -27,7 +27,7 @@ from sqlalchemy.orm.exc import NoResultFound
 log = logging.getLogger(__name__)
 
 
-@view_config(route_name='instances', request_method='GET')
+@view_config(route_name='instances', request_method=('HEAD', 'GET'))
 def list(context, request):
     return {i.domain: i.to_dict() for i in Instance.all(request.db_session)}
 
@@ -60,7 +60,7 @@ def deploy(context, request):
     else:
         # found instance, give conflict
         error = 'instance for domain {} already exists'.format(params['domain'])
-        return HTTPConflict(headers={'X-Request-Error': error})
+        raise HTTPConflict(headers={'X-Request-Error': error})
 
 
 @view_config(route_name='instance', request_method=('HEAD', 'GET'))

@@ -28,7 +28,7 @@ from pyramid.httpexceptions import (HTTPCreated,
 from pyramid.view import view_config
 
 
-@view_config(route_name='groups', request_method='GET')
+@view_config(route_name='groups', request_method=('HEAD', 'GET'))
 def list(context, request):
     return {group.name: group.to_dict() for group in
             Group.all(request.db_session)}
@@ -52,7 +52,7 @@ def create(context, request):
 
     else:
         request.db_session.commit()
-        return HTTPCreated()
+        raise HTTPCreated()
 
 
 @view_config(route_name='group', request_method=('GET', 'HEAD'))
@@ -78,7 +78,7 @@ def delete(context, request):
 
     else:
         request.db_session.commit()
-        return HTTPNoContent()
+        raise HTTPNoContent()
 
 
 @view_config(route_name='group', request_method='PUT')

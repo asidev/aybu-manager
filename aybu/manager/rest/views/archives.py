@@ -20,7 +20,7 @@ limitations under the License.
 from pyramid.view import view_config
 
 
-@view_config(route_name='archives', request_method='GET')
+@view_config(route_name='archives', request_method=('HEAD', 'GET'))
 def list(context, request):
     raise NotImplementedError
 

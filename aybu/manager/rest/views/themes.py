@@ -29,7 +29,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 
 
-@view_config(route_name='themes', request_method='GET')
+@view_config(route_name='themes', request_method=('HEAD', 'GET'))
 def list(context, request):
     return {t.name: t.to_dict() for t in Theme.all(request.db_session)}
 
@@ -95,7 +95,7 @@ def create_no_upload(context, request):
 
     else:
         request.db_session.commit()
-        return HTTPCreated()
+        raise HTTPCreated()
 
 
 @view_config(route_name='theme', request_method=('HEAD', 'GET'))
@@ -120,7 +120,7 @@ def delete(context, request):
             headers={'X-Request-Error': 'Theme {} is in use'.format(name)})
     else:
         request.db_session.commit()
-        return HTTPNoContent()
+        raise HTTPNoContent()
 
 
 @view_config(route_name='theme', request_method='PUT')

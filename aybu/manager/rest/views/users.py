@@ -29,7 +29,7 @@ from pyramid.httpexceptions import (HTTPCreated,
 from pyramid.view import view_config
 
 
-@view_config(route_name='users', request_method='GET')
+@view_config(route_name='users', request_method=('HEAD', 'GET'))
 def list(context, request):
     return {u.email: u.to_dict() for u in User.all(request.db_session)}
 
@@ -71,7 +71,7 @@ def create(context, request):
 
     else:
         request.db_session.commit()
-        return HTTPCreated()
+        raise HTTPCreated()
 
 
 @view_config(route_name='user', request_method=('HEAD', 'GET'))
@@ -95,7 +95,7 @@ def delete(context, request):
                      .format(email, e)})
     else:
         request.db_session.commit()
-        return HTTPNoContent()
+        raise HTTPNoContent()
 
 
 @view_config(route_name='user', request_method='PUT')
@@ -132,7 +132,7 @@ def update(context, request):
 
     except IntegrityError:
         error = 'An user with email {} already exists'.format(params['email'])
-        raise HTTPPreconditionFailed(eaders={'X-Request-Error': error})
+        raise HTTPPreconditionFailed(headers={'X-Request-Error': error})
 
     else:
         request.db_session.commit()
