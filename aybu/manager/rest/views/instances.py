@@ -85,7 +85,7 @@ def update(context, request):
     instance = Instance.get_by_domain(request.db_session, domain)
     action = request.params['action']
     if action in ('enable', 'disable', 'reload', 'kill', 'sentence',
-                  'flush_cache'):
+                  'flush_cache', 'archive'):
         taskname = "instance.{}".format(action)
 
     elif request.method == 'DELETE':
