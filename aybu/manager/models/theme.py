@@ -32,7 +32,7 @@ from . validators import (validate_name,
 
 class Theme(Base):
 
-    __tablename__ = 'themes'
+    __tablename__ = u'themes'
     __table_args__ = ({'mysql_engine': 'InnoDB'})
 
     name = Column(Unicode(128), primary_key=True)

@@ -40,7 +40,7 @@ __all__ = []
 log = getLogger(__name__)
 
 
-users_groups = Table('users_groups',
+users_groups = Table(u'users_groups',
                      Base.metadata,
                      Column('users_email',
                             Unicode(255),
@@ -56,8 +56,8 @@ users_groups = Table('users_groups',
 
 class User(Base):
 
-    __tablename__ = 'users'
-    __table_args__ = ({'mysql_engine': 'InnoDB'})
+    __tablename__ = u'users'
+    __table_args__ = ({'mysql_engine': u'InnoDB'})
 
     email = Column(Unicode(255), primary_key=True)
     password = Column(Crypt(), nullable=False)
@@ -117,7 +117,7 @@ class User(Base):
 
 class Group(Base):
 
-    __tablename__ = 'groups'
+    __tablename__ = u'groups'
     __table_args__ = ({'mysql_engine': 'InnoDB'})
 
     name = Column(Unicode(32), primary_key=True)
