@@ -59,7 +59,7 @@ def info(context, request):
 
 
 @view_config(route_name='environment', request_method='DELETE')
-def remove(context, request):
+def delete(context, request):
     raise NotImplementedError
 
 
