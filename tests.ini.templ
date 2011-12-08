@@ -1,0 +1,124 @@
+[DEFAULT]
+sqlalchemy_url = sqlite:/// 
+sqlalchemy_echo = false
+
+[app:aybu-manager]
+use = egg:aybu-manager
+
+# development and debugging
+# SET EVERYTHING TO FALSE IN PRODUCTION
+debug_authorization = false
+debug_notfound = false
+debug_routematch = false
+debug_templates = false
+reload_templates = false
+reload_assets = false
+debug = false
+
+sqlalchemy.url = %(sqlalchemy_url)s
+sqlalchemy.echo = %(sqlalchemy_echo)s
+
+authentication.realm = 'Aybu Manager'
+
+# templating
+mako.strict_undefined = true
+# mako.module_directory = --> if omitted then memory
+
+instance.database.prefix = aybu__
+instance.database.type = mysql
+# comment out for default driver
+instance.database.driver = oursql
+instance.database.port = 3306
+
+os.user = asidev_www
+os.group = asidev
+os.smtp_host = localhost
+os.smtp_port = 25
+
+paths.root = /srv/www/aybu/
+paths.configs = %(paths.root)s/configs
+paths.sites = %(paths.root)s/sites
+paths.archives = %(paths.root)s/archives
+paths.cgroups = /sys/fs/cgroups/sites/aybu/
+paths.logs = /var/logs/sites/
+paths.run = /var/run/aybu/
+paths.virtualenv = /srv/.virtualenvs/aybu
+
+zmq.queue_addr = tcp://127.0.0.1:8997
+zmq.daemon_addr = tcp://127.0.0.1:8998
+zmq.status_pub_addr = tcp://127.0.0.1:8999
+zmq.timeout = 1000
+zmq.result_ttl = 43200
+redis.host = localhost
+redis.port = 6379
+
+
+[app:main]
+use = aybu-manager
+
+[server:main]
+use = egg:Paste#http
+host = 0.0.0.0
+port = 6543
+
+[alembic]
+script_location = %(here)s/migrations
+sqlalchemy.url = %(sqlalchemy_url)s
+sqlalchemy.echo = %(sqlalchemy_echo)s
+
+[loggers]
+keys = root, aybu, exc_logger, alembic, sqlalchemy
+
+[handlers]
+keys = console, exc_handler
+
+[formatters]
+keys = generic, exc_formatter
+
+[logger_root]
+level = WARN
+handlers = console
+
+[logger_aybu]
+level = WARN
+handlers =
+qualname = aybu
+
+[logger_sqlalchemy]
+level = WARN
+handlers = console
+qualname = sqlalchemy.engine
+
+[logger_alembic]
+level = INFO
+handlers =
+qualname = alembic
+
+[logger_exc_logger]
+level = ERROR
+handlers = exc_handler
+qualname = exc_logger
+
+[handler_console]
+class = StreamHandler
+args = (sys.stderr,)
+level = NOTSET
+formatter = generic
+
+[handler_exc_handler]
+class = NullHandler
+args = ()
+# to log exceptions via email:
+# class = handlers.SMTPHandler
+# args = (('localhost', 25), 'from@example.com', ['to@example.com'], 'myapp Exception')
+# to log exceptions on file:
+# class = FileHandler
+# args = ('%(here)s/exception.log',)
+level = ERROR
+formatter = exc_formatter
+
+[formatter_generic]
+format = %(asctime)s %(levelname)-5.5s [%(name)s][%(threadName)s] %(message)s
+
+[formatter_exc_formatter]
+format = %(asctime)s %(message)s

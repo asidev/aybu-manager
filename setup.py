@@ -35,6 +35,8 @@ setup(name='aybu-manager',
         uwsgi = pasteuwsgi.serve:ServeCommand
       [console_scripts]
         aybu_manager_worker = aybu.manager.daemon:start
+      [nose.plugins.0.10]
+        aybuconfig = aybu.core.testing:ReadAybuConfigPlugin
       """,
       tests_require=('nose', 'coverage', 'mock'),
       setup_requires=('versiontools >= 1.8',),

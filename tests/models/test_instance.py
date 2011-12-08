@@ -20,16 +20,11 @@ from aybu.manager.models import (Environment,
                                  Instance,
                                  Theme,
                                  User)
-from . test_base import BaseTests
+from . test_base import ManagerModelsTestsBase
 from aybu.manager.exc import OperationalError, NotSupported
 import os
-import shlex
-import subprocess
-import time
-import urllib2
 
-
-class InstanceTests(BaseTests):
+class InstanceTests(ManagerModelsTestsBase):
 
     def test_deploy(self):
 

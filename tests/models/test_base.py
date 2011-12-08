@@ -16,22 +16,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import ConfigParser
-import logging
 import os
 import shutil
 import tempfile
-import unittest
-from sqlalchemy import engine_from_config
 from sqlalchemy.orm import sessionmaker
 from aybu.manager.activity_log import ActivityLog
+from aybu.core.testing import TestsBase
 
 from .. import (import_data,
                 setup_metadata,
                 create_tables,
                 drop_tables)
 
-class BaseTests(unittest.TestCase):
+class ManagerModelsTestsBase(TestsBase):
 
     def import_data(self):
         import_data(self.engine, self.Session)
@@ -44,19 +41,17 @@ class BaseTests(unittest.TestCase):
         ActivityLog.attach_to(self.session)
         return self.session
 
-    def setUp(self):
-        self.log = logging.getLogger("{}.{}".format(self.__class__.__module__,
-                                                    self.__class__.__name__))
-        ini = os.path.realpath(
-                os.path.join(os.path.dirname(__file__), "..", "..",
-                             'tests.ini'))
+    @classmethod
+    def create_tables(cls, drop=False):
+        """ avoid creating core tables """
+        pass
 
-        config = ConfigParser.ConfigParser()
-        with open(ini) as f:
-            config.readfp(f)
-        self.config = {k: v for k,v in config.items('app:aybu-manager')}
-        self.engine = engine_from_config(self.config,
-                                        'sqlalchemy.')
+    @classmethod
+    def drop_tables(cls):
+        """ avoid dropping core tables """
+        pass
+
+    def setUp(self):
         self.Session = sessionmaker(bind=self.engine)
         self.new_session()
         setup_metadata(self.engine)

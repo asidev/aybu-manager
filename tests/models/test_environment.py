@@ -20,10 +20,10 @@ import os
 
 from aybu.manager.exc import ValidationError
 from aybu.manager.models import Environment
-from . test_base import BaseTests
+from . test_base import ManagerModelsTestsBase
 
 
-class EnvironmentTests(BaseTests):
+class EnvironmentTests(ManagerModelsTestsBase):
 
     def test_create(self):
         self.config = {'app:aybu-manager': self.config}

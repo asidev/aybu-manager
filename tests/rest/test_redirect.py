@@ -19,7 +19,6 @@ limitations under the License.
 from aybu.manager.exc import ParamsError
 from pyramid import testing
 from pyramid.httpexceptions import HTTPCreated, HTTPConflict
-from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.exc import IntegrityError
 import mock
 import unittest
@@ -54,7 +53,7 @@ class TestRedirectsViews(unittest.TestCase):
 
         req.params['source'] = 'source.example.com'
         req.params['destination'] = 'www.example.com'
-        self.assertTrue(isinstance(create(ctx, req), HTTPCreated))
+        self.assertRaises(HTTPCreated, create, ctx, req)
         self.assertTrue(req.db_session.commit.called)
 
         imock.side_effect = IntegrityError(1,2,3,4)
