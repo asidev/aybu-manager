@@ -32,6 +32,7 @@ from sqlalchemy import (UniqueConstraint,
                         Integer,
                         Unicode)
 from sqlalchemy import engine_from_config
+from sqlalchemy.sql.expression import not_
 from sqlalchemy.orm import (sessionmaker,
                             Session,
                             relationship,
@@ -357,7 +358,15 @@ class Instance(Base):
                 setting = AybuCoreSetting.get(session, "theme_name")
                 setting.value = self.theme.name
 
-                session.query(AybuCoreTheme).delete(synchronize_session='fetch')
+                theme = session.query(AybuCoreTheme)\
+                        .filter(not_(AybuCoreTheme.children.any())).one()
+                while theme:
+                    parent = theme.parent
+                    self.log.debug("removing theme: %s", theme.name)
+                    theme.delete()
+                    theme = parent
+                session.flush()
+
                 themes = []
                 t = AybuCoreTheme(name=self.theme.name,
                           parent_name=self.theme.parent_name)
