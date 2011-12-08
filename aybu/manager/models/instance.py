@@ -47,7 +47,7 @@ from aybu.core.models import Base as AybuCoreBase
 from aybu.core.models import Setting as AybuCoreSetting
 from aybu.core.models import Theme as AybuCoreTheme
 from aybu.core.models import User as AybuCoreUser
-from aybu.controlpanel.proxy import Proxy  # FIXME: move to aybu.core
+from aybu.core.proxy import Proxy
 from aybu.manager.activity_log.template import render
 from aybu.manager.activity_log.fs import mkdir, create, rm, rmtree
 from aybu.manager.activity_log.packages import install, uninstall
