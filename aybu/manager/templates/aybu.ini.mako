@@ -35,6 +35,8 @@ mail.port = ${smtp.port}
 mako.strict_undefined = true
 mako.module_directory = ${instance.paths.mako_tmp_dir}
 
+[pshell]
+setup = aybu.core.utils.pshell.setup
 
 [pipeline:main]
 pipeline =
