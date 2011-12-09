@@ -1,7 +1,3 @@
-[DEFAULT]
-sqlalchemy_url = sqlite:/// 
-sqlalchemy_echo = false
-
 [app:aybu-manager]
 use = egg:aybu-manager
 
@@ -15,8 +11,8 @@ reload_templates = false
 reload_assets = false
 debug = false
 
-sqlalchemy.url = %(sqlalchemy_url)s
-sqlalchemy.echo = %(sqlalchemy_echo)s
+sqlalchemy.url = sqlite:///
+sqlalchemy.echo = false
 
 authentication.realm = 'Aybu Manager'
 
@@ -65,8 +61,11 @@ port = 6543
 
 [alembic]
 script_location = %(here)s/migrations
-sqlalchemy.url = %(sqlalchemy_url)s
-sqlalchemy.echo = %(sqlalchemy_echo)s
+sqlalchemy.url = sqlite:///
+sqlalchemy.echo = false
+
+[pshell]
+setup = aybu.manager.utils.pshell:setup
 
 [loggers]
 keys = root, aybu, exc_logger, alembic, sqlalchemy
