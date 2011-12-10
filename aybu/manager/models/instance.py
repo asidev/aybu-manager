@@ -454,7 +454,8 @@ class Instance(Base):
             instance = cls(domain=domain, owner=owner, environment=environment,
                         theme=theme, technical_contact=technical_contact,
                         default_language=default_language,
-                        database_password=database_password)
+                        database_password=database_password,
+                        enabled=False)
             session.add(instance)
             session.flush()
 
@@ -465,6 +466,8 @@ class Instance(Base):
             instance._populate_database()
             instance._write_vassal_ini()
             instance.flush_cache()
+            if enabled:
+                instance.enabled = True
 
         except:
             session.rollback()
