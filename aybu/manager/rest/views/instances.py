@@ -67,7 +67,8 @@ def deploy(context, request):
 @view_config(route_name='instance', request_method=('HEAD', 'GET'))
 def info(context, request):
     domain = request.matchdict['domain']
-    return Instance.get_by_domain(request.db_session, domain).to_dict()
+    instance = Instance.get_by_domain(request.db_session, domain)
+    return instance.to_dict(paths=True)
 
 
 @view_config(route_name='instance', request_method='PUT',
@@ -84,15 +85,17 @@ def update(context, request):
     domain = request.matchdict['domain']
     # prefer 404 upon 400, so try first to get the instance
     instance = Instance.get_by_domain(request.db_session, domain)
-    action = request.params['action']
-    if action in ('enable', 'disable', 'reload', 'kill', 'sentence',
-                  'flush_cache', 'archive'):
-        taskname = "instance.{}".format(action)
+    if request.method == 'DELETE':
+        taskname = 'instance.delete'
 
-    elif request.method == 'DELETE':
-        taskname = 'instance.remove'
+    elif 'action' not in request.params:
+        raise ParamsError('No action provided')
+
+    elif request.params['action'] in ('enable', 'disable', 'reload', 'kill',
+                                      'sentence', 'flush_cache', 'archive'):
+        taskname = "instance.{}".format(request.params['action'])
 
     else:
-        raise ParamsError('invalid action {}'.format(action))
+        raise ParamsError('invalid action {}'.format(request.params['action']))
 
     return request.submit_task(taskname, id=instance.id)
