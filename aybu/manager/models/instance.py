@@ -135,7 +135,7 @@ class Instance(Base):
 
     @classmethod
     def get_by_domain(cls, session, domain):
-        cls.search(session,
+        return cls.search(session,
                    filters=(Instance.domain == domain,),
                    return_query=True).one()
 
