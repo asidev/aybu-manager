@@ -16,6 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import logging
 import datetime
 import redis
 import zmq
@@ -49,8 +50,12 @@ class Request(BaseRequest):
     def submit_task(self, command, **data):
         s = ZmqTaskSender(self)
         uuid = self.headers.get('X-Task-UUID')
+        verbose = data.pop('verbose', False)
+
         args = {"_arg.{}".format(k): v
                 for k, v in data.iteritems() if not v is None}
+        if verbose:
+            args['log_level'] = logging.DEBUG
 
         task = Task(redis_client=self.redis,
                     requested=datetime.datetime.now(),
