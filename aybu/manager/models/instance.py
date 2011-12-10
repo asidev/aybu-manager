@@ -139,6 +139,17 @@ class Instance(Base):
                    filters=(Instance.domain == domain,),
                    return_query=True).one()
 
+    def to_dict(self, paths=False):
+        res = super(Instance, self).to_dict()
+        if paths:
+            for k, v in self.paths._asdict().iteritems():
+                key = 'paths.{}'.format(k)
+                if not isinstance(v, basestring):
+                    v = ', '.join(v)
+                res[key] = v
+        res['created'] = str(res['created'])
+        return res
+
     @property
     def python_name(self):
         return self.domain.replace(".","_").replace("-","_")
