@@ -42,6 +42,7 @@ class Pip(Action):
         command = "{} {} install -e {}".format(self.python, self.script,
                                                self.path)
         self.log.info("installing from %s", self.path)
+        self.log.debug(command)
         try:
             output = subprocess.check_output(shlex.split(command))
             self.log.debug("OUTPUT: %s", output)

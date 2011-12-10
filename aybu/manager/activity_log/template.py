@@ -71,5 +71,5 @@ class render(Action):
             return
 
         if self.written:
-            self.log.error("ROLLBACK: unlink %s", self.target)
+            self.log.info("ROLLBACK: unlink %s", self.target)
             os.unlink(self.target)
