@@ -22,7 +22,7 @@ from pyramid.config import Configurator
 from sqlalchemy import engine_from_config
 from zmq.devices.basedevice import ThreadDevice
 
-from aybu.manager.models import Base
+from aybu.manager.models import Base, Environment
 from . authentication import AuthenticationPolicy
 from . request import Request
 
@@ -53,6 +53,7 @@ def main(global_config, **settings):
 
 
 def includeme(config):
+    Environment.initialize(config.registry.settings, None)
     config.include(add_routes)
     config.add_renderer('taskresponse',
                         'aybu.manager.rest.renderers.TaskResponseRender')
