@@ -70,6 +70,23 @@ class ManagerModelsTestsBase(TestsBase):
                             os.path.basename(os.environ['VIRTUAL_ENV'])
         self.config['paths.logs'] = '{}/logs'.format(self.tempdir)
 
+        # fake cgroups
+        rel = self.config['paths.cgroups.relative_path']
+        if rel.startswith('/'):
+            rel = rel[1:]
+
+        if not self.config['paths.cgroups.controllers']:
+            cgroups = [os.path.join(self.config['paths.cgroups'], rel)]
+        else:
+            cgroups = [os.path.join(self.config['paths.cgroups'],
+                                    ctrl.strip(),
+                                    rel)
+                       for ctrl in
+                       self.config['paths.cgroups.controllers'].split(",")]
+        for cgroup in cgroups:
+            os.makedirs(cgroup)
+
+
     def tearDown(self):
         self.session.close()
         self.Session.close_all()

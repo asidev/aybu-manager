@@ -128,12 +128,27 @@ class Environment(Base):
         else:
             virtualenv = join(c['virtualenv'], self.name)
 
+        cgroups_base_path = c['cgroups']
+        cgroups_rel_path = c['cgroups.relative_path']
+        if cgroups_rel_path.startswith('/'):
+            cgroups_rel_path = cgroups_rel_path[1:]
+
+        cgroups_controllers = c.get('cgroups.controllers', None)
+
+        if cgroups_controllers:
+            cgroups_controller = [ctrl.strip() for ctrl in
+                                  cgroups_controllers.split(',')]
+            cgroups = [join(cgroups_base_path, ctrl, cgroups_rel_path)
+                    for ctrl in cgroups_controller]
+
+        else:
+            cgroups = [join(cgroups_base_path, cgroups_rel_path)]
 
         self._paths = Paths(root=c['root'],
                             configs=configs,
                             sites=c['sites'],
                             archives=c['archives'],
-                            cgroups=c['cgroups'],
+                            cgroups=cgroups,
                             logs=LogPaths(dir=c['logs'],
                                       emperor=join(c['logs'],
                                                    'uwsgi_emperor.log')),

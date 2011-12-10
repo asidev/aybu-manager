@@ -25,6 +25,21 @@ from . test_base import ManagerModelsTestsBase
 
 class EnvironmentTests(ManagerModelsTestsBase):
 
+    def assert_env_paths(self, env):
+        for key, path in env.paths._asdict().iteritems():
+            if key == 'logs':
+                path = env.paths.logs.dir
+            if key == 'virtualenv':
+                continue
+
+            if isinstance(path, list):
+                for p in path:
+                    self.log.debug("%s: %s", key, p)
+                    self.assertTrue(os.path.isdir(p))
+            else:
+                self.log.debug("%s: %s", key, path)
+                self.assertTrue(os.path.isdir(path))
+
     def test_create(self):
         self.config = {'app:aybu-manager': self.config}
         with self.assertRaises(ValidationError):
@@ -38,15 +53,21 @@ class EnvironmentTests(ManagerModelsTestsBase):
         for key, path in keys.iteritems():
             if key == 'virtualenv':
                 continue
-            self.log.debug("%s: %s", key, path)
-            self.assertTrue(os.path.isdir(path))
 
-        self.session.commit()
-        for key, path in env.paths._asdict().iteritems():
-            if key == 'logs':
-                path = env.paths.logs.dir
-            if key == 'virtualenv':
+            if key.startswith('cgroups'):
                 continue
 
             self.log.debug("%s: %s", key, path)
             self.assertTrue(os.path.isdir(path))
+
+        self.session.commit()
+        self.assert_env_paths(env)
+
+    def test_create_single_cgroup(self):
+        del self.config['paths.cgroups.controllers']
+        self.config['paths.cgroups.relative_path'] = '/'
+
+        self.env_conf = {'app:aybu-manager': self.config}
+        env = Environment.create(self.session, 'testenv', config=self.env_conf)
+        self.session.commit()
+        self.assert_env_paths(env)

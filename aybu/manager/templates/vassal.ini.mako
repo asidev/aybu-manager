@@ -16,7 +16,9 @@ vacuum = true
 no-orphan = true
 single-interpreter = true
 pyhome = ${instance.paths.virtualenv}
-cgroup = ${instance.paths.cgroup}
+% for ctrl in instance.paths.cgroups:
+cgroup = ${ctrl}
+% endfor
 logto = ${instance.paths.logs.vassal}
 log-5xx = true
 

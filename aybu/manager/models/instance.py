@@ -62,7 +62,7 @@ from . validators import (validate_hostname,
 
 __all__ = ['Instance']
 Paths = collections.namedtuple('Paths', ['config', 'vassal_config', 'dir',
-                                         'cgroup', 'logs', 'socket', 'session',
+                                         'cgroups', 'logs', 'socket', 'session',
                                          'data', 'mako_tmp_dir', 'cache',
                                          'instance_dir', 'wsgi_script',
                                          'virtualenv'])
@@ -170,7 +170,7 @@ class Instance(Base):
             config=join(dir_, 'production.ini'),
             vassal_config=join(env.configs, "{}.ini".format(self.domain)),
             dir=dir_,
-            cgroup=join(env.cgroups, self.domain),
+            cgroups=[join(ctrl, self.domain) for ctrl in env.cgroups],
             logs=LogPaths(
                       dir=join(env.logs.dir, self.domain),
                       vassal=join(env.logs.dir, self.domain, 'uwsgi_vassal.log'),
@@ -307,12 +307,12 @@ class Instance(Base):
 
     def _create_structure(self, session):
         paths = self.paths
-        dirs = sorted((paths.dir,
-            paths.cgroup,
+        dirs = [paths.dir,
             paths.cache,
             paths.logs.dir,
-            paths.mako_tmp_dir))
-        for dir_ in dirs:
+            paths.mako_tmp_dir]
+        dirs.extend(paths.cgroups)
+        for dir_ in sorted(dirs):
             session.activity_log.add(mkdir, dir_)
 
         session.activity_log.add(render, self, 'aybu.ini.mako', paths.config)
@@ -501,7 +501,8 @@ class Instance(Base):
                                     error_on_not_exists=False)
             session.activity_log.add(rmtree, self.paths.logs.dir)
             session.activity_log.add(rmtree, self.paths.dir)
-            session.activity_log.add(rmtree, self.paths.cgroup)
+            for ctrl in self.paths.cgroups:
+                session.activity_log.add(rmtree, ctrl)
 
         except:
             session.rollback()
