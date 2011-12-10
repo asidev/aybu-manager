@@ -64,13 +64,10 @@ class ManagerModelsTestsBase(TestsBase):
         self.config['paths.configs'] = '{}/configs'.format(self.tempdir)
         self.config['paths.archives'] = '{}/archives'.format(self.tempdir)
         self.config['paths.run'] = '{}/run'.format(self.tempdir)
-        self.config['paths.virtualenv.default'] = \
-                            os.path.dirname(os.environ['VIRTUAL_ENV'])
-        self.config['paths.virtualenv.base'] = \
-                            os.path.dirname(os.path.realpath(os.path.join(
-                                os.environ['VIRTUAL_ENV'], '..')))
-        self.config['virtualenv_name'] = \
-                            os.path.basename(os.environ['VIRTUAL_ENV'])
+        venv = os.path.realpath(os.environ['VIRTUAL_ENV'])
+        self.config['paths.virtualenv.default'] = venv
+
+        self.config['paths.virtualenv.base'] = os.path.dirname(venv)
         self.config['paths.logs'] = '{}/logs'.format(self.tempdir)
 
         # fake cgroups

@@ -476,7 +476,7 @@ class Instance(Base):
             instance._create_database(session)
             instance._populate_database()
             instance._write_vassal_ini()
-            instance.flush_cache()
+#            instance.flush_cache()
             if enabled:
                 instance.enabled = True
 

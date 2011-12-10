@@ -29,14 +29,12 @@ class InstanceTests(ManagerModelsTestsBase):
     def test_deploy(self):
 
         self.import_data()
-        venv_name = self.config['virtualenv_name']
         owner = self.session.query(User)\
                 .filter(User.email == 'info@asidev.com').one()
         theme = self.session.query(Theme)\
                 .filter(Theme.name == 'uffizi').one()
         env = Environment.create(self.session, 'testenv',
-                                 config=self.config,
-                                 venv_name=venv_name)
+                                 config=self.config)
         instance = Instance.deploy(self.session, 'www.example.com', owner,
                                    env, owner, theme=theme)
 
@@ -88,8 +86,7 @@ class InstanceTests(ManagerModelsTestsBase):
 
         # test change environment
         newenv = Environment.create(self.session, 'testenv2',
-                                    config=self.config,
-                                    venv_name=venv_name)
+                                    config=self.config)
         with self.assertRaises(OperationalError):
             instance.environment = newenv
         self.assertEqual(instance.environment, env)
