@@ -45,6 +45,7 @@ def deploy(context, request):
             default_language=request.params.get('default_language', u'it'),
             database_password=request.params.get('database_password'),
             enabled=True if request.params.get('enabled') else False,
+            verbose=True if request.params.get('verbose') else False,
         )
         # try to get the instance, as it MUST not exists
         Instance.get_by_domain(request.db_session, params['domain'])
