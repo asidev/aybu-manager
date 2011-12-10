@@ -25,4 +25,7 @@ def setup(env):
     env['models'] = aybu.manager.models
     env['engine'] = engine_from_config(settings, 'sqlalchemy.')
     env['request'].set_db_engine = env['engine']
-    aybu.core.models.Base.metadata.bind = env['engine']
+    aybu.manager.models.Base.metadata.bind = env['engine']
+    aybu.manager.models.Environment.initialize(settings)
+    env['session'] = env['request'].db_session
+
