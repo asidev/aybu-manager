@@ -40,7 +40,8 @@ paths.cgroups.controllers = cpu, blkio, memory
 paths.cgroups.relative_path = /sites/aybu
 paths.logs = /var/logs/sites/
 paths.run = /var/run/aybu/
-paths.virtualenv = /srv/.virtualenvs/aybu
+paths.virtualenv.default = /srv/.virtualenvs/aybu
+paths.virtualenv.base = /srv/.virtualenvs
 
 zmq.queue_addr = tcp://127.0.0.1:8997
 zmq.daemon_addr = tcp://127.0.0.1:8998

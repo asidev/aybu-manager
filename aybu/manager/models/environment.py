@@ -64,7 +64,7 @@ class Environment(Base):
         return validate_name(name)
 
     @classmethod
-    def initialize(cls, settings, section='app:aybu-manager'):
+    def initialize(cls, settings, section=None):
         if section is None:
             cls.settings = settings
         else:
@@ -124,9 +124,9 @@ class Environment(Base):
              for k in self.settings if k.startswith('paths.')}
         configs = join(c['configs'], self.name)
         if self.venv_name:
-            virtualenv = join(c['virtualenv'], self.venv_name)
+            virtualenv = join(c['virtualenv.base'], self.venv_name)
         else:
-            virtualenv = join(c['virtualenv'], self.name)
+            virtualenv = c['virtualenv.default']
 
         cgroups_base_path = c['cgroups']
         cgroups_rel_path = c['cgroups.relative_path']
@@ -156,6 +156,16 @@ class Environment(Base):
                             virtualenv=virtualenv)
 
         return self._paths
+
+    def to_dict(self, paths=False):
+        res = super(Environment, self).to_dict()
+        if paths:
+            for k, v in self.paths._asdict().iteritems():
+                key = 'paths.{}'.format(k)
+                if not isinstance(v, basestring):
+                    v = ', '.join(v)
+                res[key] = v
+        return res
 
 
     def __repr__(self):

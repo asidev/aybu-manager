@@ -29,7 +29,7 @@ class EnvironmentTests(ManagerModelsTestsBase):
         for key, path in env.paths._asdict().iteritems():
             if key == 'logs':
                 path = env.paths.logs.dir
-            if key == 'virtualenv':
+            if key.startswith('virtualenv'):
                 continue
 
             if isinstance(path, list):
@@ -41,17 +41,16 @@ class EnvironmentTests(ManagerModelsTestsBase):
                 self.assertTrue(os.path.isdir(path))
 
     def test_create(self):
-        self.config = {'app:aybu-manager': self.config}
         with self.assertRaises(ValidationError):
             env = Environment.create(self.session, 'test-env',
                                         config=self.config)
         env = Environment.create(self.session, 'testenv', config=self.config)
-        keys = {k.replace('paths.', ''): self.config['app:aybu-manager'][k]
-                          for k in self.config['app:aybu-manager'] if
+        keys = {k.replace('paths.', ''): self.config[k]
+                          for k in self.config if
                           k.startswith('paths.')}
 
         for key, path in keys.iteritems():
-            if key == 'virtualenv':
+            if key.startswith('virtualenv'):
                 continue
 
             if key.startswith('cgroups'):
@@ -70,8 +69,7 @@ class EnvironmentTests(ManagerModelsTestsBase):
         del self.config['paths.cgroups.controllers']
         self.config['paths.cgroups.relative_path'] = '/'
 
-        self.env_conf = {'app:aybu-manager': self.config}
-        env = Environment.create(self.session, 'testenv', config=self.env_conf)
+        env = Environment.create(self.session, 'testenv', config=self.config)
         self.session.commit()
         self.assert_env_paths(env)
 
