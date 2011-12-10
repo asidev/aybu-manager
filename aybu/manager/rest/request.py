@@ -49,7 +49,8 @@ class Request(BaseRequest):
     def submit_task(self, command, **data):
         s = ZmqTaskSender(self)
         uuid = self.headers.get('X-Task-UUID')
-        args = {"_arg.{}".format(k): v for k, v in data.iteritems()}
+        args = {"_arg.{}".format(k): v
+                for k, v in data.iteritems() if not v is None}
 
         task = Task(redis_client=self.redis,
                     requested=datetime.datetime.now(),
