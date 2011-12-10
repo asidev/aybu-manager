@@ -16,18 +16,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import logging
 from zmq.log.handlers import (TOPIC_DELIM,
                               PUBHandler)
 
 
 class RedisPUBHandler(PUBHandler):
 
-    def __init__(self, config, socket, context):
+    def __init__(self, config, socket, context, level=logging.NOTSET):
         self.context = context
         self.config = config
 
         self.ttl = self.config.get('zmq.result_ttl')
         super(RedisPUBHandler, self).__init__(socket, context)
+        self.setLevel(level)
         self.task = None
 
     def set_task(self, task):

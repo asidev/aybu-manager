@@ -59,20 +59,23 @@ class AybuManagerDaemonWorker(threading.Thread):
         self.socket = self.context.socket(zmq.SUB)
         self.socket.setsockopt(zmq.SUBSCRIBE, "")  # subscribe to all
         self.socket.connect('inproc://tasks')
-        handler = RedisPUBHandler(self.config, self.pub_socket, self.context)
         log = logging.getLogger('aybu')
-        log.addHandler(handler)
 
         while True:
             task = Task(uuid=self.socket.recv(),
                         redis_client=self.redis,
                         started=datetime.datetime.now())
-            handler.set_task(task)
             db = self.Session()
             db.begin()
             if not hasattr(db, 'activity_log'):
                 ActivityLog.attach_to(db)
-            log.setLevel(task.get('log_level', logging.DEBUG))
+
+            level = int(task.get('log_level', logging.DEBUG))
+            handler = RedisPUBHandler(self.config, self.pub_socket,
+                                      self.context, level=level)
+            handler.set_task(task)
+            log.addHandler(handler)
+            log.setLevel(level)
 
             try:
                 module_name = 'aybu.manager.daemon.commands.{}'\
@@ -87,14 +90,14 @@ class AybuManagerDaemonWorker(threading.Thread):
             except ImportError as e:
                 db.rollback()
                 task.status = taskstatus.FAILED
-                task.result = "Cannot found resource {}"\
+                task.result = "Cannot find resource {}"\
                         .format(task.command_module)
                 log.exception(task.result)
 
             except AttributeError as e:
                 db.rollback()
                 task.status = taskstatus.FAILED
-                task.result = "Cannot found action {} on {}"\
+                task.result = "Cannot find action {} on {}"\
                         .format(task.command_name, task.command_module)
                 log.critical(task.result)
 
@@ -114,5 +117,7 @@ class AybuManagerDaemonWorker(threading.Thread):
                 self.pub_socket.send_multipart(["{}.finished".format(task.uuid),
                                                 "task endend"])
                 db.close()
+                log.removeHandler(handler)
+                del handler
 
         self.socket.close()
