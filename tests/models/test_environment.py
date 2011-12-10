@@ -64,6 +64,9 @@ class EnvironmentTests(ManagerModelsTestsBase):
         self.assert_env_paths(env)
 
     def test_create_single_cgroup(self):
+        controllers =  self.config['paths.cgroups.controllers']
+        rel_path = self.config['paths.cgroups.relative_path']
+
         del self.config['paths.cgroups.controllers']
         self.config['paths.cgroups.relative_path'] = '/'
 
@@ -71,3 +74,7 @@ class EnvironmentTests(ManagerModelsTestsBase):
         env = Environment.create(self.session, 'testenv', config=self.env_conf)
         self.session.commit()
         self.assert_env_paths(env)
+
+        #restore options
+        self.config['paths.cgroups.controllers'] = controllers
+        self.config['paths.cgroups.realtive_path'] = rel_path
