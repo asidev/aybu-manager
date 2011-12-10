@@ -33,8 +33,9 @@ def deploy(session, task, domain, owner_email, environment_name,
     owner = User.get(session, owner_email)
     technical_contact = User.get(session, technical_contact_email)
 
-    instance = Instance.deploy(domain, owner, env, technical_contact, theme,
-                               default_language, database_password, enabled)
+    instance = Instance.deploy(session, domain, owner, env, technical_contact,
+                               theme, default_language, database_password,
+                               enabled)
 
     return instance.id
 

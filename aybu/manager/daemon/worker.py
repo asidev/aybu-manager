@@ -80,6 +80,7 @@ class AybuManagerDaemonWorker(threading.Thread):
                 module = __import__(module_name,
                                     fromlist=[task.command_name])
                 function = getattr(module, task.command_name)
+                log.debug('Task received: %s: %s', task, task.command_args)
                 result = function(db, task, **task.command_args)
                 db.commit()
 
