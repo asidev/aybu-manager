@@ -50,7 +50,7 @@ from aybu.core.models import Theme as AybuCoreTheme
 from aybu.core.models import User as AybuCoreUser
 from aybu.core.proxy import Proxy
 from aybu.manager.activity_log.template import render
-from aybu.manager.activity_log.fs import mkdir, create, rm, rmtree
+from aybu.manager.activity_log.fs import mkdir, create, rm, rmtree, rmdir
 from aybu.manager.activity_log.packages import install, uninstall
 from aybu.manager.activity_log.database import create_database, drop_database
 from aybu.manager.exc import OperationalError, NotSupported
@@ -509,14 +509,17 @@ class Instance(Base):
                                     self.paths.virtualenv,
                                     self.python_package_name)
             session.activity_log.add_group(drop_database, session,
-                                        self.database_config)
+                                           self.database_config)
 
             session.activity_log.add(rm, self.paths.socket,
-                                    error_on_not_exists=False)
-            session.activity_log.add(rmtree, self.paths.logs.dir)
-            session.activity_log.add(rmtree, self.paths.dir)
+                                     error_on_not_exists=False)
+            session.activity_log.add(rmtree, self.paths.logs.dir,
+                                     error_on_not_exists=False)
+            session.activity_log.add(rmtree, self.paths.dir,
+                                     error_on_not_exists=False)
             for ctrl in self.paths.cgroups:
-                session.activity_log.add(rmtree, ctrl)
+                session.activity_log.add(rmdir, ctrl,
+                                         error_on_not_exists=False)
 
         except:
             session.rollback()
