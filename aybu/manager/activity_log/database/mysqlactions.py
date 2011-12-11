@@ -31,6 +31,12 @@ class MysqlDatabaseAction(SQLAction):
         stmt = "DROP DATABASE {name};".format(name=self.config.name)
         return stmt
 
+    def exists(self):
+        res = self.execute(
+            "SELECT schema_name FROM information_schema.schemata "\
+            "WHERE schema_name = '{name}'".format(name=self.config.name))
+        return True if res[0].fetchall() else False
+
     def rename(self):
         """ MySQL does not support RENAME DATABASE (which indeed was
             supported between 5.1.7 and 5.1.23), so we do ... nothing.
@@ -39,7 +45,7 @@ class MysqlDatabaseAction(SQLAction):
                 - create the new database
                 - issue N querys like: RENAME TABLE old.xxx TO new.xxx
                 - drop the old database
-            but it can be tricky w.r.t indexes and constraint
+            but it can be tricky w.r.t indexes and constraints
         """
         self.log.debug("Renaming MySQL database (NoOP)")
 

@@ -27,11 +27,15 @@ def create_database(session, config):
             SQLAction(config.type, "privileges", init="grant",
                       rollback='revoke')]
 
-def drop_database(session, config):
+
+def drop_database(session, config, skip_if_not_exists=True):
+    exists = SQLAction(config.type, 'database', config=config, session=session)
+    if skip_if_not_exists and not exists.exists():
+        return []
+
     return [SQLAction(config.type, "privileges", init="revoke",
                       rollback='grant'),
             SQLAction(config.type, "database", init="rename",
                       commit='drop', rollback='restore'),
             SQLAction(config.type, "user", init="rename", commit='drop',
-                      rollback='restore'),
-            ]
+                      rollback='restore')]

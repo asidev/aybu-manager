@@ -60,6 +60,12 @@ class PostgresqlDatabaseAction(PostgresAction):
         self.kill_database_connections()
         return "DROP DATABASE {};".format(name)
 
+    def exists(self):
+        res = self.execute(
+            "SELECT datname FROM pg_catalog.pg_database "\
+            "WHERE datname='{config.name}'".format(config=self.config))
+        return True if res[0].fetchall() else False
+
     def rename(self):
         self._renamed = "{}_tmp_".format(self.config.name)
         self.kill_database_connections()
@@ -103,5 +109,3 @@ class PostgresqlPrivilegesAction(PostgresAction):
     def revoke(self):
         return "REVOKE ALL PRIVILEGES ON DATABASE {config.name} "\
                 "FROM {config.user};".format(config=self.config)
-
-

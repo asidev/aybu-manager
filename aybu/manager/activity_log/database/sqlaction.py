@@ -21,7 +21,8 @@ from sqlalchemy.orm import class_mapper
 
 class SQLAction(object):
 
-    def __new__(cls, type_, what, init=None, commit=None, rollback=None):
+    def __new__(cls, type_, what, init=None, commit=None, rollback=None,
+                config=None, session=None):
         what = what.replace("_", " ").title().replace(" ", "")
         module_name = "{}actions".format(type_)
         clsname = "{}{}Action".format(type_.title(), what)
@@ -33,6 +34,10 @@ class SQLAction(object):
         obj.on_init = init
         obj.on_commit = commit
         obj.on_rollback = rollback
+        if config:
+            obj.config = config
+        if session:
+            obj.session = session
         return obj
 
     def __call__(self, session, config):
