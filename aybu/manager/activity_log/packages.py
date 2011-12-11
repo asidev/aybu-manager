@@ -57,7 +57,9 @@ class Pip(Action):
         subprocess.check_call(shlex.split(cmd))
         # remove egg_info directory
         egginfo_dir = "{}.egg-info".format(self.package_name.replace("-", "_"))
-        shutil.rmtree(os.path.join(self.path, egginfo_dir))
+        egginfo_dir = os.path.join(self.path, egginfo_dir)
+        if os.path.isdir(egginfo_dir):
+            shutil.rmtree(egginfo_dir)
 
     def commit(self):
         pass
