@@ -64,7 +64,6 @@ class SQLAction(object):
         for statement in statements:
             self.log.info(statement)
             res.append(connection.execute(statement))
-        connection.close()
         return res
 
     def commit(self):

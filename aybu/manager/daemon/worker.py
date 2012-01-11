@@ -19,6 +19,7 @@ limitations under the License.
 from sqlalchemy import engine_from_config
 from sqlalchemy.orm import (sessionmaker,
                             scoped_session)
+from sqlalchemy.pool import NullPool
 from aybu.manager.models import Base, Environment
 from aybu.manager.activity_log import ActivityLog
 from aybu.manager.task import Task, taskstatus
@@ -37,9 +38,9 @@ class AybuManagerDaemonWorker(threading.Thread):
         self.config = config
         self.log = logging.getLogger(__name__)
         self.context = context
+        self.config["sqlalchemy.poolclass"] = NullPool
         self.engine = engine_from_config(self.config, 'sqlalchemy.')
-        self.Session = scoped_session(sessionmaker(bind=self.engine,
-                                                   autocommit=True))
+        self.Session = scoped_session(sessionmaker(bind=self.engine))
         Base.metadata.bind = self.engine
         Base.metadata.create_all()
         redis_opts = {k.replace('redis.', ''): self.config[k]
@@ -65,10 +66,9 @@ class AybuManagerDaemonWorker(threading.Thread):
             task = Task(uuid=self.socket.recv(),
                         redis_client=self.redis,
                         started=datetime.datetime.now())
-            db = self.Session()
-            db.begin()
-            if not hasattr(db, 'activity_log'):
-                ActivityLog.attach_to(db)
+            session = self.Session()
+            if not hasattr(session, 'activity_log'):
+                ActivityLog.attach_to(session)
 
             level = int(task.get('log_level', logging.DEBUG))
             handler = RedisPUBHandler(self.config, self.pub_socket,
@@ -84,25 +84,25 @@ class AybuManagerDaemonWorker(threading.Thread):
                                     fromlist=[task.command_name])
                 function = getattr(module, task.command_name)
                 log.debug('Task received: %s: %s', task, task.command_args)
-                result = function(db, task, **task.command_args)
-                db.commit()
+                result = function(session, task, **task.command_args)
+                session.commit()
 
             except ImportError as e:
-                db.rollback()
+                session.rollback()
                 task.status = taskstatus.FAILED
                 task.result = "Cannot find resource {}"\
                         .format(task.command_module)
                 log.exception(task.result)
 
             except AttributeError as e:
-                db.rollback()
+                session.rollback()
                 task.status = taskstatus.FAILED
                 task.result = "Cannot find action {} on {}"\
                         .format(task.command_name, task.command_module)
                 log.critical(task.result)
 
             except Exception as e:
-                db.rollback()
+                session.rollback()
                 log.exception('Error while executing task')
                 task.status = taskstatus.FAILED
                 task.result = str('Error')
@@ -116,7 +116,7 @@ class AybuManagerDaemonWorker(threading.Thread):
                 task['finished'] = datetime.datetime.now()
                 self.pub_socket.send_multipart(["{}.finished".format(task.uuid),
                                                 "task endend"])
-                db.close()
+                session.close()
                 log.removeHandler(handler)
                 del handler
 

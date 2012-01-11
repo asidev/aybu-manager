@@ -32,6 +32,7 @@ from sqlalchemy import (UniqueConstraint,
                         Integer,
                         Unicode)
 from sqlalchemy import engine_from_config
+from sqlalchemy.pool import NullPool
 from sqlalchemy.sql.expression import not_
 from sqlalchemy.orm import (sessionmaker,
                             Session,
@@ -253,7 +254,8 @@ class Instance(Base):
         self.log.debug("Creating SQLAlchemy engine (%s)",
                        self.database_config.sqlalchemy_url)
         self._database_engine = engine_from_config(
-                    {'sqlalchemy.url': self.database_config.sqlalchemy_url},
+                    {'sqlalchemy.url': self.database_config.sqlalchemy_url,
+                     'sqlalchemy.poolclass': NullPool},
                     'sqlalchemy.'
         )
         return self._database_engine
@@ -264,8 +266,7 @@ class Instance(Base):
 
         self.log.debug("Creating SQLAlchemy session for %s",
                        self.database_config.sqlalchemy_url)
-        self._database_session = sessionmaker(autocommit=True,
-                                              bind=self.database_engine)
+        self._database_session = sessionmaker(bind=self.database_engine)
         return self._database_session(*args, **kwargs)
 
     def _write_vassal_ini(self, session=None, skip_rollback=False):
@@ -340,19 +341,17 @@ class Instance(Base):
         self.log.info("Creating tables in instance database")
         AybuCoreBase.metadata.bind=self.database_engine
         AybuCoreBase.metadata.create_all(self.database_engine)
-        AybuCoreBase.metadata.bind=None
-
-        self.database_engine.dispose()
 
     def _populate_database(self):
         session = self.create_database_session()
-        session.begin()
         try:
             data = json.loads(pkg_resources.resource_stream('aybu.manager.data',
                                                             'default_data.json')\
                             .read())
+            self.log.debug("Calling add_default_data")
             aybu.core.models.add_default_data(session, data)
 
+            self.log.debug("Adding user %s", self.owner.email)
             u = AybuCoreUser(username=self.owner.email,
                              password=self.owner.password)
             session.add(u)
@@ -360,6 +359,7 @@ class Instance(Base):
             AybuCoreSetting.get(session, 'debug').raw_value = 'False'
 
             if self.theme:
+                self.log.info("Using theme %s for instance", self.theme.name)
                 for setting_name in ('banner_width', 'banner_height',
                                      'logo_width', 'logo_height',
                                      'main_menu_levels', 'template_levels',
@@ -392,7 +392,8 @@ class Instance(Base):
                 for theme in themes:
                     session.add(theme)
 
-                session.commit()
+            session.commit()
+
         except:
             session.rollback()
             raise
@@ -476,7 +477,7 @@ class Instance(Base):
             instance._create_database(session)
             instance._populate_database()
             instance._write_vassal_ini()
-#            instance.flush_cache()
+            instance.flush_cache()
             if enabled:
                 instance.enabled = True
 
@@ -534,7 +535,6 @@ class Instance(Base):
     def flush_cache(self):
         self.log.info("Flushing cache for %s", self)
         instance_session = self.create_database_session()
-        instance_session.begin()
         try:
             request = collections.namedtuple('Request', ['db_session', 'host'])(
                 db_session=instance_session,
