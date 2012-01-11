@@ -45,7 +45,7 @@ class Pip(Action):
         self.log.debug(command)
         try:
             output = subprocess.check_output(shlex.split(command))
-            self.log.debug("OUTPUT: %s", output)
+            #self.log.debug("OUTPUT: %s", output)
         except subprocess.CalledProcessError as e:
             self.log.error(e.output)
             raise e
