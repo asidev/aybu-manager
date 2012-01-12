@@ -345,7 +345,7 @@ class Instance(Base):
     def _populate_database(self):
         session = self.create_database_session()
         try:
-            data = json.loads(pkg_resources.resource_stream('aybu.manager.data',
+            data = json.loads(pkg_resources.resource_stream('aybu.core.data',
                                                             'default_data.json')\
                             .read())
             self.log.debug("Calling add_default_data")
