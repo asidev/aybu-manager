@@ -158,7 +158,7 @@ class Task(collections.MutableMapping):
 
     def __getitem__(self, item):
         value = self.redis.hget(self.key, item)
-        if not value:
+        if value is None:
             raise KeyError(item)
         return value
 
