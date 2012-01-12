@@ -76,6 +76,7 @@ class AybuManagerDaemonWorker(threading.Thread):
             handler.set_task(task)
             log.addHandler(handler)
             log.setLevel(level)
+            result = None
 
             try:
                 module_name = 'aybu.manager.daemon.commands.{}'\
@@ -109,11 +110,11 @@ class AybuManagerDaemonWorker(threading.Thread):
 
             else:
                 task.status = taskstatus.FINISHED
-                task.result = result or ''
                 log.info("Task completed successfully")
 
             finally:
                 task['finished'] = datetime.datetime.now()
+                task.result = result or ''
                 self.pub_socket.send_multipart(["{}.finished".format(task.uuid),
                                                 "task endend"])
                 session.close()
