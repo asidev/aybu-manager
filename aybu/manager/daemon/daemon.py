@@ -81,4 +81,3 @@ class AybuManagerDaemon(object):
         self.worker_socket.close()
         self.client_socket.close()
         self.context.term()
-
