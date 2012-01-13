@@ -51,7 +51,7 @@ port = 6543
 keys = root, aybu, exc_logger, pufferfish
 
 [handlers]
-keys = file, exc_handler
+keys = file, exc_handler, console
 
 [formatters]
 keys = generic, exc_formatter
@@ -74,6 +74,12 @@ qualname = pufferfish
 level = ERROR
 handlers = exc_handler
 qualname = exc_logger
+
+[handler_console]
+class = StreamHandler
+args = (sys.stderr,)
+level = NOTSET
+formatter = generic
 
 [handler_file]
 class = handlers.RotatingFileHandler
