@@ -50,6 +50,7 @@ def import_data(config):
     engine = engine_from_config(config, prefix='sqlalchemy.')
     Session = sessionmaker(bind=engine)
     Base.metadata.bind = engine
+    Base.metadata.drop_all()
     Base.metadata.create_all()
     session = Session()
     session.configure(bind=engine)
@@ -60,7 +61,7 @@ def import_data(config):
         session.flush()
 
     except:
-        session.rollaback()
+        session.rollback()
         raise
 
     else:

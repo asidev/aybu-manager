@@ -890,6 +890,20 @@
 	},
 	{
 		"cls_": "Theme",
+		"name": "uffizi",
+		"version": "0.1",
+		"author_email": "info@asidev.com",
+		"owner_email": "info@asidev.com",
+		"banner_width": 940,
+		"banner_height": 320,
+		"logo_width": 340,
+		"logo_height": 120,
+		"main_menu_levels": 2,
+		"template_levels": 3,
+		"image_full_size": 600
+	},
+	{
+		"cls_": "Theme",
 		"name": "moma",
 		"version": "0.1",
 		"parent_name": "uffizi",
@@ -1454,20 +1468,6 @@
 		"main_menu_levels": 1,
 		"template_levels": 2,
 		"image_full_size": 709
-	},
-	{
-		"cls_": "Theme",
-		"name": "uffizi",
-		"version": "0.1",
-		"author_email": "info@asidev.com",
-		"owner_email": "info@asidev.com",
-		"banner_width": 940,
-		"banner_height": 320,
-		"logo_width": 340,
-		"logo_height": 120,
-		"main_menu_levels": 2,
-		"template_levels": 3,
-		"image_full_size": 600
 	},
 	{
 		"cls_": "Theme",
