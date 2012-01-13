@@ -26,8 +26,8 @@ __all__ = ['Crypt']
 class Crypt(types.TypeDecorator):
     """ This class model an encrypted string using UNiX crypt(3). """
     impl = types.CHAR
-    default_length = 64
-    saltid = "$5$"  # $5$ means SHA-256; see crypt(3)
+    default_length = 90
+    saltid = "$6$"  # $5$ means SHA-256; see crypt(3)
 
     def __init__(self, length=default_length, *args, **kwargs):
         super(Crypt, self).__init__(length, *args, **kwargs)

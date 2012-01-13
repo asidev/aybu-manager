@@ -19,6 +19,7 @@ limitations under the License.
 from . base import Base
 from . types import Crypt
 import crypt
+import re
 from logging import getLogger
 from sqlalchemy import Column
 from sqlalchemy import ForeignKey
@@ -28,6 +29,7 @@ from sqlalchemy.orm import (relationship,
                             object_session,
                             validates,
                             joinedload)
+from sqlalchemy.orm.exc import NoResultFound
 
 from . validators import (validate_email,
                           validate_password,
@@ -59,6 +61,8 @@ class User(Base):
     __tablename__ = u'users'
     __table_args__ = ({'mysql_engine': u'InnoDB'})
 
+    hash_re = re.compile(r'(\$[1,5-6]\$|\$2a\$)')
+
     email = Column(Unicode(255), primary_key=True)
     password = Column(Crypt(), nullable=False)
     name = Column(Unicode(128), nullable=False)
@@ -87,17 +91,22 @@ class User(Base):
 
     @classmethod
     def get(cls, session, pkey):
-        return session.query(cls).options(joinedload('groups')).get(pkey)
+        user = session.query(cls).options(joinedload('groups')).get(pkey)
+        if user is None:
+            raise NoResultFound("No obj with key {} in class {}"\
+                                .format(pkey, cls.__name__))
+        return user
 
     @classmethod
     def check(cls, session, email, password):
         try:
             user = cls.get(session, email)
-            enc_password = crypt.crypt(password, user.password[0:2])
+            length = len(cls.hash_re.match(user.password).group())
+            enc_password = crypt.crypt(password, user.password[0:length])
             assert user.password == enc_password
 
-        except:
-            log.error('Invalid login: %s != %s', password, enc_password)
+        except (AssertionError, NoResultFound) :
+            log.error('Invalid login for %s', email)
             raise ValueError('invalid username or password')
 
         else:
