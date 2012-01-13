@@ -56,8 +56,7 @@ def create(context, request):
 def info(context, request):
     env = Environment.get(request.db_session,
                           request.matchdict['name'])
-    res = env.to_dict(paths=True)
-    return res
+    return env.to_dict(paths=True, instances=True)
 
 
 @view_config(route_name='environment', request_method='DELETE')

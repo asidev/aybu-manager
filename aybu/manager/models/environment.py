@@ -157,7 +157,7 @@ class Environment(Base):
 
         return self._paths
 
-    def to_dict(self, paths=False):
+    def to_dict(self, paths=False, instances=False):
         res = super(Environment, self).to_dict()
         if paths:
             for k, v in self.paths._asdict().iteritems():
@@ -165,6 +165,8 @@ class Environment(Base):
                 if not isinstance(v, basestring):
                     v = ', '.join(v)
                 res[key] = v
+        if instances:
+            res['instances'] = [i.domain for i in self.instances]
         return res
 
 
