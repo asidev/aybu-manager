@@ -88,11 +88,10 @@ def delete(context, request):
         request.db_session.flush()
 
     except IntegrityError as e:
-        User.log.exception('Error deleting user {}'.format(email))
         request.db_session.rollback()
         raise HTTPPreconditionFailed(
-            headers={'X-Request-Error': 'Cannot delete user {}:{}'\
-                     .format(email, e)})
+            headers={'X-Request-Error': 'Cannot delete user {}. You must '\
+                     'delete owner themes/instances first'.format(email)})
     else:
         request.db_session.commit()
         raise HTTPNoContent()
