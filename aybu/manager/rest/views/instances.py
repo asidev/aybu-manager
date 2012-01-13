@@ -17,7 +17,10 @@ limitations under the License.
 """
 
 import logging
-from aybu.manager.models import Instance
+from aybu.manager.models import (Instance,
+                                 User,
+                                 Theme,
+                                 Environment)
 from aybu.manager.exc import ParamsError
 from pyramid.view import view_config
 from pyramid.httpexceptions import HTTPConflict
@@ -40,8 +43,10 @@ def deploy(context, request):
             domain=request.params['domain'],
             owner_email=request.params['owner_email'],
             environment_name=request.params['environment_name'],
-            technical_contact_email=request.params['technical_contact_email'],
-            theme_name=request.params.get('theme_name') or None,
+            technical_contact_email=\
+                request.params.get('technical_contact_email',
+                                   request.params['owner_email']),
+            theme_name=request.params.get('theme_name'),
             default_language=request.params.get('default_language', u'it'),
             database_password=request.params.get('database_password'),
             enabled=True if request.params.get('enabled') else False,
@@ -55,11 +60,47 @@ def deploy(context, request):
         raise ParamsError(e)
 
     except NoResultFound:
-        # no instance found, submit the task
-        return request.submit_task('instance.deploy', **params)
+        # no instance found, validate relations.
+        try:
+            field = 'owner_email'
+            cls = 'user'
+            User.log.debug("Validating owner %s", params[field])
+            owner = User.get(request.db_session, params[field])
+            if not owner:
+                raise NoResultFound()
+            if params['technical_contact_email'] != params['owner_email']:
+                field = 'technical_contact_email'
+                User.log.debug("Validating contact %s", params[field])
+                ctc = User.get(request.db_session, params[field])
+                if not ctc:
+                    raise NoResultFound()
+
+            field = 'environment_name'
+            cls = 'environment'
+            Environment.log.debug("validating environment %s", params[field])
+            env = Environment.get(request.db_session, params[field])
+            if not env:
+                raise NoResultFound()
+
+            field = 'theme_name'
+            cls = 'theme'
+            if params[field]:
+                Theme.log.debug("Validating theme %s", params[field])
+                theme = Theme.get(request.db_session, params[field])
+                if not theme:
+                    raise NoResultFound()
+
+        except NoResultFound:
+            raise ParamsError('{} "{}" for {} not found'\
+                              .format(cls.title(), params[field], field))
+
+        else:
+            log.info("Submitting task")
+            # relations exists, submit tasks
+            return request.submit_task('instance.deploy', **params)
 
     else:
-        # found instance, give conflict
+        # found instance, conflict
         error = 'instance for domain {} already exists'.format(params['domain'])
         raise HTTPConflict(headers={'X-Request-Error': error})
 
