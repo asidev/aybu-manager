@@ -112,6 +112,11 @@ class User(Base):
         else:
             return True
 
+    def to_dict(self):
+        res = super(User, self).to_dict()
+        res.update(dict(groups=[g.name for g in self.groups]))
+        return res
+
     def check_password(self, password):
         return self.__class__.check(object_session(self), self.username,
                                     password)
