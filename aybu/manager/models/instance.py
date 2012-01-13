@@ -345,9 +345,10 @@ class Instance(Base):
     def _populate_database(self):
         session = self.create_database_session()
         try:
-            data = json.loads(pkg_resources.resource_stream('aybu.core.data',
-                                                            'default_data.json')\
-                            .read())
+            source_ = pkg_resources.resource_stream('aybu.core.data',
+                                                    'default_data.json')
+
+            data = json.loads(source_.read())
             self.log.debug("Calling add_default_data")
             aybu.core.models.add_default_data(session, data)
 
@@ -391,14 +392,17 @@ class Instance(Base):
 
                 for theme in themes:
                     session.add(theme)
-
-            session.commit()
+            session.flush()
 
         except:
             session.rollback()
             raise
 
+        else:
+            session.commit()
+
         finally:
+            source_.close()
             session.close()
 
     def _enable(self):
