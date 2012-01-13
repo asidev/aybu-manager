@@ -9,17 +9,34 @@
 	},
 	{
 		"cls_": "Group",
-		"name": "zeldagraphics"
+		"name": "zeldagraphic"
 	},
 	{
 		"cls_": "Group",
 		"name": "vbs"
 	},
 	{
+		"cls_": "Group",
+		"name": "author"
+	},
+	{
+		"cls_": "Group",
+		"name": "reseller"
+	},
+	{
+		"cls_": "Group",
+		"name": "client"
+	},
+	{
+		"cls_": "Group",
+		"name": "reportitalia"
+	},
+	{
 		"cls_": "User",
 		"email": "info@videobookservice.it",
 		"name": "Miriam",
 		"surname": "Sari",
+		"groups": ["vbs", "reseller"],
 		"organization": "VideoBookService",
 		"web": "http://www.videobookservice.it/",
 		"twitter": ""
@@ -29,6 +46,7 @@
 		"email": "info@asidev.com",
 		"name": "Asidev",
 		"surname": "S.r.l.",
+		"groups": ["asidev", "admin"],
 		"organization": "Asidev",
 		"web": "http://www.asidev.com/",
 		"twitter": "@asidev"
@@ -38,6 +56,7 @@
 		"email": "a.cappelli@asidev.com",
 		"name": "Andrea",
 		"surname": "Cappelli",
+		"groups": ["asidev", "admin"],
 		"organization": "Asidev",
 		"web": "http://www.asidev.com/",
 		"twitter": "@__andreac__"
@@ -47,6 +66,7 @@
 		"email": "g.bagnoli@asidev.com",
 		"name": "Giacomo",
 		"surname": "Bagnoli",
+		"groups": ["asidev", "admin"],
 		"organization": "Asidev",
 		"web": "http://www.asidev.com/",
 		"twitter": "@gbagnoli"
@@ -56,6 +76,7 @@
 		"email": "s.fontanelli@asidev.com",
 		"name": "Stefano",
 		"surname": "Fontanelli",
+		"groups": ["asidev", "admin"],
 		"organization": "Asidev",
 		"web": "http://www.asidev.com/",
 		"twitter": "@stefontanelli"
@@ -65,6 +86,7 @@
 		"email": "antongiulio@im-studio.it",
 		"name": "Antongiulio",
 		"surname": "Boh",
+		"groups": ["author"],
 		"organization": "ImStudio",
 		"web": "http://www.im-studio.it/",
 		"twitter": ""
@@ -74,6 +96,7 @@
 		"email": "info@ludographicdesign.com",
 		"name": "Ludovico",
 		"surname": "D'Aietti",
+		"groups": ["author"],
 		"organization": "Asidev",
 		"web": "http://www.ludographicdesign.com/",
 		"twitter": ""
@@ -83,6 +106,7 @@
 		"email": "chi.bertin@libero.it",
 		"name": "Chiara",
 		"surname": "Bertin",
+		"groups": ["author"],
 		"organization": "Asidev",
 		"web": "",
 		"twitter": ""
@@ -92,6 +116,7 @@
 		"email": "pana@gp-visualdesign.com",
 		"name": "Giuliano",
 		"surname": "Panaroni",
+		"groups": ["author", "zeldagraphic"],
 		"organization": "Zelda Graphics",
 		"web": "http://www.zeldagraphic.com/",
 		"twitter": ""
@@ -101,6 +126,7 @@
 		"email": "info@liviacirone.it",
 		"name": "Livia",
 		"surname": "Cirone",
+		"groups": ["author"],
 		"organization": "Design Studio",
 		"web": "http://www.liviacirone.it/",
 		"twitter": ""
@@ -110,6 +136,7 @@
 		"email": "info@reportitalia.it",
 		"name": "Reportitalia",
 		"surname": "Sas",
+		"groups": ["reseller", "reportitalia"],
 		"organization": "Reportitalia",
 		"web": "http://www.reportitalia.it/",
 		"twitter": ""

@@ -41,5 +41,13 @@ def import_from_json(session, source):
         cls = globals()[obj_data.pop('cls_')]
         if cls == Theme and 'parent_name' not in obj_data:
             obj_data['parent_name'] = 'base'
+        if cls == User:
+            groups = obj_data.pop("groups", [])
         obj = cls(**obj_data)
+
+        if cls == User:
+            for group_name in groups:
+                group = Group.get(session, group_name)
+                obj.groups.append(group)
+
         session.merge(obj)
