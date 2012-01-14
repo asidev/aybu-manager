@@ -358,6 +358,7 @@ class Instance(Base):
             u = AybuCoreUser(username=self.owner.email,
                              password=self.owner.password)
             session.add(u)
+            u.crypted_password = self.owner.password
 
             AybuCoreSetting.get(session, 'debug').raw_value = 'False'
 
