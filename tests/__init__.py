@@ -25,8 +25,8 @@ def import_data(engine, Session):
     session.configure(bind=engine)
     try:
         import_from_json(session,
-                        pkg_resources.resource_stream('aybu.manager.data',
-                                                    'manager_themes.json'))
+                        pkg_resources.resource_stream(
+                            'aybu.manager.data', 'manager_default_data.json'))
         session.flush()
 
     except:
