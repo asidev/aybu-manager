@@ -49,6 +49,7 @@ from aybu.core.models import Base as AybuCoreBase
 from aybu.core.models import Setting as AybuCoreSetting
 from aybu.core.models import Theme as AybuCoreTheme
 from aybu.core.models import User as AybuCoreUser
+from aybu.core.models import init_session_events as init_core_session_events
 from aybu.core.proxy import Proxy
 from aybu.manager.activity_log.template import render
 from aybu.manager.activity_log.fs import mkdir, create, rm, rmtree, rmdir
@@ -345,6 +346,7 @@ class Instance(Base):
     def _populate_database(self):
         session = self.create_database_session()
         try:
+            init_core_session_events(session)
             source_ = pkg_resources.resource_stream('aybu.core.data',
                                                     'default_data.json')
 
