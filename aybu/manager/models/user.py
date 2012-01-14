@@ -17,7 +17,6 @@ limitations under the License.
 """
 
 from . base import Base
-from . types import Crypt
 import crypt
 import re
 from logging import getLogger
@@ -25,6 +24,7 @@ from sqlalchemy import Column
 from sqlalchemy import ForeignKey
 from sqlalchemy import Unicode
 from sqlalchemy import Table
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import (relationship,
                             object_session,
                             validates,
@@ -62,9 +62,10 @@ class User(Base):
     __table_args__ = ({'mysql_engine': u'InnoDB'})
 
     hash_re = re.compile(r'(\$[1,5-6]\$|\$2a\$)')
+    salt = "$6$"
 
     email = Column(Unicode(255), primary_key=True)
-    password = Column(Crypt(), nullable=False)
+    crypted_password = Column("password", Unicode(128), nullable=False)
     name = Column(Unicode(128), nullable=False)
     surname = Column(Unicode(128), nullable=False)
     organization = Column(Unicode(128))
@@ -88,6 +89,14 @@ class User(Base):
     @validates('twitter')
     def validate_twitter(self, key, twitter):
         return validate_twitter(twitter)
+
+    @hybrid_property
+    def password(self):
+        return self.crypted_password
+
+    @password.setter
+    def password(self, value):
+        self.crypted_password = crypt.crypt(value, self.salt)
 
     @classmethod
     def get(cls, session, pkey):
