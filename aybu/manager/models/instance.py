@@ -427,6 +427,7 @@ class Instance(Base):
         self.log.info("Disabling %s", self)
         session = Session.object_session(self)
         session.activity_log.add(rm, self.paths.vassal_config, deferred=True)
+        session.activity_log.add(rm, self.paths.nginx_config, deferred=True)
 
     def _on_environment_update(self, env, oldenv, attr):
         if not self.attribute_changed(env, oldenv, attr):
