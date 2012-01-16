@@ -78,6 +78,9 @@ class Environment(Base):
             cls.initialize(config)
 
         try:
+            if venv_name is None:
+                venv_name = cls.settings['paths.virtualenv.default']
+
             # create the environment
             env = cls(name=name, venv_name=venv_name)
             session.add(env)
@@ -123,10 +126,7 @@ class Environment(Base):
         c = {k.replace('paths.', ''): self.settings[k]
              for k in self.settings if k.startswith('paths.')}
         configs = join(c['configs'], self.name)
-        if self.venv_name:
-            virtualenv = join(c['virtualenv.base'], self.venv_name)
-        else:
-            virtualenv = c['virtualenv.default']
+        virtualenv = join(c['virtualenv.base'], self.venv_name)
 
         cgroups_base_path = c['cgroups']
         cgroups_rel_path = c['cgroups.relative_path']
