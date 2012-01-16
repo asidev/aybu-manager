@@ -133,10 +133,13 @@ def update(context, request):
         raise ParamsError('No action provided')
 
     elif request.params['action'] in ('enable', 'disable', 'reload', 'kill',
-                                      'sentence', 'flush_cache', 'archive'):
+                                      'sentence', 'flush_cache', 'archive',
+                                      'switch_environment'):
         taskname = "instance.{}".format(request.params['action'])
 
     else:
         raise ParamsError('invalid action {}'.format(request.params['action']))
 
-    return request.submit_task(taskname, id=instance.id)
+    params = dict(request.params)
+    params.pop('action')
+    return request.submit_task(taskname, id=instance.id, **params)
