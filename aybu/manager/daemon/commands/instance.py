@@ -65,6 +65,21 @@ def flush_cache(session, task, id):
     instance.flush_cache()
 
 
+def switch_environment(session, task, id, environment):
+    instance = Instance.get(session, id)
+    new_env = Environment.get(session, environment)
+    reenable = False
+
+    if instance.enabled:
+        reenable = True
+        instance.enabled = False
+
+    instance.environment = new_env
+
+    if reenable:
+        instance.enabled = True
+
+
 def sentence(session, task, id):
     raise NotImplementedError
 
