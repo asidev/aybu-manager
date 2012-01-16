@@ -286,7 +286,9 @@ class Instance(Base):
                                  deferred=True,
                                  skip_rollback=skip_rollback)
         session.activity_log.add(render, self, 'nginx_vhost.mako',
-                                 self.paths.nginx_config)
+                                 self.paths.nginx_config,
+                                 deferred=True,
+                                 skip_rollback=skip_rollback)
         session.activity_log.add(render, self, 'domains.mako',
                                  self.paths.domains_file)
 
