@@ -18,8 +18,11 @@ limitations under the License.
 
 import collections
 import os
-from sqlalchemy import (Column, Unicode)
-from sqlalchemy import event
+from sqlalchemy import (Column,
+                        Integer,
+                        Unicode)
+from sqlalchemy import (event,
+                       func)
 from sqlalchemy.orm import validates
 from aybu.manager.activity_log.fs import mkdir
 from aybu.manager.exc import NotSupported
@@ -32,6 +35,10 @@ Paths = collections.namedtuple('Paths', ['root', 'configs', 'sites',
 LogPaths = collections.namedtuple('Logs', ['dir', 'emperor'])
 SmtpConfig = collections.namedtuple('SmtpConfig', ['host', 'port'])
 OsConf = collections.namedtuple('OsConf', ['user', 'group'])
+UWSGIConf = collections.namedtuple('UWSGIConf', ['subscription_server',
+                                                 'fastrouter'])
+Address = collections.namedtuple('Address', ['address', 'port'])
+
 __all__ = ['Environment']
 
 
@@ -42,6 +49,7 @@ class Environment(Base):
 
     name = Column(Unicode(64), primary_key=True)
     venv_name = Column(Unicode(64))
+    id = Column(Integer, unique=True)
 
     def _on_attr_update(self, value, oldvalue, attr, operation, error_msg):
         if not self.attribute_changed(value, oldvalue, attr):
@@ -81,8 +89,11 @@ class Environment(Base):
             if venv_name is None:
                 venv_name = cls.settings['paths.virtualenv.default']
 
+            max_id = session.query(func.max(cls.id)).one()[0]
+            id_ = max_id + 1 if max_id else 1
+
             # create the environment
-            env = cls(name=name, venv_name=venv_name)
+            env = cls(name=name, venv_name=venv_name, id=id_)
             session.add(env)
             root = env.paths.root
 
@@ -103,6 +114,18 @@ class Environment(Base):
         if not hasattr(self, 'settings') or not self.settings:
             self.log.error('%s has not been initialized', self)
             raise TypeError('%s class has not been initialized' % (self))
+
+    @property
+    def uwsgi_config(self):
+        self.check_initialized()
+        frp = int(self.settings['uwsgi.fastrouter.base_port']) + self.id
+        sp = int(self.settings['uwsgi.subscription_server.base_port']) + self.id
+
+        fr = Address(address=self.settings['uwsgi.fastrouter.address'],
+                     port=frp)
+        ss = Address(address=self.settings['uwsgi.subscription_server.address'],
+                     port=sp)
+        return UWSGIConf(fastrouter=fr, subscription_server=ss)
 
     @property
     def os_config(self):

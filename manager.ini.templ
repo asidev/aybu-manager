@@ -33,6 +33,7 @@ os.smtp_port = 25
 
 paths.root = /srv/www/aybu/
 paths.configs = %(paths.root)s/configs
+paths.nginx_configs = %(paths.root)s/nginx
 paths.sites = %(paths.root)s/sites
 paths.archives = %(paths.root)s/archives
 paths.cgroups = /sys/fs/cgroup
@@ -51,6 +52,10 @@ zmq.result_ttl = 43200
 redis.host = localhost
 redis.port = 6379
 
+uwsgi.fastrouter.address = 127.0.0.1
+uwsgi.fastrouter.base_port = 15500
+uwsgi.subscription_server.address = 127.0.0.1
+uwsgi.subscription_server.base_port = 16600
 
 [pipeline:main]
 # add  egg:WebError#evalerror to the pipeline for debugging

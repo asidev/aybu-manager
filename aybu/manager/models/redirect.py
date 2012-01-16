@@ -29,7 +29,7 @@ from . validators import (validate_hostname,
                           validate_redirect_target_path)
 
 
-__all__ = ['Redirect']
+__all__ = ['Redirect', 'Alias']
 
 
 class Redirect(Base):
@@ -38,12 +38,15 @@ class Redirect(Base):
     __table_args__ = ({'mysql_engine': 'InnoDB'})
 
     source = Column(Unicode(256), primary_key=True)
-    instance_id = Column(Integer, ForeignKey('instances.id',
-                                             onupdate='cascade',
-                                             ondelete='cascade'))
+    instance_id = Column(Integer,
+                         ForeignKey('instances.id',
+                                    onupdate='cascade',
+                                    ondelete='cascade'),
+                         nullable=False
+    )
     instance = relationship('Instance', backref='redirects')
-    target_path = Column(Unicode(256), default=u'')
-    http_code = Column(Integer, default=301)
+    target_path = Column(Unicode(256), default=u'', nullable=False)
+    http_code = Column(Integer, default=301, nullable=False)
 
 
     @validates('source')
@@ -62,3 +65,27 @@ class Redirect(Base):
         target = "{}{}".format(self.instance.domain, self.target_path)
         return '<Redirect {self.source} => {target} (code: {self.http_code})>'\
                 .format(target=target, self=self)
+
+
+class Alias(Base):
+
+    __tablename__ = u'aliases'
+    __table_args__ = ({'mysql_engine': 'InnoDB'})
+
+    domain = Column(Unicode(256), primary_key=True)
+    instance_id = Column(Integer,
+                         ForeignKey('instances.id',
+                                    onupdate='cascade',
+                                    ondelete='cascade'),
+                         nullable=False
+    )
+    instance = relationship('Instance', backref='aliases')
+
+    @validates('source')
+    def validate_source(self, key, source):
+        return validate_hostname(source)
+
+    def __repr__(self):
+        return '<Alias {self.domain} for {self.instance.domain}>'\
+                .format(self=self)
+

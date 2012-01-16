@@ -130,8 +130,11 @@ class ActivityLogTests(unittest.TestCase):
             paths=namedtuple('Paths', ['config'])(
                 config='MYDUMMYCONFIG'
             ),
-            environment= namedtuple('Environment', ['smtp_config', 'os_config'])(
+            environment= namedtuple('Environment', ['smtp_config',
+                                                    'uwsgi_config',
+                                                    'os_config'])(
                 smtp_config=None,
+                uwsgi_config=None,
                 os_config=None
             )
         )

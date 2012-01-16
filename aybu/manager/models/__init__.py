@@ -19,7 +19,7 @@ limitations under the License.
 import json
 
 from . instance import Instance
-from . redirect import Redirect
+from . redirect import Redirect, Alias
 from . environment import Environment
 from . user import User, Group
 from . theme import Theme
@@ -27,7 +27,7 @@ from . base import Base
 
 
 __all__ = ['Instance', 'Environment', 'Redirect', 'User', 'Group', 'Theme',
-           'Base', 'import_from_json']
+           'Base', 'Alias', 'import_from_json']
 
 
 def import_from_json(session, source):

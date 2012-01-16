@@ -66,8 +66,8 @@ __all__ = ['Instance']
 Paths = collections.namedtuple('Paths', ['config', 'vassal_config', 'dir',
                                          'cgroups', 'logs', 'socket', 'session',
                                          'data', 'mako_tmp_dir', 'cache',
-                                         'instance_dir', 'wsgi_script',
-                                         'virtualenv'])
+                                         'domains_file', 'instance_dir',
+                                         'wsgi_script', 'virtualenv'])
 LogPaths = collections.namedtuple('LogPaths', ['dir', 'vassal', 'application'])
 DataPaths = collections.namedtuple('DataPaths', ['dir', 'default'])
 SessionPaths = collections.namedtuple('SessionPaths', ['data_dir', 'lock_dir'])
@@ -194,6 +194,7 @@ class Instance(Base):
             data=data,
             mako_tmp_dir=join(cache, 'templates'),
             cache=cache,
+            domains_file=join(dir_, 'domains.txt'),
             instance_dir=join(dir_, 'aybu', 'instances', self.python_name),
             wsgi_script=join(dir_, 'main.py'),
             virtualenv=env.virtualenv,
@@ -270,7 +271,7 @@ class Instance(Base):
         self._database_session = sessionmaker(bind=self.database_engine)
         return self._database_session(*args, **kwargs)
 
-    def _write_vassal_ini(self, session=None, skip_rollback=False):
+    def _write_uwsgi_conf(self, session=None, skip_rollback=False):
         session = session or Session.object_session(self)
         if session is None:
             raise DetachedInstanceError()
@@ -278,6 +279,8 @@ class Instance(Base):
                                  self.paths.vassal_config,
                                  deferred=True,
                                  skip_rollback=skip_rollback)
+        session.activity_log.add(render, self, 'domains.mako',
+                                 self.paths.domains_file)
 
     def _rewrite_configuration(self, session=None):
         session = session or Session.object_session(self)
@@ -410,7 +413,7 @@ class Instance(Base):
 
     def _enable(self):
         self.log.info("Enabling instance %s", self)
-        self._write_vassal_ini()
+        self._write_uwsgi_conf()
 
     def _disable(self):
         self.log.info("Disabling %s", self)
@@ -483,7 +486,7 @@ class Instance(Base):
             instance._install_package(session)
             instance._create_database(session)
             instance._populate_database()
-            instance._write_vassal_ini()
+            instance._write_uwsgi_conf()
             instance.flush_cache()
             if enabled:
                 instance.enabled = True
@@ -499,7 +502,7 @@ class Instance(Base):
         if not self.enabled:
             raise OperationalError('Cannot reload a disabled instance')
         self.log.info("Reloading %s", self)
-        self._write_vassal_ini(skip_rollback=True)
+        self._write_uwsgi_conf(skip_rollback=True)
 
 
     def delete(self, session=None):

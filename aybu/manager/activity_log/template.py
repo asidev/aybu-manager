@@ -45,9 +45,12 @@ class render(Action):
             self.log.debug("rendering of %s has been deferred", self.target)
 
     def render(self):
-        return self.template.render(instance=self.instance,
-                                    os=self.instance.environment.os_config,
-                                    smtp=self.instance.environment.smtp_config)
+        return self.template.render(
+                        instance=self.instance,
+                        uwsgi=self.instance.environment.uwsgi_config,
+                        os=self.instance.environment.os_config,
+                        smtp=self.instance.environment.smtp_config
+        )
 
     def write(self):
         self.written = True

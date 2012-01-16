@@ -42,6 +42,8 @@ def upgrade():
     op.create_table(u'environments',
         sa.Column('name', sa.Unicode(length=64), nullable=False),
         sa.Column('venv_name', sa.Unicode(length=64), nullable=True),
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.UniqueConstraint('id'),
         sa.PrimaryKeyConstraint('name')
     )
 
@@ -91,6 +93,13 @@ def upgrade():
         sa.Column('http_code', sa.Integer(), nullable=True),
         sa.ForeignKeyConstraint(['instance_id'], ['instances.id'], ),
         sa.PrimaryKeyConstraint('source')
+    )
+
+    op.create_table(u'aliases',
+        sa.Column('domain', sa.Unicode(length=256), nullable=False),
+        sa.Column('instance_id', sa.Integer(), nullable=True),
+        sa.ForeignKeyConstraint(['instance_id'], ['instances.id'], ),
+        sa.PrimaryKeyConstraint('domain')
     )
 
 def downgrade():
