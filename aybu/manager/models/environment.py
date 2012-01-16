@@ -29,7 +29,7 @@ from aybu.manager.exc import NotSupported
 from . base import Base
 from . validators import validate_name
 
-Paths = collections.namedtuple('Paths', ['root', 'configs', 'sites',
+Paths = collections.namedtuple('Paths', ['root', 'configs', 'sites', 'nginx',
                                          'archives', 'cgroups', 'logs', 'run',
                                          'virtualenv'])
 LogPaths = collections.namedtuple('Logs', ['dir', 'emperor'])
@@ -170,6 +170,7 @@ class Environment(Base):
         self._paths = Paths(root=c['root'],
                             configs=configs,
                             sites=c['sites'],
+                            nginx=c['nginx'],
                             archives=c['archives'],
                             cgroups=cgroups,
                             logs=LogPaths(dir=c['logs'],

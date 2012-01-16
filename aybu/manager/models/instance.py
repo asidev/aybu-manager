@@ -67,8 +67,12 @@ Paths = collections.namedtuple('Paths', ['config', 'vassal_config', 'dir',
                                          'cgroups', 'logs', 'socket', 'session',
                                          'data', 'mako_tmp_dir', 'cache',
                                          'domains_file', 'instance_dir',
-                                         'wsgi_script', 'virtualenv'])
-LogPaths = collections.namedtuple('LogPaths', ['dir', 'vassal', 'application'])
+                                         'nginx_config', 'wsgi_script',
+                                         'virtualenv'])
+LogPaths = collections.namedtuple('LogPaths', ['dir',
+                                               'vassal',
+                                               'application',
+                                               'nginx'])
 DataPaths = collections.namedtuple('DataPaths', ['dir', 'default'])
 SessionPaths = collections.namedtuple('SessionPaths', ['data_dir', 'lock_dir'])
 SessionConfig = collections.namedtuple('SessionConfig', ['paths', 'key',
@@ -186,6 +190,7 @@ class Instance(Base):
             cgroups=[join(ctrl, self.domain) for ctrl in env.cgroups],
             logs=LogPaths(
                       dir=join(env.logs.dir, self.domain),
+                      nginx=join(env.logs.dir, self.domain, 'nginx.error.log'),
                       vassal=join(env.logs.dir, self.domain, 'uwsgi_vassal.log'),
                       application=join(env.logs.dir, self.domain,
                                        'application.log')),
@@ -195,6 +200,7 @@ class Instance(Base):
             mako_tmp_dir=join(cache, 'templates'),
             cache=cache,
             domains_file=join(dir_, 'domains.txt'),
+            nginx_config=join(env.nginx, '{}.conf'.format(self.domain)),
             instance_dir=join(dir_, 'aybu', 'instances', self.python_name),
             wsgi_script=join(dir_, 'main.py'),
             virtualenv=env.virtualenv,
@@ -279,6 +285,8 @@ class Instance(Base):
                                  self.paths.vassal_config,
                                  deferred=True,
                                  skip_rollback=skip_rollback)
+        session.activity_log.add(render, self, 'nginx_vhost.mako',
+                                 self.paths.nginx_config)
         session.activity_log.add(render, self, 'domains.mako',
                                  self.paths.domains_file)
 

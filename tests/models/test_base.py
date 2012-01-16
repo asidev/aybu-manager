@@ -61,6 +61,7 @@ class ManagerModelsTestsBase(TestsBase):
         self.config['paths.root'] = self.tempdir
         self.config['paths.cgroups'] = '{}/cgroups'.format(self.tempdir)
         self.config['paths.sites'] = '{}/sites'.format(self.tempdir)
+        self.config['paths.nginx'] = '{}/nginx'.format(self.tempdir)
         self.config['paths.configs'] = '{}/configs'.format(self.tempdir)
         self.config['paths.archives'] = '{}/archives'.format(self.tempdir)
         self.config['paths.run'] = '{}/run'.format(self.tempdir)

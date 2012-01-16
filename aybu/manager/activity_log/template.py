@@ -45,7 +45,9 @@ class render(Action):
             self.log.debug("rendering of %s has been deferred", self.target)
 
     def render(self):
+        from aybu.manager.models import Environment
         return self.template.render(
+                        settings=Environment.settings,
                         instance=self.instance,
                         uwsgi=self.instance.environment.uwsgi_config,
                         os=self.instance.environment.os_config,
