@@ -421,6 +421,8 @@ class Instance(Base):
 
     def _enable(self):
         self.log.info("Enabling instance %s", self)
+        session = Session.object_session(self)
+        self._install_package(session)
         self._write_uwsgi_conf()
 
     def _disable(self):
@@ -428,6 +430,9 @@ class Instance(Base):
         session = Session.object_session(self)
         session.activity_log.add(rm, self.paths.vassal_config, deferred=True)
         session.activity_log.add(rm, self.paths.nginx_config, deferred=True)
+        session.activity_log.add(uninstall, self.paths.dir,
+                                self.paths.virtualenv,
+                                self.python_package_name)
 
     def _on_environment_update(self, env, oldenv, attr):
         if not self.attribute_changed(env, oldenv, attr):
@@ -492,10 +497,8 @@ class Instance(Base):
 
             instance._create_structure(session)
             instance._create_python_package_paths(session)
-            instance._install_package(session)
             instance._create_database(session)
             instance._populate_database()
-            instance._write_uwsgi_conf()
             instance.flush_cache()
             if enabled:
                 instance.enabled = True
@@ -525,9 +528,6 @@ class Instance(Base):
 
         try:
             # TODO: flush
-            session.activity_log.add(uninstall, self.paths.dir,
-                                    self.paths.virtualenv,
-                                    self.python_package_name)
             session.activity_log.add_group(drop_database, session,
                                            self.database_config)
 
