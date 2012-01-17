@@ -104,9 +104,13 @@ def update(context, request):
         raise ParamsError("Missing update fields")
 
     for param in params:
-       setattr(redirect, param, params[param])
+        attr = param if param != "destination" else "instance"
+        redirect.log.debug("Setting param %s to %s on redirect %s",
+                  attr, params[param], redirect)
+        setattr(redirect, attr, params[param])
 
     try:
+        redirect.log.debug("Flushing %s", redirect)
         request.db_session.flush()
 
     except IntegrityError as e:

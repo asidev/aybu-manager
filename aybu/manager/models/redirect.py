@@ -48,6 +48,10 @@ class Redirect(Base):
     target_path = Column(Unicode(256), default=u'', nullable=False)
     http_code = Column(Integer, default=301, nullable=False)
 
+    def to_dict(self):
+        res = super(Redirect, self).to_dict()
+        res['destination'] = self.instance.domain
+        return res
 
     @validates('source')
     def validate_source(self, key, source):
