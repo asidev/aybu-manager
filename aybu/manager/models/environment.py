@@ -18,6 +18,7 @@ limitations under the License.
 
 import collections
 import os
+import pkg_resources
 from sqlalchemy import (Column,
                         Integer,
                         Unicode)
@@ -31,7 +32,7 @@ from . validators import validate_name
 
 Paths = collections.namedtuple('Paths', ['root', 'configs', 'sites', 'nginx',
                                          'archives', 'cgroups', 'logs', 'run',
-                                         'virtualenv'])
+                                         'themes', 'virtualenv'])
 LogPaths = collections.namedtuple('Logs', ['dir', 'emperor'])
 SmtpConfig = collections.namedtuple('SmtpConfig', ['host', 'port'])
 OsConf = collections.namedtuple('OsConf', ['user', 'group'])
@@ -167,10 +168,17 @@ class Environment(Base):
         else:
             cgroups = [join(cgroups_base_path, cgroups_rel_path)]
 
+        themes = os.path.realpath(
+            pkg_resources.resource_filename(
+                'aybu.themes.base', 'static'
+            )).replace('/base/static', '')
+
+
         self._paths = Paths(root=c['root'],
                             configs=configs,
                             sites=c['sites'],
                             nginx=c['nginx'],
+                            themes=themes,
                             archives=c['archives'],
                             cgroups=cgroups,
                             logs=LogPaths(dir=c['logs'],

@@ -268,6 +268,13 @@ class Instance(Base):
         )
         return self._database_engine
 
+    @property
+    def themes_chain(self):
+        theme = self.theme
+        while theme:
+            yield theme
+            theme = theme.parent
+
     def create_database_session(self, *args, **kwargs):
         if hasattr(self, "_database_session"):
             return self._database_session(*args, **kwargs)
@@ -314,12 +321,12 @@ class Instance(Base):
         session.activity_log.add(mkdir, self.paths.instance_dir,
                                  recursive_delete=True)
         session.activity_log.add(mkdir,
-                                 join(self.paths.instance_dir, "public"),
+                                 join(self.paths.instance_dir, "static"),
                                  recursive_delete=True)
         session.activity_log.add(mkdir,
                                  join(self.paths.instance_dir, "templates"),
                                  recursive_delete=True)
-        uploads = join(self.paths.instance_dir, "public", "uploads")
+        uploads = join(self.paths.instance_dir, "static", "uploads")
         session.activity_log.add(mkdir, uploads, recursive_delete=True)
         session.activity_log.add(render, self, 'setup.py.mako', join(base,
                                                                'setup.py'))

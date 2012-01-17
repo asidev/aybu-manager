@@ -141,5 +141,5 @@ def update(context, request):
         raise ParamsError('invalid action {}'.format(request.params['action']))
 
     params = dict(request.params)
-    params.pop('action')
+    params.pop('action', '')
     return request.submit_task(taskname, id=instance.id, **params)
