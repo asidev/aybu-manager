@@ -15,6 +15,7 @@ server {
 		% else:
 		try_files $uri =404;
 		% endif
+		expires max;
 	}
 
 	% for i, theme in enumerate(chain):
@@ -25,6 +26,7 @@ server {
 	% else:
 		try_files $uri =404;
 	% endif
+		expires max;
 	}
 
 	% endfor

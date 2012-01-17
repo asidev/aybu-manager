@@ -58,6 +58,11 @@ uwsgi.subscription_server.address = 127.0.0.1
 uwsgi.subscription_server.base_port = 16600
 
 nginx.port = 8080
+proxy.address = 127.0.0.1
+proxy.port = 80
+# True or False: must be python bool literals
+proxy.enabled = True
+
 
 [pipeline:main]
 # add  egg:WebError#evalerror to the pipeline for debugging

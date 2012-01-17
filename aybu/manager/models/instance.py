@@ -39,7 +39,8 @@ from sqlalchemy.orm import (sessionmaker,
                             relationship,
                             backref,
                             validates)
-from sqlalchemy.orm.exc import DetachedInstanceError
+from sqlalchemy.orm.exc import (DetachedInstanceError,
+                                NoResultFound)
 from sqlalchemy import event
 
 import pwgen
@@ -49,6 +50,7 @@ from aybu.core.models import Base as AybuCoreBase
 from aybu.core.models import Setting as AybuCoreSetting
 from aybu.core.models import Theme as AybuCoreTheme
 from aybu.core.models import User as AybuCoreUser
+from aybu.core.models import Group as AybuCoreGroup
 from aybu.core.models import init_session_events as init_core_session_events
 from aybu.core.proxy import Proxy
 from aybu.manager.activity_log.template import render
@@ -57,6 +59,8 @@ from aybu.manager.activity_log.packages import install, uninstall
 from aybu.manager.activity_log.database import create_database, drop_database
 from aybu.manager.exc import OperationalError, NotSupported
 from . base import Base
+from . user import (User,
+                    Group)
 from . validators import (validate_hostname,
                           validate_language,
                           validate_password)
@@ -363,7 +367,7 @@ class Instance(Base):
         AybuCoreBase.metadata.bind=self.database_engine
         AybuCoreBase.metadata.create_all(self.database_engine)
 
-    def _populate_database(self):
+    def _populate_database(self, manager_session):
         session = self.create_database_session()
         try:
             init_core_session_events(session)
@@ -374,14 +378,40 @@ class Instance(Base):
             self.log.debug("Calling add_default_data")
             aybu.core.models.add_default_data(session, data)
 
-            self.log.debug("Adding user %s", self.owner.email)
-            u = AybuCoreUser(username=self.owner.email,
-                             password=self.owner.password)
-            session.add(u)
-            u.crypted_password = self.owner.password
+            # copy admin users and owner to instance db.
+            users = User.search(manager_session,
+                                User.groups.any(Group.name == u'admin'))
+            if self.owner not in users:
+                users.append(self.owner)
 
+            for user in users:
+                self.log.debug("Adding user %s", user.email)
+                core_user = AybuCoreUser(username=user.email,
+                                         password=user.password)
+                session.add(core_user)
+                core_user.crypted_password = user.password
+
+                for group in user.groups:
+                    try:
+                        core_group = AybuCoreGroup.get(session, group.name)
+
+                    except NoResultFound:
+                        core_group = AybuCoreGroup(name=group.name)
+                        session.add(core_group)
+
+                    core_user.groups.append(core_group)
+
+            # modify settings for instance: debug and proxy support
             AybuCoreSetting.get(session, 'debug').raw_value = 'False'
 
+            AybuCoreSetting.get(session, 'proxy_enabled').raw_value = \
+                    self.environment.settings['proxy.enabled']
+            AybuCoreSetting.get(session, 'proxy_port').raw_value = \
+                    self.environment.settings['proxy.port']
+            AybuCoreSetting.get(session, 'proxy_address').raw_value = \
+                    self.environment.settings['proxy.address']
+
+            # setup theme in aybu instance
             if self.theme:
                 self.log.info("Using theme %s for instance", self.theme.name)
                 for setting_name in ('banner_width', 'banner_height',
@@ -507,7 +537,7 @@ class Instance(Base):
             instance._create_structure(session)
             instance._create_python_package_paths(session)
             instance._create_database(session)
-            instance._populate_database()
+            instance._populate_database(session)
             instance.flush_cache()
             if enabled:
                 instance.enabled = True
