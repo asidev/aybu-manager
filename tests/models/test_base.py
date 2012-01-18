@@ -70,6 +70,9 @@ class ManagerModelsTestsBase(TestsBase):
 
         self.config['paths.virtualenv.base'] = os.path.dirname(venv)
         self.config['paths.logs'] = '{}/logs'.format(self.tempdir)
+        self.config['proxy.enabled'] = 'False'
+        self.config['proxy.port'] = '80'
+        self.config['proxy.address'] = '127.0.0.1'
 
         # fake cgroups
         rel = self.config['paths.cgroups.relative_path']

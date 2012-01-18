@@ -21,11 +21,13 @@ import os
 import pkg_resources
 from sqlalchemy import (Column,
                         Integer,
-                        Unicode)
-from sqlalchemy import (event,
-                       func)
-from sqlalchemy.orm import validates
+                        Unicode,
+                        event,
+                        func)
+from sqlalchemy.orm import (Session,
+                            validates)
 from aybu.manager.activity_log.fs import mkdir
+from aybu.manager.activity_log.command import command
 from aybu.manager.exc import NotSupported
 from . base import Base
 from . validators import validate_name
@@ -201,6 +203,15 @@ class Environment(Base):
             res['instances'] = [i.domain for i in self.instances]
         return res
 
+    def restart_services(self):
+        try:
+            restart_cmd = self.settings['nginx.restart.cmd']
+            session = Session.object_session(self)
+            session.activity_log.add(command, restart_cmd, on_commit=True,
+                                     on_rollback=True)
+
+        except KeyError:
+            pass
 
     def __repr__(self):
         return '<Environment {self.name}>'.format(self=self)

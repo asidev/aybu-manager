@@ -302,6 +302,7 @@ class Instance(Base):
                                  skip_rollback=skip_rollback)
         session.activity_log.add(render, self, 'domains.mako',
                                  self.paths.domains_file)
+        self.environment.restart_services()
 
     def _rewrite_configuration(self, session=None):
         session = session or Session.object_session(self)
@@ -472,6 +473,7 @@ class Instance(Base):
         session.activity_log.add(uninstall, self.paths.dir,
                                 self.paths.virtualenv,
                                 self.python_package_name)
+        self.environment.restart_services()
 
     def _on_environment_update(self, env, oldenv, attr):
         if not self.attribute_changed(env, oldenv, attr):
