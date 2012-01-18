@@ -119,7 +119,7 @@ class User(Base):
             raise ValueError('invalid username or password')
 
         else:
-            return True
+            return user
 
     def to_dict(self):
         res = super(User, self).to_dict()

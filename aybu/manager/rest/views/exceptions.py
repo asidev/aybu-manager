@@ -16,7 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-
+import logging
 from aybu.manager.exc import (ParamsError,
                               TaskExistsError,
                               TaskNotFoundError,
@@ -25,12 +25,21 @@ from pyramid.view import view_config
 from pyramid.httpexceptions import (HTTPBadRequest,
                                     HTTPNoContent,
                                     HTTPCreated,
+                                    HTTPUnauthorized,
+                                    HTTPForbidden,
                                     HTTPNotFound,
                                     HTTPConflict,
                                     HTTPPreconditionFailed,
                                     HTTPNotImplemented)
+from pyramid.security import (NO_PERMISSION_REQUIRED,
+                              authenticated_userid)
 
 from sqlalchemy.orm.exc import NoResultFound
+
+
+DISABLED_METH_COLL = ('DELETE', 'PUT', 'OPTIONS', 'TRACE', 'CONNECT')
+DISABLED_METH_OBJ = ('POST', 'OPTIONS', 'TRACE', 'CONNECT')
+log = logging.getLogger(__name__)
 
 
 def generate_empty_response(context, request, status, add_headers={}):
@@ -41,12 +50,8 @@ def generate_empty_response(context, request, status, add_headers={}):
     response.headers.update({'Content-Length': 0,
                              'Content-Type': 'application/json; charset=UTF-8'})
     response.headers.update(add_headers)
+    # TODO add logging with ip/user/agent etc etc
     return response
-
-
-DISABLED_METH_COLL = ('DELETE', 'PUT', 'OPTIONS', 'TRACE', 'CONNECT')
-DISABLED_METH_OBJ = ('POST', 'OPTIONS', 'TRACE', 'CONNECT')
-ALL_BUT_GET = ('DELETE', 'PUT', 'OPTIONS', 'TRACE', 'CONNECT', 'PUT')
 
 
 @view_config(route_name='archives', request_method=DISABLED_METH_COLL)
@@ -75,12 +80,20 @@ def method_not_allowed(context, request):
 
 @view_config(context=HTTPCreated)
 @view_config(context=HTTPNoContent)
-@view_config(context=HTTPNotFound)
+@view_config(context=HTTPUnauthorized, permission=NO_PERMISSION_REQUIRED)
+@view_config(context=HTTPForbidden, permission=NO_PERMISSION_REQUIRED)
+@view_config(context=HTTPNotFound, permission=NO_PERMISSION_REQUIRED)
 @view_config(context=HTTPBadRequest)
 @view_config(context=HTTPConflict)
 @view_config(context=HTTPPreconditionFailed)
 def created(context, request):
-    return generate_empty_response(context, request, context.code)
+    if isinstance(context, HTTPForbidden) and \
+       not authenticated_userid(request):
+        code = 401
+        context = HTTPUnauthorized()
+    else:
+        code = context.code
+    return generate_empty_response(context, request, code)
 
 
 @view_config(context=TaskNotFoundError)
@@ -105,3 +118,6 @@ def conflict(context, request):
 @view_config(context=HTTPNotImplemented)
 def not_implemented(context, request):
     return generate_empty_response(context, request, 501)
+
+def unauthorized(context, request):
+    return generate_empty_response(context, request, 401)

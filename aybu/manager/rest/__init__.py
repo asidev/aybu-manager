@@ -18,6 +18,7 @@ limitations under the License.
 
 import logging
 import zmq
+import pyramid.security
 from pyramid.config import Configurator
 from sqlalchemy import engine_from_config
 from zmq.devices.basedevice import ThreadDevice
@@ -35,6 +36,7 @@ def main(global_config, **settings):
     authentication_policy = AuthenticationPolicy(
                             realm=settings['authentication.realm'])
     config = Configurator(settings=settings, request_factory=Request,
+                          default_permission=pyramid.security.Authenticated,
                           authentication_policy=authentication_policy)
 
     config.include(includeme)
@@ -62,20 +64,21 @@ def includeme(config):
 
 
 def add_routes(config):
-    config.add_route('instances', '/instances')
-    config.add_route('instance', '/instances/{domain}')
-    config.add_route('archives', '/archives')
-    config.add_route('archive', '/archives/{name}')
-    config.add_route('themes', '/themes')
-    config.add_route('theme', '/themes/{name}')
-    config.add_route('redirects', '/redirects')
-    config.add_route('redirect', '/redirects/{source}')
-    config.add_route('environments', '/environments')
-    config.add_route('environment', '/environments/{name}')
-    config.add_route('users', '/users')
-    config.add_route('user', '/users/{email}')
-    config.add_route('groups', '/groups')
-    config.add_route('group', '/groups/{name}')
-    config.add_route('tasks', '/tasks')
-    config.add_route('task', '/tasks/{uuid}')
-    config.add_route('tasklogs', '/tasks/{uuid}/logs')
+    admin_factory = 'aybu.manager.rest.authentication.AdminFactory'
+    config.add_route('instances', '/instances', factory=admin_factory)
+    config.add_route('instance', '/instances/{domain}', factory=admin_factory)
+    config.add_route('archives', '/archives', factory=admin_factory)
+    config.add_route('archive', '/archives/{name}', factory=admin_factory)
+    config.add_route('themes', '/themes', factory=admin_factory)
+    config.add_route('theme', '/themes/{name}', factory=admin_factory)
+    config.add_route('redirects', '/redirects', factory=admin_factory)
+    config.add_route('redirect', '/redirects/{source}', factory=admin_factory)
+    config.add_route('environments', '/environments', factory=admin_factory)
+    config.add_route('environment', '/environments/{name}', factory=admin_factory)
+    config.add_route('users', '/users', factory=admin_factory)
+    config.add_route('user', '/users/{email}', factory=admin_factory)
+    config.add_route('groups', '/groups', factory=admin_factory)
+    config.add_route('group', '/groups/{name}', factory=admin_factory)
+    config.add_route('tasks', '/tasks', factory=admin_factory)
+    config.add_route('task', '/tasks/{uuid}', factory=admin_factory)
+    config.add_route('tasklogs', '/tasks/{uuid}/logs', factory=admin_factory)

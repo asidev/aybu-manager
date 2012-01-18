@@ -16,48 +16,31 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import binascii
+import logging
 
 from zope.interface import implements
-
 from paste.httpheaders import AUTHORIZATION
 from paste.httpheaders import WWW_AUTHENTICATE
-
 from pyramid.interfaces import IAuthenticationPolicy
-from pyramid.security import Everyone
-from pyramid.security import Authenticated
-
+import pyramid.httpexceptions
+import pyramid.security
 from aybu.manager.models import User
 
-__all__ = ['AuthenticationPolicy']
+log = logging.getLogger(__name__)
+__all__ = ['AuthenticationPolicy', 'AdminFactory']
 
 
 def _get_basicauth_credentials(request):
-    authorization = AUTHORIZATION(request.environ)
     try:
+        authorization = AUTHORIZATION(request.environ)
         authmeth, auth = authorization.split(' ', 1)
+        assert authmeth.lower() == 'basic'
+        auth = auth.strip().decode('base64')
+        username, password = auth.split(':', 1)
+        return {'username':username, 'password':password}
 
-    except ValueError:
-        # not enough values to unpack
+    except (AssertionError, ValueError, binascii):
         return None
-
-    if authmeth.lower() == 'basic':
-        try:
-            auth = auth.strip().decode('base64')
-
-        except binascii.Error:
-            # can't decode
-            return None
-
-        try:
-            login, password = auth.split(':', 1)
-
-        except ValueError:
-            # not enough values to unpack
-            return None
-
-        return {'email':login, 'password':password}
-
-    return None
 
 
 class BasicAuthenticationPolicy(object):
@@ -89,30 +72,30 @@ class BasicAuthenticationPolicy(object):
         if credentials is None:
             return None
 
-        userid = credentials['login']
+        userid = credentials['username']
         if not self.check(credentials, request) is None:
             return userid
 
     def effective_principals(self, request):
-        effective_principals = [Everyone]
+        effective_principals = [pyramid.security.Everyone]
         credentials = _get_basicauth_credentials(request)
         if credentials is None:
             return effective_principals
 
-        userid = credentials['login']
+        userid = credentials['username']
         groups = self.check(credentials, request)
         if groups is None: # is None!
             return effective_principals
 
-        effective_principals.append(Authenticated)
-        effective_principals.append(userid)
+        effective_principals.append(pyramid.security.Authenticated)
         effective_principals.extend(groups)
+        effective_principals.append(userid)
         return effective_principals
 
     def unauthenticated_userid(self, request):
         creds = self._get_credentials(request)
         if not creds is None:
-            return creds['login']
+            return creds['username']
 
         return None
 
@@ -127,20 +110,31 @@ class BasicAuthenticationPolicy(object):
 class AuthenticationPolicy(BasicAuthenticationPolicy):
 
     def __init__(self, realm='Realm'):
+        log.info("Creating AuthenticationPolicy for realm %s", realm)
         super(AuthenticationPolicy, self).__init__(check=self.check_user,
                                                    realm=realm)
 
     def check_user(self, credentials, request):
-        email = credentials['email']
+        username = credentials['username']
         password = credentials['password']
 
         try:
-            user = User.get(request.db_session, email)
-            if not user.check(password):
-                return None
+            user = User.check(request.db_session, username, password)
 
         except:
             return None
 
         else:
-            return [group.name for group in user.groups]
+            groups = [group.name for group in user.groups]
+            return groups
+
+
+class AdminFactory(object):
+
+    __acl__ = [(pyramid.security.Allow,
+                "admin",
+                pyramid.security.ALL_PERMISSIONS),
+               pyramid.security.DENY_ALL]
+
+    def __init__(self, request):
+        pass
