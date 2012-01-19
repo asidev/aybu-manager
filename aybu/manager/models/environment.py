@@ -200,7 +200,7 @@ class Environment(Base):
                                                   "{}.conf".format(self.name)),
                              dir=c['configs'])
 
-
+        log = join(c['logs'], "{}_emperor.log".format(self.name))
         self._paths = Paths(root=c['root'],
                             configs=configs,
                             sites=c['sites'],
@@ -208,8 +208,7 @@ class Environment(Base):
                             archives=c['archives'],
                             cgroups=cgroups,
                             logs=LogPaths(dir=c['logs'],
-                                      emperor=join(c['logs'],
-                                                   'uwsgi_emperor.log')),
+                                      emperor=log),
                             run=c['run'],
                             virtualenv=virtualenv)
 
