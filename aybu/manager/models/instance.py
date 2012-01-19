@@ -24,6 +24,8 @@ import os
 import pkg_resources
 import uuid
 
+import alembic
+import alembic.config
 from sqlalchemy import (UniqueConstraint,
                         ForeignKey,
                         Column,
@@ -279,6 +281,18 @@ class Instance(Base):
             yield theme
             theme = theme.parent
 
+    @property
+    def alembic(self):
+        try:
+            cfg = self._alembic
+
+        except AttributeError:
+            cfg = alembic.config.Config(self.paths.config)
+            self._alembic = cfg
+
+        finally:
+            return cfg
+
     def create_database_session(self, *args, **kwargs):
         if hasattr(self, "_database_session"):
             return self._database_session(*args, **kwargs)
@@ -459,6 +473,7 @@ class Instance(Base):
 
         else:
             session.commit()
+            self.stamp_schema("head")
 
         finally:
             source_.close()
@@ -609,6 +624,15 @@ class Instance(Base):
             proxy.ban('^/.*')
         finally:
             instance_session.close()
+
+    def upgrade_schema(self, revision='head'):
+        """ Uses alembic to migrate aybu.core schema to given revision """
+        self.log.info("Upgrading schema to revision '%s'", revision)
+        alembic.command.upgrade(self.alembic, revision)
+
+    def stamp_schema(self, revision='head'):
+        self.log.info("Stamping schema as revision '%s'", revision)
+        alembic.command.stamp(self.alembic, revision)
 
 
 event.listen(Instance.environment, 'set', Instance._on_environment_update)

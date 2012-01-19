@@ -40,7 +40,7 @@ from . validators import validate_name
 
 Paths = collections.namedtuple('Paths', ['root', 'configs', 'sites',
                                          'archives', 'cgroups', 'logs', 'run',
-                                         'themes', 'virtualenv'])
+                                         'themes', 'virtualenv', 'migrations'])
 LogPaths = collections.namedtuple('Logs', ['dir', 'emperor'])
 SmtpConfig = collections.namedtuple('SmtpConfig', ['host', 'port'])
 OsConf = collections.namedtuple('OsConf', ['user', 'group'])
@@ -234,6 +234,9 @@ class Environment(Base):
                 'aybu.themes.base', 'static'
             )).replace('/base/static', '')
 
+        migrations = os.path.realpath(
+            pkg_resources.resource_filename('aybu.core.models', 'migrations'))
+
         configs = ConfigDirs(uwsgi=join(c['configs.uwsgi'], self.name),
                              nginx=c['configs.nginx'],
                              supervisor_dir=c['configs.supervisor'],
@@ -246,6 +249,7 @@ class Environment(Base):
                             configs=configs,
                             sites=c['sites'],
                             themes=themes,
+                            migrations=migrations,
                             archives=c['archives'],
                             cgroups=cgroups,
                             logs=LogPaths(dir=c['logs'],

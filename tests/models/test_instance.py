@@ -102,6 +102,9 @@ class InstanceTests(ManagerModelsTestsBase):
         instance.enabled = True
         self.session.commit()
 
+        # "test" migration: call it at least once :(
+        instance.upgrade_schema('head')
+
         # test delete
         with self.assertRaises(OperationalError):
             instance.delete()
