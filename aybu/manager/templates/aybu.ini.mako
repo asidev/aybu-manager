@@ -28,8 +28,8 @@ default_data = ${instance.paths.data.default}
 default_locale_name = ${instance.default_language}
 
 # pyramid_mailer
-mail.host = ${smtp.host}
-mail.port = ${smtp.port}
+mail.host = ${instance.environment.smtp_config.host}
+mail.port = ${instance.environment.smtp_config.port}
 
 # templating
 mako.strict_undefined = true
@@ -89,7 +89,7 @@ args = ('${instance.paths.logs.application}', 'a', 10485760, 10)
 
 [handler_exc_handler]
 class = handlers.SMTPHandler
-args = (('${smtp.host}', ${smtp.port}), 'exc@${instance.domain}', ['${instance.technical_contact_email}'], '${instance.domain} Exception')
+args = (('${instance.environment.smtp_config.host}', ${instance.environment.smtp_config.port}), 'exc@${instance.domain}', ['${instance.technical_contact_email}'], '${instance.domain} Exception')
 level = ERROR
 formatter = exc_formatter
 

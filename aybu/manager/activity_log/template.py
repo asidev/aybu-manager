@@ -26,10 +26,10 @@ __all__ = ['render']
 
 class render(Action):
 
-    def __init__(self, instance, template_name, target, deferred=False,
-                 skip_rollback=False, perms=None):
+    def __init__(self, template_name, target, deferred=False,
+                 skip_rollback=False, perms=None, **params):
         super(render, self).__init__()
-        self.instance = instance
+        self.params = params
         self.template_name = template_name
         self.perms = perms
         self.template = Template(
@@ -48,10 +48,7 @@ class render(Action):
         from aybu.manager.models import Environment
         return self.template.render(
                         settings=Environment.settings,
-                        instance=self.instance,
-                        uwsgi=self.instance.environment.uwsgi_config,
-                        os=self.instance.environment.os_config,
-                        smtp=self.instance.environment.smtp_config
+                        **self.params
         )
 
     def write(self):

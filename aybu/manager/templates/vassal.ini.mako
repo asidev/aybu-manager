@@ -4,7 +4,7 @@ chdir = %(instance_dir)
 module = main
 #socket = ${instance.paths.socket}
 socket = :0
-subscribe-to = ${uwsgi.subscription_server.address}:${uwsgi.subscription_server.port}:@${instance.paths.dir}/domains.txt
+subscribe-to = ${instance.environment.uwsgi_config.subscription_server.address}:${instance.environment.uwsgi_config.subscription_server.port}:@${instance.paths.dir}/domains.txt
 static-map = /static=${instance.paths.instance_dir}/static
 % for theme in instance.themes_chain:
 static-map = /static=${instance.environment.paths.themes}/${theme.name}/static
@@ -17,8 +17,8 @@ idle = 120
 lazy = true
 cheap = true
 reload-on-rss = 64
-uid = ${os.user}
-gid = ${os.group}
+uid = ${instance.environment.os_config.user}
+gid = ${instance.environment.os_config.group}
 vacuum = true
 no-orphan = true
 single-interpreter = true

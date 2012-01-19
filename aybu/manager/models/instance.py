@@ -292,16 +292,19 @@ class Instance(Base):
         session = session or Session.object_session(self)
         if session is None:
             raise DetachedInstanceError()
-        session.activity_log.add(render, self, 'vassal.ini.mako',
+        session.activity_log.add(render, 'vassal.ini.mako',
                                  self.paths.vassal_config,
                                  deferred=True,
-                                 skip_rollback=skip_rollback)
-        session.activity_log.add(render, self, 'nginx_vhost.mako',
+                                 skip_rollback=skip_rollback,
+                                 instance=self)
+        session.activity_log.add(render, 'nginx_vhost.mako',
                                  self.paths.nginx_config,
                                  deferred=True,
-                                 skip_rollback=skip_rollback)
-        session.activity_log.add(render, self, 'domains.mako',
-                                 self.paths.domains_file)
+                                 skip_rollback=skip_rollback,
+                                 instance=self)
+        session.activity_log.add(render, 'domains.mako',
+                                 self.paths.domains_file,
+                                 instance=self)
         self.environment.restart_services()
 
     def _rewrite_configuration(self, session=None):
@@ -310,8 +313,9 @@ class Instance(Base):
             raise DetachedInstanceError()
 
         session.activity_log.add(rm, self.paths.config)
-        session.activity_log.add(render, self, 'aybu.ini.mako',
-                                 self.paths.config)
+        session.activity_log.add(render, 'aybu.ini.mako',
+                                 self.paths.config,
+                                 instance=self)
         if self.enabled:
             self.reload()
 
@@ -333,11 +337,11 @@ class Instance(Base):
                                  recursive_delete=True)
         uploads = join(self.paths.instance_dir, "static", "uploads")
         session.activity_log.add(mkdir, uploads, recursive_delete=True)
-        session.activity_log.add(render, self, 'setup.py.mako', join(base,
-                                                               'setup.py'))
-        session.activity_log.add(render, self, 'namespace_init.py.mako',
+        session.activity_log.add(render, 'setup.py.mako',
+                                 join(base, 'setup.py'), instance=self)
+        session.activity_log.add(render, 'namespace_init.py.mako',
                                  join(base, 'aybu', '__init__.py'))
-        session.activity_log.add(render, self, 'namespace_init.py.mako',
+        session.activity_log.add(render, 'namespace_init.py.mako',
                                  join(base, 'aybu', 'instances',
                                       '__init__.py'))
         session.activity_log.add(create, join(self.paths.instance_dir,
@@ -353,9 +357,10 @@ class Instance(Base):
         for dir_ in sorted(dirs):
             session.activity_log.add(mkdir, dir_)
 
-        session.activity_log.add(render, self, 'aybu.ini.mako', paths.config)
-        session.activity_log.add(render, self, 'main.py.mako', paths.wsgi_script,
-                                 perms=0644)
+        session.activity_log.add(render, 'aybu.ini.mako', paths.config,
+                                 instance=self)
+        session.activity_log.add(render, 'main.py.mako', paths.wsgi_script,
+                                 perms=0644, instance=self)
 
     def _install_package(self, session):
         session.activity_log.add(install, self.paths.dir, self.paths.virtualenv,

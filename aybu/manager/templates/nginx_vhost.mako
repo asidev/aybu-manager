@@ -33,6 +33,6 @@ server {
 	location / {
 		include /etc/nginx/uwsgi_params;
 		uwsgi_param UWSGI_FASTROUTER_KEY $host;
-		uwsgi_pass ${uwsgi.fastrouter.address}:${uwsgi.fastrouter.port};
+		uwsgi_pass ${instance.environment.uwsgi_config.fastrouter.address}:${instance.environment.uwsgi_config.fastrouter.port};
 	}
 }

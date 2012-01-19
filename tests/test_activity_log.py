@@ -140,14 +140,14 @@ class ActivityLogTests(unittest.TestCase):
         )
         template_name = 'main.py.mako'
         target = os.path.join(self.tempdir, 'main.py')
-        al.add(render, instance, template_name, target)
+        al.add(render, template_name, target, instance=instance)
         self.assertTrue(os.path.exists(target))
         with open(target) as f:
             self.assertIn('MYDUMMYCONFIG', f.read())
         al.rollback()
         self.assertFalse(os.path.exists(target))
 
-        al.add(render, instance, template_name, target, deferred=True)
+        al.add(render, template_name, target, deferred=True, instance=instance)
         self.assertFalse(os.path.exists(target))
         al.commit()
         self.assertTrue(os.path.exists(target))
