@@ -32,7 +32,7 @@ class EnvironmentTests(ManagerModelsTestsBase):
             elif key == 'configs':
                 path = [env.paths.configs.nginx,
                         env.paths.configs.uwsgi,
-                        env.paths.configs.supervisor]
+                        env.paths.configs.supervisor_dir]
             elif key.startswith('virtualenv'):
                 continue
 

@@ -28,6 +28,7 @@ from sqlalchemy.orm import (Session,
                             validates)
 from aybu.manager.activity_log.fs import mkdir
 from aybu.manager.activity_log.command import command
+from aybu.manager.activity_log.template import render
 from aybu.manager.exc import NotSupported
 from . base import Base
 from . validators import validate_name
@@ -39,9 +40,10 @@ LogPaths = collections.namedtuple('Logs', ['dir', 'emperor'])
 SmtpConfig = collections.namedtuple('SmtpConfig', ['host', 'port'])
 OsConf = collections.namedtuple('OsConf', ['user', 'group'])
 ConfigDirs = collections.namedtuple('ConfigDirs',
-                                    ['dir', 'uwsgi', 'nginx', 'supervisor'])
+                                    ['dir', 'uwsgi', 'nginx',
+                                     'supervisor_dir', 'supervisor_conf'])
 UWSGIConf = collections.namedtuple('UWSGIConf', ['subscription_server',
-                                                 'fastrouter'])
+                                                 'fastrouter', 'bin'])
 Address = collections.namedtuple('Address', ['address', 'port'])
 
 __all__ = ['Environment']
@@ -109,11 +111,19 @@ class Environment(Base):
             paths.append(os.path.dirname(env.paths.configs.uwsgi))
             paths.append(env.paths.configs.uwsgi)
             paths.append(env.paths.configs.nginx)
-            paths.append(env.paths.configs.supervisor)
+            paths.append(env.paths.configs.supervisor_dir)
             paths.append(env.paths.logs.dir)
             cls.log.error("paths: %s", paths)
             for path in sorted(paths):
                 session.activity_log.add(mkdir, path, error_on_exists=False)
+
+            session.activity_log.add(render, 'supervisor.conf.mako',
+                                     env.paths.configs.supervisor_conf,
+                                     env=env, uwsgi=env.uwsgi_config)
+            sup_update_cmd = cls.settings.get('supervisor.update.cmd', None)
+            if sup_update_cmd:
+                session.activity_log.add(command, sup_update_cmd,
+                                         oncommit=True, on_rollback=True)
 
         except:
             session.rollback()
@@ -136,7 +146,8 @@ class Environment(Base):
                      port=frp)
         ss = Address(address=self.settings['uwsgi.subscription_server.address'],
                      port=sp)
-        return UWSGIConf(fastrouter=fr, subscription_server=ss)
+        bin_ = self.settings.get('uwsgi.bin', 'uwsgi')
+        return UWSGIConf(fastrouter=fr, subscription_server=ss, bin=bin_)
 
     @property
     def os_config(self):
@@ -184,7 +195,9 @@ class Environment(Base):
 
         configs = ConfigDirs(uwsgi=join(c['configs.uwsgi'], self.name),
                              nginx=c['configs.nginx'],
-                             supervisor=c['configs.supervisor'],
+                             supervisor_dir=c['configs.supervisor'],
+                             supervisor_conf=join(c['configs.supervisor'],
+                                                  "{}.conf".format(self.name)),
                              dir=c['configs'])
 
 

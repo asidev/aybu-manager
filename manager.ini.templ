@@ -58,9 +58,11 @@ uwsgi.fastrouter.address = 127.0.0.1
 uwsgi.fastrouter.base_port = 15500
 uwsgi.subscription_server.address = 127.0.0.1
 uwsgi.subscription_server.base_port = 16600
+uwsgi.bin = /usr/local/bin/uwsgi
 
 nginx.port = 8080
 nginx.restart.cmd = sudo /etc/init.d/nginx restart
+supervisor.update.cmd = /usr/bin/supervisorctl update
 proxy.address = 127.0.0.1
 proxy.port = 80
 # True or False: must be python bool literals
