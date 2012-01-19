@@ -51,6 +51,7 @@ def start():
         parser.error('Error starting daemon: {}'.format(e))
 
     log = logging.getLogger("{}:start".format(__name__))
+    daemon = None
     try:
         daemon = AybuManagerDaemon(config)
         daemon.start()
@@ -68,6 +69,7 @@ def start():
         exit_status = 0
 
     finally:
-        daemon.worker._Thread__stop()
+        if daemon:
+            daemon.worker._Thread__stop()
         sys.exit(exit_status)
 
