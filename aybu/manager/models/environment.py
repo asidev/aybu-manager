@@ -113,7 +113,6 @@ class Environment(Base):
             paths.append(env.paths.configs.nginx)
             paths.append(env.paths.configs.supervisor_dir)
             paths.append(env.paths.logs.dir)
-            cls.log.error("paths: %s", paths)
             for path in sorted(paths):
                 session.activity_log.add(mkdir, path, error_on_exists=False)
 
