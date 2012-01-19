@@ -189,7 +189,7 @@ class Instance(Base):
         )
         self._paths = Paths(
             config=join(dir_, 'production.ini'),
-            vassal_config=join(env.configs, "{}.ini".format(self.domain)),
+            vassal_config=join(env.configs.uwsgi, "{}.ini".format(self.domain)),
             dir=dir_,
             cgroups=[join(ctrl, self.domain) for ctrl in env.cgroups],
             logs=LogPaths(
@@ -204,7 +204,7 @@ class Instance(Base):
             mako_tmp_dir=join(cache, 'templates'),
             cache=cache,
             domains_file=join(dir_, 'domains.txt'),
-            nginx_config=join(env.nginx, '{}.conf'.format(self.domain)),
+            nginx_config=join(env.configs.nginx, '{}.conf'.format(self.domain)),
             instance_dir=join(dir_, 'aybu', 'instances', self.python_name),
             wsgi_script=join(dir_, 'main.py'),
             virtualenv=env.virtualenv,

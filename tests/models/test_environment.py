@@ -29,7 +29,11 @@ class EnvironmentTests(ManagerModelsTestsBase):
         for key, path in env.paths._asdict().iteritems():
             if key == 'logs':
                 path = env.paths.logs.dir
-            if key.startswith('virtualenv'):
+            elif key == 'configs':
+                path = [env.paths.configs.nginx,
+                        env.paths.configs.uwsgi,
+                        env.paths.configs.supervisor]
+            elif key.startswith('virtualenv'):
                 continue
 
             if isinstance(path, list):

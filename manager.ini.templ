@@ -31,9 +31,11 @@ os.group = asidev
 os.smtp_host = localhost
 os.smtp_port = 25
 
-paths.root = /srv/www/aybu/
+paths.root = /var/www/aybu/
 paths.configs = %(paths.root)s/configs
-paths.nginx = %(paths.root)s/nginx
+paths.configs.uwsgi = %(paths.configs)s/uwsgi
+paths.configs.nginx = %(paths.configs)s/nginx
+paths.configs.supervisor = %(paths.configs)s/supervisor
 paths.sites = %(paths.root)s/sites
 paths.archives = %(paths.root)s/archives
 paths.cgroups = /sys/fs/cgroup

@@ -61,15 +61,20 @@ class ManagerModelsTestsBase(TestsBase):
         self.config['paths.root'] = self.tempdir
         self.config['paths.cgroups'] = '{}/cgroups'.format(self.tempdir)
         self.config['paths.sites'] = '{}/sites'.format(self.tempdir)
-        self.config['paths.nginx'] = '{}/nginx'.format(self.tempdir)
         self.config['paths.configs'] = '{}/configs'.format(self.tempdir)
+        self.config['paths.configs.nginx'] = '{}/configs/nginx'\
+                                                        .format(self.tempdir)
+        self.config['paths.configs.uwsgi'] = '{}/configs/uwsgi'\
+                                                        .format(self.tempdir)
+        self.config['paths.configs.supervisor'] = '{}/configs/supervisor'\
+                                                        .format(self.tempdir)
+        self.config['paths.logs'] = '{}/logs'.format(self.tempdir)
         self.config['paths.archives'] = '{}/archives'.format(self.tempdir)
         self.config['paths.run'] = '{}/run'.format(self.tempdir)
         venv = os.path.realpath(os.environ['VIRTUAL_ENV'])
         self.config['paths.virtualenv.default'] = venv
 
         self.config['paths.virtualenv.base'] = os.path.dirname(venv)
-        self.config['paths.logs'] = '{}/logs'.format(self.tempdir)
         self.config['proxy.enabled'] = 'False'
         self.config['proxy.port'] = '80'
         self.config['proxy.address'] = '127.0.0.1'

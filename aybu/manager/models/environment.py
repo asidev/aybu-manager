@@ -32,12 +32,14 @@ from aybu.manager.exc import NotSupported
 from . base import Base
 from . validators import validate_name
 
-Paths = collections.namedtuple('Paths', ['root', 'configs', 'sites', 'nginx',
+Paths = collections.namedtuple('Paths', ['root', 'configs', 'sites',
                                          'archives', 'cgroups', 'logs', 'run',
                                          'themes', 'virtualenv'])
 LogPaths = collections.namedtuple('Logs', ['dir', 'emperor'])
 SmtpConfig = collections.namedtuple('SmtpConfig', ['host', 'port'])
 OsConf = collections.namedtuple('OsConf', ['user', 'group'])
+ConfigDirs = collections.namedtuple('ConfigDirs',
+                                    ['dir', 'uwsgi', 'nginx', 'supervisor'])
 UWSGIConf = collections.namedtuple('UWSGIConf', ['subscription_server',
                                                  'fastrouter'])
 Address = collections.namedtuple('Address', ['address', 'port'])
@@ -101,9 +103,15 @@ class Environment(Base):
             root = env.paths.root
 
             paths = [p for k, p in env.paths._asdict().iteritems()
-                           if k != 'root' and k != 'virtualenv' and root in p]
-            paths.append(os.path.dirname(env.paths.configs))
+                           if k != 'root' and k != 'virtualenv' and root in p
+                           and k != 'configs']
+            paths.append(env.paths.configs.dir)
+            paths.append(os.path.dirname(env.paths.configs.uwsgi))
+            paths.append(env.paths.configs.uwsgi)
+            paths.append(env.paths.configs.nginx)
+            paths.append(env.paths.configs.supervisor)
             paths.append(env.paths.logs.dir)
+            cls.log.error("paths: %s", paths)
             for path in sorted(paths):
                 session.activity_log.add(mkdir, path, error_on_exists=False)
 
@@ -151,7 +159,6 @@ class Environment(Base):
         join = os.path.join
         c = {k.replace('paths.', ''): self.settings[k]
              for k in self.settings if k.startswith('paths.')}
-        configs = join(c['configs'], self.name)
         virtualenv = join(c['virtualenv.base'], self.venv_name)
 
         cgroups_base_path = c['cgroups']
@@ -175,11 +182,15 @@ class Environment(Base):
                 'aybu.themes.base', 'static'
             )).replace('/base/static', '')
 
+        configs = ConfigDirs(uwsgi=join(c['configs.uwsgi'], self.name),
+                             nginx=c['configs.nginx'],
+                             supervisor=c['configs.supervisor'],
+                             dir=c['configs'])
+
 
         self._paths = Paths(root=c['root'],
                             configs=configs,
                             sites=c['sites'],
-                            nginx=c['nginx'],
                             themes=themes,
                             archives=c['archives'],
                             cgroups=cgroups,
