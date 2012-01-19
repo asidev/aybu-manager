@@ -134,7 +134,7 @@ def update(context, request):
 
     elif request.params['action'] in ('enable', 'disable', 'reload', 'kill',
                                       'sentence', 'flush_cache', 'archive',
-                                      'switch_environment'):
+                                      'migrate', 'switch_environment'):
         taskname = "instance.{}".format(request.params['action'])
 
     else:

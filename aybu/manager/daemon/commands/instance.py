@@ -80,6 +80,11 @@ def switch_environment(session, task, id, environment):
         instance.enabled = True
 
 
+def migrate(session, task, id, revision):
+    instance = Instance.get(session, id)
+    instance.upgrade_schema(revision)
+
+
 def sentence(session, task, id):
     raise NotImplementedError
 
