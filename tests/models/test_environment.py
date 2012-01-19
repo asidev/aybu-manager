@@ -80,3 +80,9 @@ class EnvironmentTests(ManagerModelsTestsBase):
         #restore options
         self.config['paths.cgroups.controllers'] = controllers
         self.config['paths.cgroups.realtive_path'] = rel_path
+
+    def test_delete(self):
+        env = Environment.create(self.session, 'testenv', config=self.config)
+        env.delete()
+
+

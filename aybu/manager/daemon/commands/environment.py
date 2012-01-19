@@ -25,3 +25,9 @@ log = logging.getLogger(__name__)
 def create(session, task, name, virtualenv_name=None):
     env = Environment.create(session, name, virtualenv_name)
     return env.name
+
+
+def delete(session, task, name):
+    env = Environment.get(session, name)
+    env.delete()
+

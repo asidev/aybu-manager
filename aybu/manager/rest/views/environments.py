@@ -59,9 +59,13 @@ def info(context, request):
     return env.to_dict(paths=True, instances=True)
 
 
-@view_config(route_name='environment', request_method='DELETE')
+@view_config(route_name='environment', request_method='DELETE',
+             renderer='taskresponse')
 def delete(context, request):
-    raise NotImplementedError
+    env = Environment.get(request.db_session,
+                          request.matchdict['name'])
+    taskname = "environment.delete"
+    return request.submit_task(taskname, name=env.name)
 
 
 @view_config(route_name='environment', request_method='PUT')

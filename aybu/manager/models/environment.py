@@ -26,10 +26,15 @@ from sqlalchemy import (Column,
                         func)
 from sqlalchemy.orm import (Session,
                             validates)
-from aybu.manager.activity_log.fs import mkdir
+
+from sqlalchemy.orm.exc import DetachedInstanceError
+from aybu.manager.activity_log.fs import (mkdir,
+                                          rmtree,
+                                          rm,
+                                          rmdir)
 from aybu.manager.activity_log.command import command
 from aybu.manager.activity_log.template import render
-from aybu.manager.exc import NotSupported
+from aybu.manager.exc import (NotSupported, OperationalError)
 from . base import Base
 from . validators import validate_name
 
@@ -122,13 +127,48 @@ class Environment(Base):
             sup_update_cmd = cls.settings.get('supervisor.update.cmd', None)
             if sup_update_cmd:
                 session.activity_log.add(command, sup_update_cmd,
-                                         oncommit=True, on_rollback=True)
+                                         on_commit=True, on_rollback=True)
 
         except:
             session.rollback()
             raise
         else:
             return env
+
+    def delete(self, session=None):
+        session = session or Session.object_session(self)
+        if not session:
+            raise DetachedInstanceError()
+
+        self.log.info("Deleting %s", self)
+        if self.instances:
+            raise OperationalError('Cannot delete {} as it own instances'\
+                                   .format(self))
+        try:
+            session.activity_log.add(rm, self.paths.configs.supervisor_conf,
+                                     error_on_not_exists=False)
+            sup_update_cmd = self.settings.get('supervisor.update.cmd', None)
+            if sup_update_cmd:
+                session.activity_log.add(command, sup_update_cmd,
+                                         on_init=True, on_commit=True,
+                                         on_rollback=True)
+            session.activity_log.add(rmtree,
+                                     self.paths.configs.uwsgi,
+                                     error_on_not_exists=False)
+            cgroups = [os.path.join(ctrl, self.name)
+                       for ctrl in self.paths.cgroups]
+            for ctrl in cgroups:
+                session.activity_log.add(rmdir, ctrl,
+                                         error_on_not_exists=False)
+        except:
+            self.log.exception("Error deleting environment %s", self)
+            session.rollback()
+            raise
+
+        else:
+            session.query(self.__class__)\
+                    .filter(self.__class__.name == self.name)\
+                    .delete()
 
     def check_initialized(self):
         if not hasattr(self, 'settings') or not self.settings:
@@ -139,12 +179,14 @@ class Environment(Base):
     def uwsgi_config(self):
         self.check_initialized()
         frp = int(self.settings['uwsgi.fastrouter.base_port']) + self.id
-        sp = int(self.settings['uwsgi.subscription_server.base_port']) + self.id
+        sp = int(self.settings['uwsgi.subscription_server.base_port']) \
+                + self.id
 
         fr = Address(address=self.settings['uwsgi.fastrouter.address'],
                      port=frp)
-        ss = Address(address=self.settings['uwsgi.subscription_server.address'],
-                     port=sp)
+        ss = Address(
+            address=self.settings['uwsgi.subscription_server.address'],
+            port=sp)
         bin_ = self.settings.get('uwsgi.bin', 'uwsgi')
         return UWSGIConf(fastrouter=fr, subscription_server=ss, bin=bin_)
 
@@ -225,10 +267,10 @@ class Environment(Base):
             res['instances'] = [i.domain for i in self.instances]
         return res
 
-    def restart_services(self):
+    def restart_services(self, session=None):
         try:
             restart_cmd = self.settings['nginx.restart.cmd']
-            session = Session.object_session(self)
+            session = session or Session.object_session(self)
             session.activity_log.add(command, restart_cmd, on_commit=True,
                                      on_rollback=True)
 
