@@ -78,14 +78,14 @@ def method_not_allowed(context, request):
     return generate_empty_response(context, request, 405)
 
 
-@view_config(context=HTTPCreated)
-@view_config(context=HTTPNoContent)
+@view_config(context=HTTPCreated, permission=NO_PERMISSION_REQUIRED)
+@view_config(context=HTTPNoContent, permission=NO_PERMISSION_REQUIRED)
 @view_config(context=HTTPUnauthorized, permission=NO_PERMISSION_REQUIRED)
 @view_config(context=HTTPForbidden, permission=NO_PERMISSION_REQUIRED)
 @view_config(context=HTTPNotFound, permission=NO_PERMISSION_REQUIRED)
-@view_config(context=HTTPBadRequest)
-@view_config(context=HTTPConflict)
-@view_config(context=HTTPPreconditionFailed)
+@view_config(context=HTTPBadRequest, permission=NO_PERMISSION_REQUIRED)
+@view_config(context=HTTPConflict, permission=NO_PERMISSION_REQUIRED)
+@view_config(context=HTTPPreconditionFailed, permission=NO_PERMISSION_REQUIRED)
 def created(context, request):
     if isinstance(context, HTTPForbidden) and \
        not authenticated_userid(request):
@@ -96,8 +96,8 @@ def created(context, request):
     return generate_empty_response(context, request, code)
 
 
-@view_config(context=TaskNotFoundError)
-@view_config(context=NoResultFound)
+@view_config(context=TaskNotFoundError, permission=NO_PERMISSION_REQUIRED)
+@view_config(context=NoResultFound, permission=NO_PERMISSION_REQUIRED)
 def not_found(context, request):
     return generate_empty_response(context, request, 404)
 
