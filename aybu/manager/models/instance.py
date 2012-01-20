@@ -75,11 +75,11 @@ from . validators import (validate_hostname,
 
 __all__ = ['Instance']
 Paths = collections.namedtuple('Paths', ['config', 'vassal_config', 'dir',
-                                         'cgroups', 'logs', 'socket', 'session',
+                                         'cgroups', 'logs', 'socket',
                                          'data', 'mako_tmp_dir', 'cache',
                                          'domains_file', 'instance_dir',
                                          'nginx_config', 'wsgi_script',
-                                         'virtualenv'])
+                                         'virtualenv', 'session'])
 LogPaths = collections.namedtuple('LogPaths', ['dir',
                                                'vassal',
                                                'application',
@@ -135,8 +135,8 @@ class Instance(Base):
     database_password = Column(Unicode(32))
 
     def __repr__(self):
-        return "<Instance [{self.id}] {self.domain} (enabled: {self.enabled})>"\
-                .format(self=self)
+        return "<Instance [{i.id}] {i.domain} (enabled: {i.enabled})>"\
+                .format(i=self)
 
     @validates('domain')
     def validates_domain(self, key, domain):
@@ -186,7 +186,8 @@ class Instance(Base):
         env = self.environment.paths
         dir_ = join(env.sites, self.domain)
         cache = join(dir_, 'cache')
-        data_dir = join(pkg_resources.resource_filename('aybu.manager', 'data'))
+        data_dir = join(pkg_resources.resource_filename('aybu.manager',
+                                                        'data'))
 
         session_paths = SessionPaths(data_dir=join(cache, "session_data"),
                                     lock_dir=join(cache, "session_locks"))
@@ -196,13 +197,15 @@ class Instance(Base):
         )
         self._paths = Paths(
             config=join(dir_, 'production.ini'),
-            vassal_config=join(env.configs.uwsgi, "{}.ini".format(self.domain)),
+            vassal_config=join(env.configs.uwsgi,
+                              "{}.ini".format(self.domain)),
             dir=dir_,
             cgroups=[join(ctrl, self.domain) for ctrl in env.cgroups],
             logs=LogPaths(
                       dir=join(env.logs.dir, self.domain),
                       nginx=join(env.logs.dir, self.domain, 'nginx.error.log'),
-                      vassal=join(env.logs.dir, self.domain, 'uwsgi_vassal.log'),
+                      vassal=join(env.logs.dir, self.domain,
+                                  'uwsgi_vassal.log'),
                       application=join(env.logs.dir, self.domain,
                                        'application.log')),
             socket=join(env.run, "{}.socket".format(self.domain)),
@@ -211,7 +214,8 @@ class Instance(Base):
             mako_tmp_dir=join(cache, 'templates'),
             cache=cache,
             domains_file=join(dir_, 'domains.txt'),
-            nginx_config=join(env.configs.nginx, '{}.conf'.format(self.domain)),
+            nginx_config=join(env.configs.nginx,
+                              '{}.conf'.format(self.domain)),
             instance_dir=join(dir_, 'aybu', 'instances', self.python_name),
             wsgi_script=join(dir_, 'main.py'),
             virtualenv=env.virtualenv,
@@ -382,7 +386,8 @@ class Instance(Base):
                                  perms=0644, instance=self)
 
     def _install_package(self, session):
-        session.activity_log.add(install, self.paths.dir, self.paths.virtualenv,
+        session.activity_log.add(install, self.paths.dir,
+                                 self.paths.virtualenv,
                                  self.python_package_name)
 
     def _create_database(self, session):
@@ -523,13 +528,15 @@ class Instance(Base):
                            'Cannot change the domain of an instance')
 
     def _on_theme_update(self, theme, oldtheme, attr):
-        if not self.attribute_changed(theme, oldtheme, attr) or oldtheme is None:
+        if not self.attribute_changed(theme, oldtheme, attr) \
+           or oldtheme is None:
             return
 
         raise NotImplementedError
 
     def _on_attr_update(self, value, oldvalue, attr):
-        if not self.attribute_changed(value, oldvalue, attr) or oldvalue is None:
+        if not self.attribute_changed(value, oldvalue, attr) \
+           or oldvalue is None:
             return
         self._rewrite_configuration()
 
@@ -619,12 +626,12 @@ class Instance(Base):
         self.log.info("Flushing cache for %s", self)
         instance_session = self.create_database_session()
         try:
-            request = collections.namedtuple('Request', ['db_session', 'host'])(
-                db_session=instance_session,
-                host="{}:80".format(self.domain)
-            )
+            request = collections.namedtuple(
+              'Request', ['db_session', 'host']
+            )(db_session=instance_session, host="{}:80".format(self.domain))
             proxy = Proxy(request)
             proxy.ban('^/.*')
+
         finally:
             instance_session.close()
 
