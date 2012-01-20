@@ -599,7 +599,13 @@ class Instance(Base):
             raise OperationalError('Cannot delete an enabled instance')
 
         try:
-            # TODO: flush
+            # flush proxy for instance
+            self.flush_cache()
+
+            # create an archive
+            self.archive()
+
+            # now delete
             session.activity_log.add_group(drop_database, session,
                                            self.database_config)
 
@@ -644,12 +650,15 @@ class Instance(Base):
         self.log.info("Stamping schema as revision '%s'", revision)
         alembic.command.stamp(self.alembic, revision)
 
-    def archive(self, archive_name, session=None):
+    def archive(self, archive_name=None, session=None):
         session = session or Session.object_session(self)
         if not session:
             raise DetachedInstanceError()
 
+        now = datetime.datetime.now().strftime('%Y%m%d-%H:%M:%S')
+        archive_name = archive_name or "{}-{}".format(self.domain, now)
         archive_name = "{}.tar.gz".format(archive_name)
+
         archive_path = os.path.join(self.environment.paths.archives,
                                     archive_name)
         self.log.info("Archiving %s to %s", self, archive_name)
