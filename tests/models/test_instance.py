@@ -107,17 +107,22 @@ class InstanceTests(ManagerModelsTestsBase):
         instance.upgrade_schema('head')
 
         # create an archive
-        instance.archive(name='test')
+        instance.archive(archive_name='test')
         p = os.path.join(instance.environment.paths.archives,
                          "test.tar.gz")
-        self.log.error(p)
         self.assertTrue(os.path.exists(p))
 
-        # test delete
+        # test restore and delete
         with self.assertRaises(OperationalError):
             instance.delete()
+
+        with self.assertRaises(OperationalError):
+            instance.restore(archive_name='test')
+
         instance.enabled = False
         self.session.commit()
+        #instance.restore(archive_name='test')
+
         instance.delete()
         self.assertFalse(os.path.exists(instance.paths.dir))
         self.session.commit()

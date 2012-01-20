@@ -36,3 +36,21 @@ def dump_database(config, dump_dir, dump_name=None):
         raise ValueError("Invalid db type {}".format(config.type))
 
     return command(dump_cmd, on_init=True)
+
+
+def restore_database(config, dump_dir, dump_name=None):
+    dump_name = dump_name or config.type
+    dump_name = "{}.sql".format(dump_name)
+    dump_path = os.path.join(dump_dir, dump_name)
+
+    if config.type == 'mysql':
+        restore_cmd = "mysql {config.name}"
+    elif config.type == 'postgresql':
+        restore_cmd = "psql {config.name}"
+    else:
+        raise ValueError("Invalid db type {}".format(config.type))
+
+    with open(dump_path, "r") as dump_file:
+        cmd = command(restore_cmd, stdin=dump_file)
+
+    return cmd

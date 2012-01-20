@@ -59,10 +59,16 @@ from aybu.core.models import Group as AybuCoreGroup
 from aybu.core.models import init_session_events as init_core_session_events
 from aybu.core.proxy import Proxy
 from aybu.manager.activity_log.template import render
-from aybu.manager.activity_log.fs import mkdir, create, rm, rmtree, rmdir
+from aybu.manager.activity_log.fs import (mkdir,
+                                          create,
+                                          copytree,
+                                          rm,
+                                          rmtree,
+                                          rmdir)
 from aybu.manager.activity_log.packages import install, uninstall
 from aybu.manager.activity_log.database import (create_database,
                                                 drop_database,
+                                                restore_database,
                                                 dump_database)
 from aybu.manager.exc import OperationalError, NotSupported
 from . base import Base
@@ -489,24 +495,6 @@ class Instance(Base):
             source_.close()
             session.close()
 
-    def _enable(self):
-        self.log.info("Enabling instance %s", self)
-        session = Session.object_session(self)
-        self._install_package(session)
-        self._write_uwsgi_conf()
-        self.flush_cache()
-
-    def _disable(self):
-        self.log.info("Disabling %s", self)
-        session = Session.object_session(self)
-        session.activity_log.add(rm, self.paths.vassal_config, deferred=True)
-        session.activity_log.add(rm, self.paths.nginx_config, deferred=True)
-        session.activity_log.add(uninstall, self.paths.dir,
-                                self.paths.virtualenv,
-                                self.python_package_name)
-        self.environment.restart_services()
-        self.flush_cache()
-
     def _on_environment_update(self, env, oldenv, attr):
         if not self.attribute_changed(env, oldenv, attr):
             return
@@ -591,6 +579,24 @@ class Instance(Base):
         self.log.info("Reloading %s", self)
         self._write_uwsgi_conf(skip_rollback=True)
 
+    def _enable(self):
+        self.log.info("Enabling instance %s", self)
+        session = Session.object_session(self)
+        self._install_package(session)
+        self._write_uwsgi_conf()
+        self.flush_cache()
+
+    def _disable(self):
+        self.log.info("Disabling %s", self)
+        session = Session.object_session(self)
+        session.activity_log.add(rm, self.paths.vassal_config, deferred=True)
+        session.activity_log.add(rm, self.paths.nginx_config, deferred=True)
+        session.activity_log.add(uninstall, self.paths.dir,
+                                self.paths.virtualenv,
+                                self.python_package_name)
+        self.environment.restart_services()
+        self.flush_cache()
+
     def delete(self, session=None):
         session = session or Session.object_session(self)
         if not session:
@@ -667,14 +673,52 @@ class Instance(Base):
             filesdir = os.path.join(tempdir, "files")
             session.activity_log.add(dump_database, self.database_config,
                                      tempdir)
+            self.log.debug("Copying files to %s", tempdir)
             shutil.copytree(self.paths.instance_dir, filesdir,
                             ignore=shutil.ignore_patterns('*.pyc'))
+            self.log.debug('Creating archive from %s to %s',
+                            tempdir, archive_path)
             with tarfile.open(archive_path, "w:gz") as t:
                 t.add(tempdir, arcname='/')
 
         except:
             if os.path.isfile(archive_path):
                 os.unlink(archive_path)
+            raise
+
+        finally:
+            shutil.rmtree(tempdir)
+
+    def restore(self, archive_name, session=None):
+        session = session or Session.object_session(self)
+        if not session:
+            raise DetachedInstanceError()
+
+        if self.enabled:
+            raise OperationalError('Cannot restore an enabled instance')
+
+        if not archive_name.endswith(".tar.gz"):
+            archive_name = "{}.tar.gz".format(archive_name)
+        archive_path = os.path.join(self.environment.paths.archives,
+                                    archive_name)
+        self.log.info("Restoring %s using %s", self, archive_name)
+
+        try:
+            tempdir = tempfile.mkdtemp()
+            filesdir = os.path.join(tempdir, "files")
+            self.log.debug("Unpacking archive to %s", tempdir)
+            with tarfile.open(archive_path, mode="r:gz") as t:
+                t.extractall(tempdir)
+
+            session.activity_log.add(restore_database, self.database_config,
+                                     tempdir)
+            session.activity_log.add(rmtree, self.paths.instance_dir)
+            session.activity_log.add(copytree, filesdir,
+                                     self.paths.instance_dir)
+            self.upgrade_schema('head')
+
+        except:
+            session.rollback()
             raise
 
         finally:

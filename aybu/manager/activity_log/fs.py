@@ -76,7 +76,7 @@ class mkdir(FSAction):
     def __init__(self, path, mode=0777, error_on_exists=True,
                  recursive_delete=False):
         super(mkdir, self).__init__(path)
-        self.recursive_delete=recursive_delete
+        self.recursive_delete = recursive_delete
         if not error_on_exists:
             if not os.path.exists(path):
                 os.mkdir(path, mode)
@@ -101,6 +101,10 @@ class create(FSAction):
         self.log.info("create file %s", path)
         if os.path.exists(path):
             raise OSError(errno.EEXIST, "File exists: {}".format(path))
+
+        if content is None:
+            return
+
         with open(path, 'w') as f:
             f.write(content)
 
@@ -115,6 +119,18 @@ class copy(create):
         super(copy, self).__init__(destination)
         self.log.info("cp %s => %s", source, destination)
         shutil.copy(source, destination)
+
+
+class copytree(create):
+
+    def __init__(self, source, destination):
+        super(copytree, self).__init__(destination, content=None)
+        self.log.info("copytree %s => %s", source, destination)
+        shutil.copytree(source, destination)
+
+    def rollback(self):
+        self.log.info("rmtree %s", self.path)
+        shutil.rmtree(self.path)
 
 
 class rm(DeleteAction):
@@ -143,4 +159,3 @@ class rmtree(DeleteAction):
         if not self.skip:
             self.log.info("rmtree %s (was %s)", self.tmp_path, self.path)
             shutil.rmtree(self.tmp_path)
-

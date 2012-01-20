@@ -18,6 +18,7 @@ limitations under the License.
 
 from . sqlaction import SQLAction
 
+
 class PostgresAction(SQLAction):
 
     def get_connection(self):
