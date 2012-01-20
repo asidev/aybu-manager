@@ -22,6 +22,9 @@ import datetime
 import json
 import os
 import pkg_resources
+import tempfile
+import shutil
+import tarfile
 import uuid
 
 import alembic
@@ -58,7 +61,9 @@ from aybu.core.proxy import Proxy
 from aybu.manager.activity_log.template import render
 from aybu.manager.activity_log.fs import mkdir, create, rm, rmtree, rmdir
 from aybu.manager.activity_log.packages import install, uninstall
-from aybu.manager.activity_log.database import create_database, drop_database
+from aybu.manager.activity_log.database import (create_database,
+                                                drop_database,
+                                                dump_database)
 from aybu.manager.exc import OperationalError, NotSupported
 from . base import Base
 from . user import (User,
@@ -164,7 +169,7 @@ class Instance(Base):
 
     @property
     def python_name(self):
-        return self.domain.replace(".","_").replace("-","_")
+        return self.domain.replace(".", "_").replace("-", "_")
 
     @property
     def python_package_name(self):
@@ -179,7 +184,7 @@ class Instance(Base):
         atexit.register(pkg_resources.cleanup_resources)
         join = os.path.join
         env = self.environment.paths
-        dir_= join(env.sites, self.domain)
+        dir_ = join(env.sites, self.domain)
         cache = join(dir_, 'cache')
         data_dir = join(pkg_resources.resource_filename('aybu.manager', 'data'))
 
@@ -219,7 +224,7 @@ class Instance(Base):
             return self._session_config
 
         self._session_config = SessionConfig(
-                                paths = self.paths.session,
+                                paths=self.paths.session,
                                 key=self.domain,
                                 secret=uuid.uuid4().hex
         )
@@ -384,7 +389,7 @@ class Instance(Base):
         session.activity_log.add_group(create_database, session,
                                        self.database_config)
         self.log.info("Creating tables in instance database")
-        AybuCoreBase.metadata.bind=self.database_engine
+        AybuCoreBase.metadata.bind = self.database_engine
         AybuCoreBase.metadata.create_all(self.database_engine)
 
     def _populate_database(self, manager_session):
@@ -577,7 +582,6 @@ class Instance(Base):
         self.log.info("Reloading %s", self)
         self._write_uwsgi_conf(skip_rollback=True)
 
-
     def delete(self, session=None):
         session = session or Session.object_session(self)
         if not session:
@@ -611,7 +615,6 @@ class Instance(Base):
                    .filter(self.__class__.id == self.id)\
                    .delete()
 
-
     def flush_cache(self):
         self.log.info("Flushing cache for %s", self)
         instance_session = self.create_database_session()
@@ -633,6 +636,36 @@ class Instance(Base):
     def stamp_schema(self, revision='head'):
         self.log.info("Stamping schema as revision '%s'", revision)
         alembic.command.stamp(self.alembic, revision)
+
+    def archive(self, name=None, session=None):
+        session = session or Session.object_session(self)
+        if not session:
+            raise DetachedInstanceError()
+        now = datetime.datetime.now().strftime('%Y%m%d-%H:%M:%S')
+        archive_name = name or "{}-{}".format(self.domain, now)
+
+        archive_name = "{}.tar.gz".format(archive_name)
+        archive_path = os.path.join(self.environment.paths.archives,
+                                    archive_name)
+        self.log.info("Archiving %s to %s", self, archive_name)
+
+        try:
+            tempdir = tempfile.mkdtemp()
+            filesdir = os.path.join(tempdir, "files")
+            session.activity_log.add(dump_database, self.database_config,
+                                     tempdir)
+            shutil.copytree(self.paths.instance_dir, filesdir,
+                            ignore=shutil.ignore_patterns('*.pyc'))
+            with tarfile.open(archive_path, "w:gz") as t:
+                t.add(tempdir, arcname='/')
+
+        except:
+            if os.path.isfile(archive_path):
+                os.unlink(archive_path)
+            raise
+
+        finally:
+            shutil.rmtree(tempdir)
 
 
 event.listen(Instance.environment, 'set', Instance._on_environment_update)

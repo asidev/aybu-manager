@@ -16,9 +16,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-__all__ = ['create_database', 'drop_database']
+__all__ = ['create_database', 'drop_database', 'dump_database']
 
 from . sqlaction import SQLAction
+from . dump import dump_database
 
 
 def create_database(session, config):

@@ -28,6 +28,7 @@ from .. import (import_data,
                 create_tables,
                 drop_tables)
 
+
 class ManagerModelsTestsBase(TestsBase):
 
     def import_data(self):
@@ -94,7 +95,6 @@ class ManagerModelsTestsBase(TestsBase):
                        self.config['paths.cgroups.controllers'].split(",")]
         for cgroup in cgroups:
             os.makedirs(cgroup)
-
 
     def tearDown(self):
         self.session.close()

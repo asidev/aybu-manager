@@ -24,6 +24,7 @@ from . test_base import ManagerModelsTestsBase
 from aybu.manager.exc import OperationalError, NotSupported
 import os
 
+
 class InstanceTests(ManagerModelsTestsBase):
 
     def test_deploy(self):
@@ -104,6 +105,13 @@ class InstanceTests(ManagerModelsTestsBase):
 
         # "test" migration: call it at least once :(
         instance.upgrade_schema('head')
+
+        # create an archive
+        instance.archive(name='test')
+        p = os.path.join(instance.environment.paths.archives,
+                         "test.tar.gz")
+        self.log.error(p)
+        self.assertTrue(os.path.exists(p))
 
         # test delete
         with self.assertRaises(OperationalError):
