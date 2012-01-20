@@ -494,6 +494,7 @@ class Instance(Base):
         session = Session.object_session(self)
         self._install_package(session)
         self._write_uwsgi_conf()
+        self.flush_cache()
 
     def _disable(self):
         self.log.info("Disabling %s", self)
@@ -504,6 +505,7 @@ class Instance(Base):
                                 self.paths.virtualenv,
                                 self.python_package_name)
         self.environment.restart_services()
+        self.flush_cache()
 
     def _on_environment_update(self, env, oldenv, attr):
         if not self.attribute_changed(env, oldenv, attr):
@@ -599,9 +601,6 @@ class Instance(Base):
             raise OperationalError('Cannot delete an enabled instance')
 
         try:
-            # flush proxy for instance
-            self.flush_cache()
-
             # create an archive
             self.archive()
 
