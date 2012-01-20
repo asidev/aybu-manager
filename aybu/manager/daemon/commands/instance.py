@@ -85,6 +85,11 @@ def migrate(session, task, id, revision):
     instance.upgrade_schema(revision)
 
 
+def archive(session, task, id, name):
+    instance = Instance.get(session, id)
+    instance.archive(name)
+
+
 def sentence(session, task, id):
     raise NotImplementedError
 
