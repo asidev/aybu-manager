@@ -637,12 +637,10 @@ class Instance(Base):
         self.log.info("Stamping schema as revision '%s'", revision)
         alembic.command.stamp(self.alembic, revision)
 
-    def archive(self, name=None, session=None):
+    def archive(self, archive_name, session=None):
         session = session or Session.object_session(self)
         if not session:
             raise DetachedInstanceError()
-        now = datetime.datetime.now().strftime('%Y%m%d-%H:%M:%S')
-        archive_name = name or "{}-{}".format(self.domain, now)
 
         archive_name = "{}.tar.gz".format(archive_name)
         archive_path = os.path.join(self.environment.paths.archives,
