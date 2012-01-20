@@ -90,6 +90,11 @@ def archive(session, task, id, name):
     instance.archive(name)
 
 
+def restore(session, task, id, archive_name):
+    instance = Instance.get(session, id)
+    instance.restore(archive_name)
+
+
 def sentence(session, task, id):
     raise NotImplementedError
 

@@ -101,7 +101,8 @@ def deploy(context, request):
 
     else:
         # found instance, conflict
-        error = 'instance for domain {} already exists'.format(params['domain'])
+        error = 'instance for domain {} already exists'\
+                .format(params['domain'])
         raise HTTPConflict(headers={'X-Request-Error': error})
 
 
@@ -115,7 +116,31 @@ def info(context, request):
 @view_config(route_name='instance', request_method='PUT',
              request_param='action=restore', renderer='taskresponse')
 def restore(context, request):
-    raise NotImplementedError
+    domain = request.matchdict['domain']
+    instance = Instance.get_by_domain(request.db_session, domain)
+    archive = request.params.get(archive)
+    archive_name = request.params.get(archive_name)
+
+    if archive and archive_name:
+        raise ParamsError('archive and archive_name are mutually exclusive')
+
+    elif archive_name and not archive:
+        raise ParamsError('missing both archive and archive name')
+
+    elif archive:
+        # TODO handle archive upload
+        raise NotImplementedError()
+
+    if not archive_name.endswith("tar.gz"):
+        archive_name = "{}.tar.gz".format(archive_name)
+
+    archives = Environment.settings['paths.archives']
+    archive_path = os.path.join(archives, archive_name)
+    if not os.path.exists(archive_path):
+        raise ParamsError('{} is not a valid archive'.format(archive_name))
+
+    return request.submit_task('instance.restore', id=instance.id,
+                               archive_name=archive_name)
 
 
 @view_config(route_name='instance', request_method='PUT',
