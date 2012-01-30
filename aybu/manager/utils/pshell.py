@@ -18,6 +18,7 @@ limitations under the License.
 
 from sqlalchemy import engine_from_config
 import aybu.manager.models
+from aybu.manager.activity_log import ActivityLog
 
 
 def setup(env):
@@ -28,4 +29,5 @@ def setup(env):
     aybu.manager.models.Base.metadata.bind = env['engine']
     aybu.manager.models.Environment.initialize(settings)
     env['session'] = env['request'].db_session
+    ActivityLog.attach_to(env['session'])
 
