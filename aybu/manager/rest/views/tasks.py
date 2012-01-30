@@ -24,9 +24,11 @@ from aybu.manager.task import Task
 
 log = logging.getLogger(__name__)
 
+
 def get_task(request):
     return Task.retrieve(uuid=request.matchdict['uuid'],
                     redis_client=request.redis)
+
 
 @view_config(route_name='tasks', request_method=('HEAD', 'GET'))
 def list(context, request):

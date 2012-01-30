@@ -119,5 +119,6 @@ def conflict(context, request):
 def not_implemented(context, request):
     return generate_empty_response(context, request, 501)
 
+
 def unauthorized(context, request):
     return generate_empty_response(context, request, 401)
