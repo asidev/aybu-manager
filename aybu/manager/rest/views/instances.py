@@ -116,6 +116,10 @@ def info(context, request):
 @view_config(route_name='instance', request_method='PUT',
              request_param='action=restore', renderer='taskresponse')
 def restore(context, request):
+
+    # FIXME: re-enable when restore issues are sorted out
+    raise NotImplementedError()
+
     domain = request.matchdict['domain']
     instance = Instance.get_by_domain(request.db_session, domain)
     archive = request.params.get(archive)
