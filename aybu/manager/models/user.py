@@ -114,7 +114,7 @@ class User(Base):
             enc_password = crypt.crypt(password, user.password[0:length])
             assert user.password == enc_password
 
-        except (AssertionError, NoResultFound) :
+        except (AssertionError, NoResultFound):
             log.error('Invalid login for %s', email)
             raise ValueError('invalid username or password')
 
@@ -155,4 +155,3 @@ class Group(Base):
 
     def __repr__(self):
         return "<Group {}>".format(self.name)
-
