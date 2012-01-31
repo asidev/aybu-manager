@@ -41,13 +41,14 @@ class FSAction(Action):
 class DeleteAction(FSAction):
 
     def __init__(self, path, error_on_dirs=False, error_on_not_exists=True,
-                 deferred=False):
+                 deferred=False, error_on_fail=True):
         super(DeleteAction, self).__init__(path)
         self.tmp_name = "._{}".format(os.path.basename(path))
         self.tmp_path = os.path.realpath(
             os.path.join(os.path.dirname(path), self.tmp_name)
         )
         self.deferred = deferred
+        self.fail = error_on_fail
 
         if error_on_dirs and os.path.isdir(self.path):
             raise OSError(errno.EISDIR,
@@ -135,14 +136,20 @@ class copytree(create):
 
 class rm(DeleteAction):
 
-    def __init__(self, path, error_on_not_exists=True, deferred=False):
+    def __init__(self, path, error_on_not_exists=True, deferred=False,
+                 error_on_fail=False):
         super(rm, self).__init__(path, True, error_on_not_exists,
                                  deferred=deferred)
 
     def commit(self):
         if not self.skip:
             self.log.info("unlinking %s (was %s)", self.tmp_path, self.path)
-            os.unlink(self.tmp_path)
+            try:
+                os.unlink(self.tmp_path)
+            except Exception as e:
+                if self.fail:
+                    raise e
+                self.log.warn("Error on rm: %s", e)
 
 
 class rmdir(DeleteAction):
@@ -150,7 +157,12 @@ class rmdir(DeleteAction):
     def commit(self):
         if not self.skip:
             self.log.info("rmdir %s (was %s)", self.tmp_path, self.path)
-            os.rmdir(self.tmp_path)
+            try:
+                os.rmdir(self.tmp_path)
+            except Exception as e:
+                if self.fail:
+                    raise e
+                self.log.warn("Error on rm: %s", e)
 
 
 class rmtree(DeleteAction):
@@ -158,4 +170,9 @@ class rmtree(DeleteAction):
     def commit(self):
         if not self.skip:
             self.log.info("rmtree %s (was %s)", self.tmp_path, self.path)
-            shutil.rmtree(self.tmp_path)
+            try:
+                shutil.rmtree(self.tmp_path)
+            except Exception as e:
+                if self.fail:
+                    raise e
+                self.log.warn("Error on rm: %s", e)
