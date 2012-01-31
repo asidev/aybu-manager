@@ -154,9 +154,13 @@ def restore(context, request):
 def update(context, request):
     domain = request.matchdict['domain']
     # prefer 404 upon 400, so try first to get the instance
+    params = dict(request.params)
+    params.pop('action', '')
+
     instance = Instance.get_by_domain(request.db_session, domain)
     if request.method == 'DELETE':
         taskname = 'instance.delete'
+        params['archive'] = True if request.params.get('archive') else ''
 
     elif 'action' not in request.params:
         raise ParamsError('No action provided')
@@ -169,6 +173,4 @@ def update(context, request):
     else:
         raise ParamsError('invalid action {}'.format(request.params['action']))
 
-    params = dict(request.params)
-    params.pop('action', '')
     return request.submit_task(taskname, id=instance.id, **params)

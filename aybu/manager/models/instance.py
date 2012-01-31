@@ -597,7 +597,7 @@ class Instance(Base):
         self.environment.restart_services()
         self.flush_cache()
 
-    def delete(self, session=None):
+    def delete(self, session=None, archive=False):
         session = session or Session.object_session(self)
         if not session:
             raise DetachedInstanceError()
@@ -607,8 +607,8 @@ class Instance(Base):
             raise OperationalError('Cannot delete an enabled instance')
 
         try:
-            # create an archive
-            self.archive()
+            if archive:
+                self.archive()
 
             # now delete
             session.activity_log.add_group(drop_database, session,
@@ -622,7 +622,8 @@ class Instance(Base):
                                      error_on_not_exists=False)
             for ctrl in self.paths.cgroups:
                 session.activity_log.add(rmdir, ctrl,
-                                         error_on_not_exists=False)
+                                         error_on_not_exists=False,
+                                         error_on_fail=False)
 
         except:
             session.rollback()

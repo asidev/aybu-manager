@@ -45,9 +45,9 @@ def reload(session, task, id):
     instance.reload()
 
 
-def delete(session, task, id):
+def delete(session, task, id, archive=False):
     instance = Instance.get(session, id)
-    instance.delete()
+    instance.delete(archive=archive)
 
 
 def enable(session, task, id):
