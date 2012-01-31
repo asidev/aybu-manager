@@ -45,9 +45,14 @@ class render(Action):
             self.log.debug("rendering of %s has been deferred", self.target)
 
     def render(self):
-        from aybu.manager.models import Environment
+        if "instance" in self.params:
+            settings = self.params['instance'].environment.settings
+        else:
+            from aybu.manager.models import Environment
+            settings = Environment.settings
+
         return self.template.render(
-                        settings=Environment.settings,
+                        settings=settings,
                         **self.params
         )
 
