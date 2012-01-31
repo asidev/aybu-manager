@@ -1,4 +1,4 @@
-[program:aybu_${env.name}]
+[program:${program_prefix}_${env.name}]
 <%
   import os.path
   cgroups = ["--cgroup %s" % os.path.join(ctrl, env.name) for ctrl in env.paths.cgroups]

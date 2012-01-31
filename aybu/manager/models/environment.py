@@ -121,9 +121,11 @@ class Environment(Base):
             for path in sorted(paths):
                 session.activity_log.add(mkdir, path, error_on_exists=False)
 
+            pfx = cls.settings.get('supervisor.command.prefix', 'aybu')
             session.activity_log.add(render, 'supervisor.conf.mako',
                                      env.paths.configs.supervisor_conf,
-                                     env=env, uwsgi=env.uwsgi_config)
+                                     env=env, uwsgi=env.uwsgi_config,
+                                     program_prefix=pfx)
             sup_update_cmd = cls.settings.get('supervisor.update.cmd', None)
             if sup_update_cmd:
                 session.activity_log.add(command, sup_update_cmd,
