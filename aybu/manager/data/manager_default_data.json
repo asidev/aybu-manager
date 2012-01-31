@@ -45,7 +45,7 @@
 	{
 		"cls_": "User",
 		"email": "info@asidev.com",
-		"crypted_password": "$6$$5KCcgp3LkCP8A9xBpAs/xE.jw7I37FsIeXZrEIlRQluM0uWjNMbMRTsD7t0cXFpWcKF7TN7Xqw4YX11GoqgIS0",
+		"crypted_password": "$6$$tdxClBYB9Y1DsDbEhLTnZyWTYjiZ01GHWKECbJnh43DPfY3VHsJL8wgEBI0fmnRzQKb7zUfDLMdG0zSdKiqwx.",
 		"name": "Asidev",
 		"surname": "S.r.l.",
 		"groups": ["asidev", "admin"],
@@ -56,7 +56,7 @@
 	{
 		"cls_": "User",
 		"email": "a.cappelli@asidev.com",
-		"crypted_password": "$6$$5KCcgp3LkCP8A9xBpAs/xE.jw7I37FsIeXZrEIlRQluM0uWjNMbMRTsD7t0cXFpWcKF7TN7Xqw4YX11GoqgIS0",
+		"crypted_password": "$6$$WuW8h9yei3pGLbdYyicJN16O6tqDtvVPmyDkBKMZ3mCFKeE9BJy2MoSqvcFoT5JLk9FCZ/EeSC2tflPOlDEZd0",
 		"name": "Andrea",
 		"surname": "Cappelli",
 		"groups": ["asidev", "admin"],
@@ -67,7 +67,7 @@
 	{
 		"cls_": "User",
 		"email": "g.bagnoli@asidev.com",
-		"crypted_password": "$6$$5KCcgp3LkCP8A9xBpAs/xE.jw7I37FsIeXZrEIlRQluM0uWjNMbMRTsD7t0cXFpWcKF7TN7Xqw4YX11GoqgIS0",
+		"crypted_password": "$6$$CaVwDuwErieOWKXc7tIDt4vRBmbfDKZ.i/WgMdOm.5Dhpg5ZCsJ6sshHD0GZF40qxdubm0odFBqslV4rBIMVs.",
 		"name": "Giacomo",
 		"surname": "Bagnoli",
 		"groups": ["asidev", "admin"],
@@ -78,7 +78,7 @@
 	{
 		"cls_": "User",
 		"email": "s.fontanelli@asidev.com",
-		"crypted_password": "$6$$5KCcgp3LkCP8A9xBpAs/xE.jw7I37FsIeXZrEIlRQluM0uWjNMbMRTsD7t0cXFpWcKF7TN7Xqw4YX11GoqgIS0",
+		"crypted_password": "$6$$wEwu8QEUSk7O6pJis7oVPH5TYYYWZU/UuwCzR7t4o/HbtP2PzUAij2siXA8KD4e0b8MZPyEZKofczq9inkxWz0",
 		"name": "Stefano",
 		"surname": "Fontanelli",
 		"groups": ["asidev", "admin"],
