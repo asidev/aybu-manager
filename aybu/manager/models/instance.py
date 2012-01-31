@@ -489,11 +489,14 @@ class Instance(Base):
 
         else:
             session.commit()
+            session.close()
+            session = None
             self.stamp_schema("head")
 
         finally:
             source_.close()
-            session.close()
+            if not session is None:
+                session.close()
 
     def _on_environment_update(self, env, oldenv, attr):
         if not self.attribute_changed(env, oldenv, attr):
