@@ -47,8 +47,10 @@ def generate_empty_response(context, request, status, add_headers={}):
     response.status_int = status
     if hasattr(context, 'headers') and context.headers:
         response.headers = context.headers
-    response.headers.update({'Content-Length': 0,
-                             'Content-Type': 'application/json; charset=UTF-8'})
+    response.headers.update(
+        {'Content-Length': 0,
+         'Content-Type': 'application/json; charset=UTF-8'}
+    )
     response.headers.update(add_headers)
     # TODO add logging with ip/user/agent etc etc
     return response
@@ -114,8 +116,8 @@ def conflict(context, request):
     return generate_empty_response(context, request, 409)
 
 
-@view_config(context=NotImplementedError)
-@view_config(context=HTTPNotImplemented)
+@view_config(context=NotImplementedError, permission=NO_PERMISSION_REQUIRED)
+@view_config(context=HTTPNotImplemented, permission=NO_PERMISSION_REQUIRED)
 def not_implemented(context, request):
     return generate_empty_response(context, request, 501)
 
