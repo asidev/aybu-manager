@@ -49,11 +49,12 @@ users_groups = Table(u'users_groups',
                             ForeignKey('users.email',
                                        onupdate="cascade",
                                        ondelete="cascade")),
-                            Column('groups_name',
-                                   Unicode(32),
-                                   ForeignKey('groups.name',
-                                              onupdate="cascade",
-                                              ondelete="cascade")))
+                     Column('groups_name',
+                            Unicode(32),
+                            ForeignKey('groups.name',
+                                       onupdate="cascade",
+                                       ondelete="cascade")),
+                     mysql_engine='InnoDB')
 
 
 class User(Base):
