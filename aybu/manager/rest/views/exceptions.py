@@ -109,14 +109,14 @@ def not_found(context, request):
     return generate_empty_response(context, request, 404)
 
 
-@view_config(context=ParamsError)
-@view_config(context=ValidationError)
+@view_config(context=ParamsError, permission=NO_PERMISSION_REQUIRED)
+@view_config(context=ValidationError, permission=NO_PERMISSION_REQUIRED)
 def bad_request(context, request):
     return generate_empty_response(context, request, 400,
                                    {'X-Request-Error': str(context)})
 
 
-@view_config(context=TaskExistsError)
+@view_config(context=TaskExistsError, permission=NO_PERMISSION_REQUIRED)
 def conflict(context, request):
     return generate_empty_response(context, request, 409)
 
