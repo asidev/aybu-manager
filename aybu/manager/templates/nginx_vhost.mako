@@ -1,6 +1,7 @@
 server {
 	listen ${settings['nginx.port']};
 	server_name ${instance.domain} ${" ".join([a.domain for a in instance.aliases])};
+	access_log off;
 	error_log ${instance.paths.logs.nginx} info;
 	set $themes ${instance.environment.paths.themes};
 	set $instance ${instance.paths.instance_dir};
