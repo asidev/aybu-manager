@@ -51,7 +51,7 @@ def create_no_upload(context, request):
     try:
         name = request.params['name']
         parent_name = request.params.get('parent', None)
-        version = request.params.get('version', '')
+        version = request.params['version']
         author_email = request.params['author']
         owner_email = request.params['owner']
         banner_width = request.params['banner_width']
