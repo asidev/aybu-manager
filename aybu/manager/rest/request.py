@@ -33,6 +33,12 @@ class Request(BaseRequest):
         super(Request, self).__init__(*args, **kwargs)
         self.zmq_context = zmq.Context()
 
+    def _finished_callback(self, request):
+        try:
+            super(Request, self)._finished_callback(request)
+        except TypeError:
+            pass
+
     @property
     def redis(self):
         if self._redis:
@@ -61,6 +67,3 @@ class Request(BaseRequest):
                     requested=datetime.datetime.now(),
                     command=command, uuid=uuid, **args)
         return s.submit(task)
-
-
-
