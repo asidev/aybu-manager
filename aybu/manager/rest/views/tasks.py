@@ -40,7 +40,7 @@ def list(context, request):
 def flush(context, request):
     for task in Task.all(redis_client=request.redis):
         task.remove()
-    raise HTTPNoContent()
+    return HTTPNoContent()
 
 
 @view_config(route_name='task', request_method=('HEAD', 'GET'))
@@ -51,6 +51,7 @@ def info(context, request):
 @view_config(route_name='task', request_method='DELETE')
 def remove(context, request):
     get_task(request).remove()
+    return HTTPNoContent()
 
 
 @view_config(route_name='tasklogs', request_method='GET')
@@ -62,4 +63,4 @@ def get_logs(context, request):
 @view_config(route_name='tasklogs', request_method='DELETE')
 def flush_logs(context, request):
     get_task(request).flush_logs()
-    raise HTTPNoContent()
+    return HTTPNoContent()
