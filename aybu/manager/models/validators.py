@@ -93,7 +93,7 @@ def validate_version(version):
         validator.parse(version)
 
     except:
-        raise ValidationError('invalid version %s')
+        raise ValidationError('invalid version {}'.format(version))
 
     return version
 
