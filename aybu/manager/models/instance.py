@@ -80,7 +80,8 @@ from . validators import (validate_hostname,
 
 
 __all__ = ['Instance']
-Paths = collections.namedtuple('Paths', ['config', 'vassal_config', 'dir',
+Paths = collections.namedtuple('Paths', ['pyramid_config', 'alembic_config',
+                                         'vassal_config', 'dir',
                                          'cgroups', 'logs', 'socket',
                                          'data', 'mako_tmp_dir', 'cache',
                                          'domains_file', 'instance_dir',
@@ -202,7 +203,8 @@ class Instance(Base):
             default=join(data_dir, 'default_json')
         )
         self._paths = Paths(
-            config=join(dir_, 'production.ini'),
+            pyramid_config=join(dir_, 'production.ini'),
+            alembic_config=join(dir_, 'alembic.ini'),
             vassal_config=join(env.configs.uwsgi,
                               "{}.ini".format(self.domain)),
             dir=dir_,
@@ -302,7 +304,7 @@ class Instance(Base):
             cfg = self._alembic
 
         except AttributeError:
-            cfg = alembic.config.Config(self.paths.config)
+            cfg = alembic.config.Config(self.paths.alembic_config)
             self._alembic = cfg
 
         finally:
@@ -321,6 +323,7 @@ class Instance(Base):
         session = session or Session.object_session(self)
         if session is None:
             raise DetachedInstanceError()
+
         session.activity_log.add(render, 'vassal.ini.mako',
                                  self.paths.vassal_config,
                                  deferred=True,
@@ -341,9 +344,13 @@ class Instance(Base):
         if session is None:
             raise DetachedInstanceError()
 
-        session.activity_log.add(rm, self.paths.config)
+        session.activity_log.add(rm, self.paths.pyramid_config)
+        session.activity_log.add(rm, self.paths.alembic_config)
         session.activity_log.add(render, 'aybu.ini.mako',
-                                 self.paths.config,
+                                 self.paths.pyramid_config,
+                                 instance=self)
+        session.activity_log.add(render, 'alembic.ini.mako',
+                                 self.paths.alembic_config,
                                  instance=self)
         if self.enabled:
             self.reload()
@@ -386,8 +393,10 @@ class Instance(Base):
         for dir_ in sorted(dirs):
             session.activity_log.add(mkdir, dir_)
 
-        session.activity_log.add(render, 'aybu.ini.mako', paths.config,
+        session.activity_log.add(render, 'aybu.ini.mako', paths.pyramid_config,
                                  instance=self)
+        session.activity_log.add(render, 'alembic.ini.mako',
+                                 paths.alembic_config, instance=self)
         session.activity_log.add(render, 'main.py.mako', paths.wsgi_script,
                                  perms=0644, instance=self)
 

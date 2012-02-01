@@ -38,11 +38,6 @@ mako.module_directory = ${instance.paths.mako_tmp_dir}
 [pshell]
 setup = aybu.core.utils.pshell.setup
 
-[alembic]
-sqlalchemy.url = ${instance.database_config.sqlalchemy_url}
-sqlalchemy.echo = false
-script_location = ${instance.environment.paths.migrations}
-
 [pipeline:main]
 pipeline =
     aybu-controlpanel
@@ -53,7 +48,7 @@ host = 0.0.0.0
 port = 6543
 
 [loggers]
-keys = root, aybu, exc_logger, pufferfish, alembic
+keys = root, aybu, exc_logger, pufferfish
 
 [handlers]
 keys = file, exc_handler, console
@@ -69,11 +64,6 @@ handlers = file
 level = WARN
 handlers =
 qualname = aybu
-
-[logger_alembic]
-level = INFO
-handlers =
-qualname = alembic
 
 [logger_pufferfish]
 level = WARN
