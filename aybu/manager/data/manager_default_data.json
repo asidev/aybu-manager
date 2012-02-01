@@ -457,6 +457,20 @@
 	},
 	{
 		"cls_": "Theme",
+		"name": "clothing",
+		"version": "0.1",
+		"author_email": "antongiulio@im-studio.it",
+		"owner_email": "info@videobookservice.it",
+		"banner_width": 210,
+		"banner_height": 400,
+		"logo_width": 210,
+		"logo_height": 120,
+		"main_menu_levels": 2,
+		"template_levels": 2,
+		"image_full_size": 640
+	},
+	{
+		"cls_": "Theme",
 		"name": "cross",
 		"version": "0.1",
 		"author_email": "info@ludographicdesign.com",
