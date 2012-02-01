@@ -147,6 +147,13 @@ def restore(context, request):
                                archive_name=archive_name)
 
 
+@view_config(route_name='instances', request_method="PUT",
+             request_param='action=reload', renderer='taskresponse')
+def reload_all(context, request):
+    # TODO add view to throw 400 on wrong params for PUT
+    return request.submit_task('instance.reload', id='all')
+
+
 @view_config(route_name='instance', request_method='PUT',
              request_param='action', renderer='taskresponse')
 @view_config(route_name='instance', request_method='DELETE',

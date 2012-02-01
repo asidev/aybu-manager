@@ -41,8 +41,19 @@ def deploy(session, task, domain, owner_email, environment_name,
 
 
 def reload(session, task, id):
-    instance = Instance.get(session, id)
-    instance.reload()
+    if id == "all":
+        instances = Instance.all(session)
+    else:
+        instance = Instance.get(session, id)
+
+    envs = {}
+    for instance in instances:
+        env = instance.environment
+        envs[env.name] = env
+        instance.reload(restart_services=False)
+
+    for env in envs.values():
+        env.restart_services()
 
 
 def delete(session, task, id, archive=False):

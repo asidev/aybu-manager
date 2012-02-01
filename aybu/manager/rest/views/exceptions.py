@@ -63,7 +63,8 @@ def generate_empty_response(context, request, status, add_headers={}):
 
 @view_config(route_name='archives', request_method=DISABLED_METH_COLL)
 @view_config(route_name='archive', request_method=DISABLED_METH_OBJ)
-@view_config(route_name='instances', request_method=DISABLED_METH_COLL)
+@view_config(route_name='instances', request_method=('DELETE', 'OPTIONS',
+                                                     'TRACE', 'CONNECT'))
 @view_config(route_name='instance', request_method=DISABLED_METH_OBJ)
 @view_config(route_name='themes', request_method=DISABLED_METH_COLL)
 @view_config(route_name='theme', request_method=DISABLED_METH_OBJ)

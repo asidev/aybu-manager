@@ -319,7 +319,8 @@ class Instance(Base):
         self._database_session = sessionmaker(bind=self.database_engine)
         return self._database_session(*args, **kwargs)
 
-    def _write_uwsgi_conf(self, session=None, skip_rollback=False):
+    def _write_uwsgi_conf(self, session=None, skip_rollback=False,
+                          restart_services=True):
         session = session or Session.object_session(self)
         if session is None:
             raise DetachedInstanceError()
@@ -337,7 +338,8 @@ class Instance(Base):
         session.activity_log.add(render, 'domains.mako',
                                  self.paths.domains_file,
                                  instance=self)
-        self.environment.restart_services()
+        if restart_services:
+            self.environment.restart_services()
 
     def _rewrite_configuration(self, session=None):
         session = session or Session.object_session(self)
@@ -585,11 +587,12 @@ class Instance(Base):
         else:
             return instance
 
-    def reload(self):
+    def reload(self, restart_services=True):
         if not self.enabled:
             raise OperationalError('Cannot reload a disabled instance')
         self.log.info("Reloading %s", self)
-        self._write_uwsgi_conf(skip_rollback=True)
+        self._write_uwsgi_conf(skip_rollback=True,
+                               restart_services=restart_services)
 
     def _enable(self):
         self.log.info("Enabling instance %s", self)
