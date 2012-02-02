@@ -1,5 +1,7 @@
 % for redirect in instance.redirects:
 server {
+	access_log off;
+	error_log /dev/null crit;
 	listen ${settings['nginx.port']};
 	server_name ${redirect.source};
 	return ${redirect.http_code} http://${redirect.instance.domain}${redirect.target_path};
