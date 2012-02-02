@@ -23,6 +23,7 @@ import json
 import os
 import pkg_resources
 import tempfile
+import signal
 import shutil
 import tarfile
 import uuid
@@ -58,6 +59,7 @@ from aybu.core.models import User as AybuCoreUser
 from aybu.core.models import Group as AybuCoreGroup
 from aybu.core.models import init_session_events as init_core_session_events
 from aybu.core.proxy import Proxy
+from aybu.manager.cgroup import CGroup
 from aybu.manager.activity_log.template import render
 from aybu.manager.activity_log.fs import (mkdir,
                                           create,
@@ -172,6 +174,10 @@ class Instance(Base):
                     v = ', '.join(v)
                 res[key] = v
         res['created'] = str(res['created'])
+        master_pid = self.master_pid
+        pids = self.workers_pids
+        res['process.master'] = "---" if not master_pid else master_pid
+        res['process.workers'] = "---" if not pids else list(pids)
         return res
 
     @property
@@ -309,6 +315,34 @@ class Instance(Base):
 
         finally:
             return cfg
+
+    @property
+    def cgroup(self):
+        if not hasattr(self, "_cgroup"):
+            self._cgroup = CGroup(self.paths.cgroups)
+        return self._cgroup
+
+    @property
+    def used_memory(self):
+        if not self.enabled:
+            return None
+        return self.cgroup.used_memory
+
+    @property
+    def master_pid(self):
+        if not self.enabled:
+            return None
+        return self.cgroup.master_pid
+
+    @property
+    def workers_pids(self):
+        if not self.master_pid:
+            return set()
+        return self.pids ^ set([self.master_pid])
+
+    @property
+    def pids(self):
+        return self.cgroup.tasks
 
     def create_database_session(self, *args, **kwargs):
         if hasattr(self, "_database_session"):
@@ -605,6 +639,23 @@ class Instance(Base):
         self.log.info("Reloading %s", self)
         self.rewrite_uwsgi_conf(skip_rollback=True,
                                restart_services=restart_services)
+
+    def _signal(self, sig):
+        if not self.enabled:
+            raise OperationalError('Cannot signal a disabled instance')
+        os.kill(self.master_pid, sig)
+
+    def gracefully_reload_workers(self):
+        self.log.info("Gracefully reloading workers and master for %s", self)
+        self._signal(signal.SIGHUP)
+
+    def force_reload_workers(self):
+        self.log.warn("Brutally reloading workers and master for %s", self)
+        self._signal(signal.SIGTERM)
+
+    def kill_stack(self):
+        self.log.critical('Killing uWSGI stack for %s', self)
+        self._signal(signal.SIGINT)
 
     def _enable(self):
         self.log.info("Enabling instance %s", self)
