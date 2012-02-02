@@ -44,7 +44,7 @@ def reload(session, task, id):
     if id == "all":
         instances = Instance.all(session)
     else:
-        instance = Instance.get(session, id)
+        instances = [Instance.get(session, id)]
 
     envs = {}
     for instance in instances:
