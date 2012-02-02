@@ -34,6 +34,3 @@ class TaskResponseRender(object):
         headers.append(('X-Task-Status', taskresponse.task.status))
 
         raise HTTPAccepted(headers=headers)
-
-
-
