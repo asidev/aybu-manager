@@ -319,8 +319,10 @@ class Instance(Base):
         self._database_session = sessionmaker(bind=self.database_engine)
         return self._database_session(*args, **kwargs)
 
-    def _write_uwsgi_conf(self, session=None, skip_rollback=False,
+    def rewrite_uwsgi_conf(self, session=None, skip_rollback=False,
                           restart_services=True):
+        """ Calling this function will trigger instance reload
+            by the emperor if instance is enabled """
         session = session or Session.object_session(self)
         if session is None:
             raise DetachedInstanceError()
@@ -330,18 +332,13 @@ class Instance(Base):
                                  deferred=True,
                                  skip_rollback=skip_rollback,
                                  instance=self)
-        session.activity_log.add(render, 'nginx_vhost.mako',
-                                 self.paths.nginx_config,
-                                 deferred=True,
-                                 skip_rollback=skip_rollback,
-                                 instance=self)
         session.activity_log.add(render, 'domains.mako',
                                  self.paths.domains_file,
                                  instance=self)
-        if restart_services:
-            self.environment.restart_services()
+        self.rewrite_nginx_conf(skip_rollback=skip_rollback,
+                                restart_services=restart_services)
 
-    def _rewrite_configuration(self, session=None):
+    def rewrite_pyramid_conf(self, session=None):
         session = session or Session.object_session(self)
         if session is None:
             raise DetachedInstanceError()
@@ -356,6 +353,21 @@ class Instance(Base):
                                  instance=self)
         if self.enabled:
             self.reload()
+
+    def rewrite_nginx_conf(self, session=None, skip_rollback=False,
+                           restart_services=True):
+        session = session or Session.object_session(self)
+        if session is None:
+            raise DetachedInstanceError()
+
+        self.log.debug("Rewriting nginx config for %s", self)
+        session.activity_log.add(render, 'nginx_vhost.mako',
+                                 self.paths.nginx_config,
+                                 deferred=True,
+                                 skip_rollback=skip_rollback,
+                                 instance=self)
+        if restart_services:
+            self.environment.restart_services()
 
     def _create_python_package_paths(self, session):
         base = self.paths.dir
@@ -542,7 +554,7 @@ class Instance(Base):
         if not self.attribute_changed(value, oldvalue, attr) \
            or oldvalue is None:
             return
-        self._rewrite_configuration()
+        self.rewrite_pyramid_conf()
 
     def _on_toggle_status(self, value, oldvalue, attr):
         if not self.attribute_changed(value, oldvalue, attr):
@@ -591,14 +603,14 @@ class Instance(Base):
         if not self.enabled:
             raise OperationalError('Cannot reload a disabled instance')
         self.log.info("Reloading %s", self)
-        self._write_uwsgi_conf(skip_rollback=True,
+        self.rewrite_uwsgi_conf(skip_rollback=True,
                                restart_services=restart_services)
 
     def _enable(self):
         self.log.info("Enabling instance %s", self)
         session = Session.object_session(self)
         self._install_package(session)
-        self._write_uwsgi_conf()
+        self.rewrite_uwsgi_conf()
         self.flush_cache()
 
     def _disable(self):
