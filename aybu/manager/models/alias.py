@@ -25,47 +25,30 @@ from sqlalchemy.orm import (relationship,
 from sqlalchemy import event
 
 from . base import Base
-from . validators import (validate_hostname,
-                          validate_redirect_http_code,
-                          validate_redirect_target_path)
+from . validators import validate_hostname
 from . instance import Instance
 
 
-__all__ = ['Redirect']
+__all__ = ['Alias']
 
 
-class Redirect(Base):
+class Alias(Base):
 
-    __tablename__ = u'redirects'
+    __tablename__ = u'aliases'
     __table_args__ = ({'mysql_engine': 'InnoDB'})
 
-    source = Column(Unicode(256), primary_key=True)
+    domain = Column(Unicode(256), primary_key=True)
     instance_id = Column(Integer,
                          ForeignKey('instances.id',
                                     onupdate='cascade',
                                     ondelete='cascade'),
                          nullable=False
     )
-    instance = relationship('Instance', backref='redirects')
-    target_path = Column(Unicode(256), default=u'', nullable=False)
-    http_code = Column(Integer, default=301, nullable=False)
-
-    def to_dict(self):
-        res = super(Redirect, self).to_dict()
-        res['destination'] = self.instance.domain
-        return res
+    instance = relationship('Instance', backref='aliases')
 
     @validates('source')
     def validate_source(self, key, source):
         return validate_hostname(source)
-
-    @validates('target_path')
-    def validate_target_path(self, key, target_path):
-        return validate_redirect_target_path(target_path)
-
-    @validates('http_code')
-    def validates_http_code(self, key, http_code):
-        return validate_redirect_http_code(http_code)
 
     @classmethod
     def after_init(cls, self, args, kwargs):
@@ -76,7 +59,7 @@ class Redirect(Base):
         else:
             self.log.debug("redirect has not instance attached")
 
-    def _on_attr_update(self, value, oldvalue, attr):
+    def _on_domain_update(self, value, oldvalue, attr):
         if not self.attribute_changed(value, oldvalue, attr):
             return
 
@@ -98,17 +81,19 @@ class Redirect(Base):
 
     def delete(self, session=None):
         instance = self.instance
-        super(Redirect, self).delete(session)
+        super(Alias, self).delete(session)
         instance.rewrite_nginx_conf()
 
+    def to_dict(self):
+        res = super(Alias, self).to_dict()
+        res['destination'] = self.instance.domain
+        return res
+
     def __repr__(self):
-        target = "{}{}".format(self.instance.domain, self.target_path)
-        return '<Redirect {self.source} => {target} (code: {self.http_code})>'\
-                .format(target=target, self=self)
+        return '<Alias {self.domain} for {self.instance.domain}>'\
+                .format(self=self)
 
 
-event.listen(Redirect, 'init', Redirect.after_init)
-event.listen(Redirect.source, 'set', Redirect._on_attr_update)
-event.listen(Redirect.instance, 'set', Redirect._on_instance_update)
-event.listen(Redirect.http_code, 'set', Redirect._on_attr_update)
-event.listen(Redirect.target_path, 'set', Redirect._on_attr_update)
+event.listen(Alias, 'init', Alias.after_init)
+event.listen(Alias.domain, 'set', Alias._on_domain_update)
+event.listen(Alias.instance, 'set', Alias._on_instance_update)

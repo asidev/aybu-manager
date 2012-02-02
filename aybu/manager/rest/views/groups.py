@@ -101,4 +101,3 @@ def update(context, request):
     else:
         request.db_session.commit()
         return group.to_dict()
-

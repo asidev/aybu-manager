@@ -17,6 +17,8 @@ limitations under the License.
 """
 
 import logging
+from aybu.manager.models.validators import (validate_hostname,
+                                            check_domain_not_used)
 from aybu.manager.models import (Instance,
                                  User,
                                  Theme,
@@ -25,6 +27,7 @@ from aybu.manager.exc import ParamsError
 from pyramid.view import view_config
 from pyramid.httpexceptions import HTTPConflict
 from sqlalchemy.orm.exc import NoResultFound
+import os
 
 
 log = logging.getLogger(__name__)
@@ -43,8 +46,8 @@ def deploy(context, request):
             domain=request.params['domain'],
             owner_email=request.params['owner_email'],
             environment_name=request.params['environment_name'],
-            technical_contact_email=\
-                request.params.get('technical_contact_email',
+            technical_contact_email=request.params.get(
+                                   'technical_contact_email',
                                    request.params['owner_email']),
             theme_name=request.params.get('theme_name'),
             default_language=request.params.get('default_language', u'it'),
@@ -52,6 +55,8 @@ def deploy(context, request):
             enabled=True if request.params.get('enabled') else False,
             verbose=True if request.params.get('verbose') else False,
         )
+        check_domain_not_used(request, params['domain'])
+        params['domain'] = validate_hostname(params['domain'])
         # try to get the instance, as it MUST not exists
         Instance.get_by_domain(request.db_session, params['domain'])
 
@@ -122,8 +127,8 @@ def restore(context, request):
 
     domain = request.matchdict['domain']
     instance = Instance.get_by_domain(request.db_session, domain)
-    archive = request.params.get(archive)
-    archive_name = request.params.get(archive_name)
+    archive = request.params.get('archive')
+    archive_name = request.params.get('archive_name')
 
     if archive and archive_name:
         raise ParamsError('archive and archive_name are mutually exclusive')

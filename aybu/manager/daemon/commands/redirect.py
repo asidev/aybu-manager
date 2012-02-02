@@ -37,7 +37,7 @@ def delete(session, task, source):
 
 
 def update(session, task, source, instance_id=None, http_code=None,
-           target_path=None):
+           target_path=None, new_source=None):
     try:
         redirect = Redirect.get(session, source)
         if instance_id:
@@ -46,5 +46,8 @@ def update(session, task, source, instance_id=None, http_code=None,
             redirect.http_code = http_code
         if target_path:
             redirect.target_path = target_path
+        if new_source:
+            redirect.source = new_source
+
     except:
         log.exception('redirect.update')

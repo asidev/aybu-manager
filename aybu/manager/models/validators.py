@@ -19,6 +19,8 @@ limitations under the License.
 import re
 import urllib
 from distutils.version import StrictVersion
+from pyramid.httpexceptions import HTTPConflict
+from sqlalchemy.orm.exc import NoResultFound
 from .. exc import ValidationError
 
 name_re = re.compile(r'^[A-Za-z_][\w]*$')
@@ -158,3 +160,18 @@ def validate_language(lang):
 
     except:
         raise ValidationError('Invalid language {}'.format(lang))
+
+
+def check_domain_not_used(request, domain):
+    from aybu.manager.models import (Instance, Alias, Redirect)
+    for fun, name in ((Alias.get, "alias"), (Redirect.get, 'redirect'),
+                  (Instance.get_by_domain, "instance")):
+        try:
+            fun(request.db_session, domain)
+
+        except NoResultFound:
+            pass
+
+        else:
+            error = 'domain {} already exists as {}'.format(domain, name)
+            raise HTTPConflict(headers={'X-Request-Error': error})

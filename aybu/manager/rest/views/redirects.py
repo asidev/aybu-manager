@@ -15,15 +15,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
-import logging
+from aybu.manager.models.validators import (validate_hostname,
+                                            check_domain_not_used)
 from aybu.manager.exc import ParamsError
 from aybu.manager.models import (Instance,
                                  Redirect)
-from pyramid.httpexceptions import HTTPConflict, HTTPCreated
 from pyramid.view import view_config
 from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.exc import IntegrityError
 
 
 @view_config(route_name='redirects', request_method=('HEAD', 'GET'))
@@ -35,21 +33,13 @@ def list(context, request):
              renderer='taskresponse')
 def create(context, request):
     try:
-        source = request.params['source']
+        source = validate_hostname(request.params['source'])
         instance = Instance.get_by_domain(request.db_session,
                                         request.params['destination'])
         http_code = request.params.get('http_code', 301)
         target_path = request.params.get('target_path', '')
 
-        try:
-            r = Redirect.get(request.db_session, source)
-
-        except NoResultFound:
-            pass
-
-        else:
-            error = 'redirect for source {} already exists'.format(source)
-            raise HTTPConflict(headers={'X-Request-Error': error})
+        check_domain_not_used(request, source)
 
     except KeyError as e:
         raise ParamsError(e)
@@ -87,6 +77,7 @@ def update(context, request):
     Redirect.get(request.db_session, source)
 
     specs = (
+       ('new_source', check_domain_not_used, [request]),
        ('destination', Instance.get_by_domain, [request.db_session]),
        ('http_code', None, None),
        ('target_path', None, None)
@@ -111,4 +102,8 @@ def update(context, request):
     if "destination" in params:
         params['instance_id'] = params['destination'].id
         del params['destination']
+
+    if "new_source" in params:
+        params['new_source'] = validate_hostname(params['new_source'])
+
     return request.submit_task('redirect.update', **params)

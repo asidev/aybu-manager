@@ -18,8 +18,9 @@ limitations under the License.
 
 import json
 
+from . alias import Alias
 from . instance import Instance
-from . redirect import Redirect, Alias
+from . redirect import Redirect
 from . environment import Environment
 from . user import User, Group
 from . theme import Theme
