@@ -176,8 +176,10 @@ class Instance(Base):
         res['created'] = str(res['created'])
         master_pid = self.master_pid
         pids = self.workers_pids
-        res['process.master'] = "---" if not master_pid else master_pid
+        used_memory = self.used_memory
+        res['process.master'] = master_pid or "---"
         res['process.workers'] = "---" if not pids else list(pids)
+        res['process.used_memory'] = used_memory or "---"
         return res
 
     @property
