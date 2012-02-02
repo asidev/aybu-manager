@@ -16,7 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-
+import logging
 from aybu.manager.exc import ParamsError
 from aybu.manager.models import (Instance,
                                  Redirect)
@@ -31,7 +31,8 @@ def list(context, request):
     return {r.source: r.to_dict() for r in Redirect.all(request.db_session)}
 
 
-@view_config(route_name='redirects', request_method='POST')
+@view_config(route_name='redirects', request_method='POST',
+             renderer='taskresponse')
 def create(context, request):
     try:
         source = request.params['source']
@@ -40,10 +41,15 @@ def create(context, request):
         http_code = request.params.get('http_code', 301)
         target_path = request.params.get('target_path', '')
 
-        r = Redirect(source=source, instance=instance, http_code=http_code,
-                target_path=target_path)
-        request.db_session.add(r)
-        request.db_session.flush()
+        try:
+            r = Redirect.get(request.db_session, source)
+
+        except NoResultFound:
+            pass
+
+        else:
+            error = 'redirect for source {} already exists'.format(source)
+            raise HTTPConflict(headers={'X-Request-Error': error})
 
     except KeyError as e:
         raise ParamsError(e)
@@ -52,14 +58,10 @@ def create(context, request):
         raise ParamsError('No instance for domain {}'\
                         .format(request.params['destination']))
 
-    except IntegrityError:
-        error = 'redirect for source {} already exists'.format(source)
-        request.db_session.rollback()
-        raise HTTPConflict(headers={'X-Request-Error': error})
-
     else:
-        request.db_session.commit()
-        raise HTTPCreated()
+        params = dict(source=source, instance_id=instance.id,
+                      http_code=http_code, target_path=target_path)
+        return request.submit_task('redirect.create', **params)
 
 
 @view_config(route_name='redirect', request_method=('HEAD', 'GET'))
@@ -68,19 +70,21 @@ def info(context, request):
                         request.matchdict['source']).to_dict()
 
 
-@view_config(route_name='redirect', request_method='DELETE')
+@view_config(route_name='redirect', request_method='DELETE',
+             renderer='taskresponse')
 def delete(context, request):
-    redirect = Redirect.get(request.db_session,
-                            request.matchdict['source'])
-    redirect.delete()
-    request.db_session.commit()
+    source = request.matchdict['source']
+    Redirect.get(request.db_session, source)
+    return request.submit_task('redirect.delete', source=source)
 
 
-@view_config(route_name='redirect', request_method='PUT')
+@view_config(route_name='redirect', request_method='PUT',
+             renderer='taskresponse')
 def update(context, request):
 
     params = dict()
-    redirect = Redirect.get(request.db_session, request.matchdict['source'])
+    source = request.matchdict['source']
+    Redirect.get(request.db_session, source)
 
     specs = (
        ('destination', Instance.get_by_domain, [request.db_session]),
@@ -103,21 +107,8 @@ def update(context, request):
     if not params:
         raise ParamsError("Missing update fields")
 
-    for param in params:
-        attr = param if param != "destination" else "instance"
-        redirect.log.debug("Setting param %s to %s on redirect %s",
-                  attr, params[param], redirect)
-        setattr(redirect, attr, params[param])
-
-    try:
-        redirect.log.debug("Flushing %s", redirect)
-        request.db_session.flush()
-
-    except IntegrityError as e:
-        request.db_session.rollback()
-        raise HTTPConflict(headers={'X-Request-Error': str(e)})
-
-    else:
-        request.db_session.commit()
-
-    return redirect.to_dict()
+    params['source'] = source
+    if "destination" in params:
+        params['instance_id'] = params['destination'].id
+        del params['destination']
+    return request.submit_task('redirect.update', **params)

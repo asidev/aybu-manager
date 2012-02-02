@@ -1,14 +1,21 @@
 server {
 	listen ${settings['nginx.port']};
-	server_name ${instance.domain} ${" ".join([a.domain for a in instance.aliases])};
+	server_name ${instance.domain} ${" ".join([a.domain for a in instance.aliases])} ${" ".join([r.source for r in instance.redirects])};
 	access_log off;
 	error_log ${instance.paths.logs.nginx} info;
 	set $themes ${instance.environment.paths.themes};
 	set $instance ${instance.paths.instance_dir};
-<%
-    chain = list(instance.themes_chain)
-    num_themes = len(chain)
-%>
+	<%
+	chain = list(instance.themes_chain)
+	num_themes = len(chain)
+	%>
+
+	% for redirect in instance.redirects:
+	if ($host == "${redirect.source}") {
+		rewrite ^ http://${redirect.instance.domain}${redirect.target_path} ${"permanent" if redirect.http_code < 302 else "redirect"};
+	}
+	% endfor
+
 	location /static {
 		root $instance;
 		% if instance.theme:
