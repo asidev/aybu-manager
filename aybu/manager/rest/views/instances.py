@@ -148,10 +148,23 @@ def restore(context, request):
 
 
 @view_config(route_name='instances', request_method="PUT",
+             request_param='action=rewrite', renderer='taskresponse')
+def rewrite_all(context, request):
+    # TODO add view to throw 400 on wrong params for PUT
+    return request.submit_task('instance.rewrite', id='all')
+
+
+@view_config(route_name='instances', request_method="PUT",
              request_param='action=reload', renderer='taskresponse')
 def reload_all(context, request):
     # TODO add view to throw 400 on wrong params for PUT
-    return request.submit_task('instance.reload', id='all')
+    params = {}
+    for p in ('kill', 'force'):
+        value = request.params.get(p)
+        if value:
+            params[p] = True
+
+    return request.submit_task('instance.reload', id='all', **params)
 
 
 @view_config(route_name='instance', request_method='PUT',
@@ -174,7 +187,8 @@ def update(context, request):
 
     elif request.params['action'] in ('enable', 'disable', 'reload', 'kill',
                                       'sentence', 'flush_cache', 'archive',
-                                      'migrate', 'switch_environment'):
+                                      'migrate', 'switch_environment',
+                                      'rewrite'):
         taskname = "instance.{}".format(request.params['action'])
 
     else:

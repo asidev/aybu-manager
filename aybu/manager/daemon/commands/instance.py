@@ -40,7 +40,7 @@ def deploy(session, task, domain, owner_email, environment_name,
     return instance.id
 
 
-def reload(session, task, id):
+def rewrite(session, task, id):
     if id == "all":
         instances = Instance.all(session)
     else:
@@ -48,12 +48,26 @@ def reload(session, task, id):
 
     envs = {}
     for instance in instances:
+        if not instance.enabled:
+            continue
+
         env = instance.environment
         envs[env.name] = env
-        instance.reload(restart_services=False)
+        instance.rewrite(restart_services=False)
 
     for env in envs.values():
         env.restart_services()
+
+
+def reload(session, task, id, force=False, kill=False):
+    if id == 'all':
+        instances = Instance.all(session)
+    else:
+        instances = [Instance.get(session, id)]
+
+    for instance in instances:
+        if instance.enabled:
+            instance.reload(force=force, kill=kill)
 
 
 def delete(session, task, id, archive=False):

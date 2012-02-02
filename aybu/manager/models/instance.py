@@ -386,7 +386,7 @@ class Instance(Base):
                                  self.paths.alembic_config,
                                  instance=self)
         if self.enabled:
-            self.reload()
+            self.rewrite()
 
     def rewrite_nginx_conf(self, session=None, skip_rollback=False,
                            restart_services=True):
@@ -599,6 +599,11 @@ class Instance(Base):
         else:
             self._disable()
 
+    def _signal(self, sig):
+        if not self.enabled:
+            raise OperationalError('Cannot signal a disabled instance')
+        os.kill(self.master_pid, sig)
+
     @classmethod
     def deploy(cls, session, domain, owner, environment,
                technical_contact, theme=None, default_language=u'it',
@@ -633,17 +638,20 @@ class Instance(Base):
         else:
             return instance
 
-    def reload(self, restart_services=True):
+    def rewrite(self, restart_services=True):
         if not self.enabled:
-            raise OperationalError('Cannot reload a disabled instance')
-        self.log.info("Reloading %s", self)
+            raise OperationalError('Cannot rewrite a disabled instance')
+        self.log.info("Rewriting %s", self)
         self.rewrite_uwsgi_conf(skip_rollback=True,
                                restart_services=restart_services)
 
-    def _signal(self, sig):
-        if not self.enabled:
-            raise OperationalError('Cannot signal a disabled instance')
-        os.kill(self.master_pid, sig)
+    def reload(self, force=False, kill=False):
+        if not force and not kill:
+            self.gracefully_reload_workers()
+        elif force:
+            self.force_reload_workers()
+        else:
+            self.kill_stack()
 
     def gracefully_reload_workers(self):
         self.log.info("Gracefully reloading workers and master for %s", self)
