@@ -127,8 +127,9 @@ class ActivityLogTests(unittest.TestCase):
     def test_render(self):
         al = ActivityLog()
         instance = namedtuple('Instance', ['paths', 'environment'])(
-            paths=namedtuple('Paths', ['config'])(
-                config='MYDUMMYCONFIG'
+            paths=namedtuple('Paths', ['pyramid_config', 'alembic_config'])(
+                pyramid_config='MYDUMMYCONFIG',
+                alembic_config='MYDUMMYCONFIG'
             ),
             environment= namedtuple('Environment', ['settings',
                                                     'smtp_config',
