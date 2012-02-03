@@ -177,9 +177,11 @@ class Instance(Base):
         master_pid = self.master_pid
         pids = self.workers_pids
         used_memory = self.used_memory
+
         res['process.master'] = master_pid or "---"
         res['process.workers'] = "---" if not pids else list(pids)
         res['process.used_memory'] = used_memory or "---"
+
         return res
 
     @property
@@ -326,9 +328,10 @@ class Instance(Base):
 
     @property
     def used_memory(self):
-        if not self.enabled:
+        try:
+            return self.cgroup.used_memory
+        except TypeError:
             return None
-        return self.cgroup.used_memory
 
     @property
     def master_pid(self):
