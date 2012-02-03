@@ -32,8 +32,8 @@ from pyramid.httpexceptions import (HTTPNotFound,
 @view_config(route_name='archives', request_method=('HEAD', 'GET'))
 def list(context, request):
     archives = Environment.settings['paths.archives']
-    return [path.replace(archives, '')[1:] for path in
-            glob.glob("{}/*.tar.gz".format(archives))]
+    return {path.replace(archives, '')[1:]: path for path in
+            glob.glob("{}/*.tar.gz".format(archives))}
 
 
 @view_config(route_name='archives', request_method='POST',
