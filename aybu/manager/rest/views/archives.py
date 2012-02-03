@@ -41,9 +41,10 @@ def list(context, request):
 def create(context, request):
     try:
         domain = request.params['domain']
-        now = datetime.datetime.now().strftime('%Y%m%d-%H:%M:%S')
+        now = datetime.datetime.now().strftime('%Y%m%d-%H.%M.%S')
         default_name = "{}-{}".format(domain, now)
         name = request.params.get('name', default_name)
+        name.replace(":", ".")
 
     except KeyError as e:
         raise ParamsError(e)
