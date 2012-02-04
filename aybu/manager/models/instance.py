@@ -182,6 +182,9 @@ class Instance(Base):
         res['process.workers'] = "---" if not pids else list(pids)
         res['process.used_memory'] = used_memory or "---"
 
+        res['aliases'] = [a.domain for a in self.aliases]
+        res['redirects'] = [r.source for r in self.redirects]
+
         return res
 
     @property
