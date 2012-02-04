@@ -77,7 +77,7 @@ class CGroup(object):
         try:
             return int(self.controllers[0].get_first_in('tasks'))
 
-        except IOError:
+        except (IOError, ValueError):
             return None
 
     @property
