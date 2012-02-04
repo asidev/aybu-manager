@@ -44,7 +44,7 @@ class Alias(Base):
                                     ondelete='cascade'),
                          nullable=False
     )
-    instance = relationship('Instance', backref='aliases')
+    instance = relationship('Instance', backref='aliases', lazy="joined")
 
     @validates('source')
     def validate_source(self, key, source):
@@ -53,7 +53,7 @@ class Alias(Base):
     @classmethod
     def after_init(cls, self, args, kwargs):
         if self.instance:
-            self.instance.rewrite_nginx_conf()
+            self.instance.rewrite()
             self.log.debug("Created redirect %s: rewriting nginx conf for %s",
                           self, self.instance)
         else:
@@ -67,7 +67,7 @@ class Alias(Base):
             self.log.debug("Attribute %s changed (%s => %s) on %s: "
                            "rewriting nginx conf for %s",
                            attr, oldvalue, value, self, self.instance)
-            self.instance.rewrite_nginx_conf()
+            self.instance.rewrite()
 
     def _on_instance_update(self, instance, oldinstance, attr):
         if not self.attribute_changed(instance, oldinstance, attr):
@@ -75,14 +75,14 @@ class Alias(Base):
 
         self.log.debug("Instance changed, rewriting both nginx conf")
         if instance:
-            instance.rewrite_nginx_conf()
+            instance.rewrite()
         if oldinstance and isinstance(oldinstance, Instance):
-            oldinstance.rewrite_nginx_conf()
+            oldinstance.rewrite()
 
     def delete(self, session=None):
         instance = self.instance
         super(Alias, self).delete(session)
-        instance.rewrite_nginx_conf()
+        instance.rewrite()
 
     def to_dict(self):
         res = super(Alias, self).to_dict()
