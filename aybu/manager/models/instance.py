@@ -373,6 +373,8 @@ class Instance(Base):
                                  instance=self)
         session.activity_log.add(render, 'domains.mako',
                                  self.paths.domains_file,
+                                 deferred=True,
+                                 skip_rollback=skip_rollback,
                                  instance=self)
         self.rewrite_nginx_conf(skip_rollback=skip_rollback,
                                 restart_services=restart_services)
