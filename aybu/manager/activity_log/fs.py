@@ -176,3 +176,28 @@ class rmtree(DeleteAction):
                 if self.fail:
                     raise e
                 self.log.warn("Error on rm: %s", e)
+
+
+class mv(FSAction):
+
+    def __init__(self, source, destination):
+        super(mv, self).__init__(source)
+        self.source = source
+        self.log.info("mv %s => %s", source, destination)
+        sdir = os.path.dirname(self.source)
+        sname = "._{}".format(os.path.basename(self.source))
+        self.tmp_source_path = os.path.join(sdir, sname)
+        self.destination = destination
+        if os.path.exists(self.tmp_source_path):
+            self.log.warn("%s already exists: removing", self.tmp_source_path)
+            shutil.rmtree(self.tmp_source_path)
+
+        shutil.copytree(source, destination)
+        os.rename(self.source, self.tmp_source_path)
+
+    def commit(self):
+        shutil.rmtree(self.tmp_source_path)
+
+    def rollback(self):
+        shutil.rmtree(self.destination)
+        os.rename(self.tmp_source_path, self.source)

@@ -26,6 +26,7 @@ from aybu.manager.activity_log import ActivityLog
 from aybu.manager.activity_log.fs import (mkdir,
                                           create,
                                           copy,
+                                          mv,
                                           rm,
                                           rmdir,
                                           rmtree)
@@ -207,4 +208,28 @@ class ActivityLogTests(unittest.TestCase):
         al.commit()
         self.assertFalse(os.path.exists(testdir))
 
+
+    def test_mv(self):
+        al = ActivityLog()
+        source = os.path.join(self.tempdir, "source")
+        destination = os.path.join(self.tempdir, "destination")
+
+        os.mkdir(source)
+        os.mkdir(destination)
+
+        with self.assertRaises(OSError):
+            al.add(mv, source, destination)
+
+        shutil.rmtree(destination)
+        al.add(mv, source, destination)
+        self.assertFalse(os.path.exists(source))
+        self.assertTrue(os.path.exists(destination))
+        al.rollback()
+        self.assertTrue(os.path.exists(source))
+        self.assertFalse(os.path.exists(destination))
+
+        al.add(mv, source, destination)
+        al.commit()
+        self.assertFalse(os.path.exists(source))
+        self.assertTrue(os.path.exists(destination))
 
