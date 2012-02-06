@@ -23,6 +23,7 @@ from aybu.manager.exc import (ParamsError,
                               ValidationError)
 from pyramid.view import view_config
 from pyramid.httpexceptions import (HTTPBadRequest,
+                                    HTTPAccepted,
                                     HTTPNoContent,
                                     HTTPCreated,
                                     HTTPUnauthorized,
@@ -88,6 +89,7 @@ def method_not_allowed(context, request):
 
 @view_config(context=HTTPCreated, permission=NO_PERMISSION_REQUIRED)
 @view_config(context=HTTPNoContent, permission=NO_PERMISSION_REQUIRED)
+@view_config(context=HTTPAccepted, permission=NO_PERMISSION_REQUIRED)
 @view_config(context=HTTPUnauthorized, permission=NO_PERMISSION_REQUIRED)
 @view_config(context=HTTPForbidden, permission=NO_PERMISSION_REQUIRED)
 @view_config(context=HTTPNotFound, permission=NO_PERMISSION_REQUIRED)
