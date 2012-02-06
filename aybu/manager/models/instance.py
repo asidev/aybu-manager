@@ -64,6 +64,7 @@ from aybu.manager.activity_log.template import render
 from aybu.manager.activity_log.fs import (mkdir,
                                           create,
                                           copytree,
+                                          mv,
                                           rm,
                                           rmtree,
                                           rmdir)
@@ -389,12 +390,16 @@ class Instance(Base):
 
         session.activity_log.add(rm, self.paths.pyramid_config)
         session.activity_log.add(rm, self.paths.alembic_config)
+        session.activity_log.add(rm, self.paths.wsgi_script)
         session.activity_log.add(render, 'aybu.ini.mako',
                                  self.paths.pyramid_config,
                                  instance=self)
         session.activity_log.add(render, 'alembic.ini.mako',
                                  self.paths.alembic_config,
                                  instance=self)
+        session.activity_log.add(render, 'main.py.mako',
+                                 self.paths.wsgi_script,
+                                 perms=0644, instance=self)
         if self.enabled:
             self.rewrite()
 
@@ -584,15 +589,70 @@ class Instance(Base):
         if not self.attribute_changed(domain, olddomain, attr):
             return
 
-        raise NotSupported('instance_update_domain',
-                           'Cannot change the domain of an instance')
+        # internal use only
+        if hasattr(self, "_rename_ok"):
+            return
+
+        raise OperationalError('Cannot assign a new domain to instance. '
+                               'Use self.change_domain() instead')
+
+    def change_domain(self, new_domain, session=None):
+        session = session or Session.object_session(self)
+        if not session:
+            raise DetachedInstanceError()
+
+        if self.enabled:
+            raise OperationalError('Cannot rename an enabled instance')
+
+        opaths = self.paths
+        odomain = self.domain
+        opython_name = self.python_name
+
+        try:
+            self._rename_ok = True
+            self.domain = new_domain
+
+        finally:
+            # in case of validationerrors etc.
+            del self._rename_ok
+
+        del self._paths
+        # At this point, self.domain is the new domain and
+        # self.paths are the new paths
+
+        self.log.info('Changing instance domain from %s to %s', odomain,
+                      self.domain)
+        for cgroup in opaths.cgroups:
+            session.activity_log.add(rmdir, cgroup,
+                                     error_on_not_exists=False,
+                                     error_on_fail=False)
+        for cgroup in self.paths.cgroups:
+            session.activity_log.add(mkdir, cgroup)
+
+        session.activity_log.add(mv, opaths.dir, self.paths.dir)
+        inst_base_dir = os.path.dirname(self.paths.instance_dir)
+        session.activity_log.add(mv,
+                                 os.path.join(inst_base_dir, opython_name),
+                                 os.path.join(inst_base_dir, self.python_name))
+        session.activity_log.add(mv, opaths.logs.dir, self.paths.logs.dir)
+        self.rewrite_pyramid_conf()
+        self.rewrite_uwsgi_conf()
+        self.rewrite_nginx_conf()
+        session.activity_log.add(render, 'setup.py.mako',
+                                 os.path.join(self.paths.dir, 'setup.py'),
+                                 instance=self)
+        session.activity_log.add(rm, self.paths.vassal_config,
+                                 error_on_not_exists=False)
+        session.activity_log.add(rm, self.paths.nginx_config,
+                                 error_on_not_exists=False)
 
     def _on_theme_update(self, theme, oldtheme, attr):
         if not self.attribute_changed(theme, oldtheme, attr) \
            or oldtheme is None:
             return
 
-        raise NotImplementedError
+        raise NotSupported('instance_theme_updated',
+                           'Changing the theme of an instance is unsupported')
 
     def _on_attr_update(self, value, oldvalue, attr):
         if not self.attribute_changed(value, oldvalue, attr) \
@@ -690,6 +750,7 @@ class Instance(Base):
         session.activity_log.add(uninstall, self.paths.dir,
                                 self.paths.virtualenv,
                                 self.python_package_name)
+
         self.environment.restart_services()
         self.flush_cache()
 

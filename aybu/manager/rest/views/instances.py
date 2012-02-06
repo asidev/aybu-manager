@@ -193,10 +193,13 @@ def update(context, request):
     elif request.params['action'] in ('enable', 'disable', 'reload', 'kill',
                                       'sentence', 'flush_cache', 'archive',
                                       'migrate', 'switch_environment',
-                                      'rewrite'):
+                                      'rewrite', 'change_domain'):
         taskname = "instance.{}".format(request.params['action'])
 
     else:
         raise ParamsError('invalid action {}'.format(request.params['action']))
+
+    if request.params['action'] == 'change_domain':
+        check_domain_not_used(request, params['domain'])
 
     return request.submit_task(taskname, id=instance.id, **params)

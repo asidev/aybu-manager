@@ -105,6 +105,20 @@ def switch_environment(session, task, id, environment):
         instance.enabled = True
 
 
+def change_domain(session, task, id, domain):
+    instance = Instance.get(session, id)
+    reenable = False
+
+    if instance.enabled:
+        reenable = True
+        instance.enabled = False
+
+    instance.change_domain(domain)
+
+    if reenable:
+        instance.enabled = True
+
+
 def migrate(session, task, id, revision):
     instance = Instance.get(session, id)
     instance.upgrade_schema(revision)
