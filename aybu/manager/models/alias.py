@@ -52,12 +52,14 @@ class Alias(Base):
 
     @classmethod
     def after_init(cls, self, args, kwargs):
-        if self.instance:
+        if self.instance and self.instance.enabled:
             self.instance.rewrite()
-            self.log.debug("Created redirect %s: rewriting nginx conf for %s",
+            self.log.debug("Created alias %s: rewriting nginx conf for %s",
                           self, self.instance)
+        elif not self.instance:
+            self.log.debug("alias has no instance attached")
         else:
-            self.log.debug("redirect has not instance attached")
+            self.log.debug("alias instance is not enabled")
 
     def _on_domain_update(self, value, oldvalue, attr):
         if not self.attribute_changed(value, oldvalue, attr):
@@ -74,15 +76,18 @@ class Alias(Base):
             return
 
         self.log.debug("Instance changed, rewriting both nginx conf")
-        if instance:
+        if instance and instance.enabled:
             instance.rewrite()
-        if oldinstance and isinstance(oldinstance, Instance):
+        if oldinstance \
+                and isinstance(oldinstance, Instance) \
+                and oldinstance.enabled:
             oldinstance.rewrite()
 
     def delete(self, session=None):
         instance = self.instance
         super(Alias, self).delete(session)
-        instance.rewrite()
+        if instance.enabled:
+            instance.rewrite()
 
     def to_dict(self):
         res = super(Alias, self).to_dict()
