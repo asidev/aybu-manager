@@ -199,7 +199,10 @@ def update(context, request):
     else:
         raise ParamsError('invalid action {}'.format(request.params['action']))
 
-    if request.params['action'] == 'change_domain':
-        check_domain_not_used(request, params['domain'])
+    try:
+        if request.params['action'] == 'change_domain':
+            check_domain_not_used(request, params['domain'])
+    except KeyError:
+        pass
 
     return request.submit_task(taskname, id=instance.id, **params)

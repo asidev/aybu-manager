@@ -54,7 +54,9 @@ class Task(collections.MutableMapping):
         self.logs_levels_key = "logs:levels"
 
         if new and self.redis_client.exists(self.key):
-            raise TaskExistsError('a task with uuid %s already exists' % (uuid))
+            raise TaskExistsError('a task with uuid {} already exists'
+                                  .format(uuid))
+
         else:
             self.redis.sadd("tasks", self.uuid)
 
