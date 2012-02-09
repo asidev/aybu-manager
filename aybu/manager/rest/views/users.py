@@ -36,9 +36,9 @@ from pyramid.security import NO_PERMISSION_REQUIRED
 from .exceptions import generate_empty_response
 
 
-#@view_config(route_name='users', request_method=('HEAD', 'GET'))
-#def list(context, request):
-#    return {u.email: u.to_dict() for u in User.all(request.db_session)}
+@view_config(route_name='users', request_method=('HEAD', 'GET'))
+def list(context, request):
+    return {u.email: u.to_dict() for u in User.all(request.db_session)}
 
 
 @view_config(route_name='users', request_method='POST')
