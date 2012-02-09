@@ -175,6 +175,7 @@ class Instance(Base):
                     v = ', '.join(v)
                 res[key] = v
         res['created'] = str(res['created'])
+        res['groups'] = [g.name for g in self.groups] if self.groups else None
         master_pid = self.master_pid
         pids = self.workers_pids
         used_memory = self.used_memory
@@ -486,29 +487,6 @@ class Instance(Base):
             self.log.debug("Calling add_default_data")
             aybu.core.models.add_default_data(session, data)
 
-            # copy admin users and owner to instance db.
-            users = User.search(manager_session,
-                                User.groups.any(Group.name == u'admin'))
-            if self.owner not in users:
-                users.append(self.owner)
-
-            for user in users:
-                self.log.debug("Adding user %s", user.email)
-                core_user = AybuCoreUser(username=user.email,
-                                         password=user.password)
-                session.add(core_user)
-                core_user.crypted_password = user.password
-
-                for group in user.groups:
-                    try:
-                        core_group = AybuCoreGroup.get(session, group.name)
-
-                    except NoResultFound:
-                        core_group = AybuCoreGroup(name=group.name)
-                        session.add(core_group)
-
-                    core_user.groups.append(core_group)
-
             # modify settings for instance: debug and proxy support
             AybuCoreSetting.get(session, 'debug').raw_value = 'False'
 
@@ -697,6 +675,18 @@ class Instance(Base):
             instance._create_python_package_paths(session)
             instance._create_database(session)
             instance._populate_database(session)
+
+            # add group and users
+            instance_group = Group(name=instance.domain, instance=instance)
+            instance.log.info("Created group %s",  instance_group)
+            admins = User.search(session,
+                                 User.groups.any(Group.name == u'admin'))
+
+            if instance.owner not in admins:
+                instance.log.info("Adding user %s to group %s",
+                                  instance.owner, instance_group)
+                instance.owner.groups.append(instance_group)
+
             instance.flush_cache()
             if enabled:
                 instance.enabled = True
