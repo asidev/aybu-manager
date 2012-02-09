@@ -1,4 +1,4 @@
-"""empty message
+"""Initial schema
 
 Revision ID: c16f3da9876
 Revises: None

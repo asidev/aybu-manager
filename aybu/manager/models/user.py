@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+    #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 Copyright 2010 Asidev s.r.l.
@@ -20,10 +20,11 @@ from . base import Base
 import crypt
 import re
 from logging import getLogger
-from sqlalchemy import Column
-from sqlalchemy import ForeignKey
-from sqlalchemy import Unicode
-from sqlalchemy import Table
+from sqlalchemy import (Column,
+                        ForeignKey,
+                        Unicode,
+                        Table,
+                        Integer)
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import (relationship,
                             object_session,
@@ -144,7 +145,14 @@ class Group(Base):
     __tablename__ = u'groups'
     __table_args__ = ({'mysql_engine': 'InnoDB'})
 
-    name = Column(Unicode(32), primary_key=True)
+    name = Column(Unicode(255), primary_key=True)
+    instance_id = Column(Integer,
+                         ForeignKey('instances.id',
+                                    onupdate='cascade',
+                                    ondelete='cascade'),
+                         nullable=True
+    )
+    instance = relationship('Instance', backref='groups')
 
     @validates('name')
     def validate_name(self, key, name):
@@ -152,7 +160,12 @@ class Group(Base):
 
     def to_dict(self):
         return {'name': self.name,
-                'users': [u.email for u in self.users]}
+                'users': [u.email for u in self.users],
+                'instance': self.instance.domain if self.instance else None}
 
     def __repr__(self):
-        return "<Group {}>".format(self.name)
+        res = "<Group {}".format(self.name)
+        if self.instance:
+            return "{} [instance: {}]>".format(res, self.instance)
+        else:
+            return "{}>".format(res)
