@@ -23,7 +23,7 @@ from pyramid.httpexceptions import HTTPConflict
 from sqlalchemy.orm.exc import NoResultFound
 from .. exc import ValidationError
 
-name_re = re.compile(r'^[A-Za-z_][\w]*$')
+name_re = re.compile(r'^[A-Za-z_][\w\._]*$')
 
 # hostname_re and email_re shamelessly stolen from django.core.validators
 hostname_re = re.compile(
