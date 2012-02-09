@@ -35,6 +35,9 @@ mail.port = ${instance.environment.smtp_config.port}
 mako.strict_undefined = true
 mako.module_directory = ${instance.paths.mako_tmp_dir}
 
+# remote login
+remote_login_url = ${instance.environment.settings['api_url']}/users
+
 [pshell]
 setup = aybu.core.utils.pshell.setup
 
