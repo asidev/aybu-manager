@@ -589,6 +589,9 @@ class Instance(Base):
         try:
             self._rename_ok = True
             self.domain = new_domain
+            for group in self.groups:
+                if group.name == odomain:
+                    group.name = new_domain
 
         finally:
             # in case of validationerrors etc.
