@@ -163,7 +163,7 @@ def update(context, request):
     # only admins can change users groups
     if 'admin' in principals and 'groups' in request.params:
         groups = request.params.getall('groups')
-        params['groups'] = User.search(
+        params['groups'] = Group.search(
             request.db_session,
             filters=(Group.name.in_(groups), )
         )
