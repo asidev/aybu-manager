@@ -24,10 +24,13 @@ from paste.httpheaders import WWW_AUTHENTICATE
 from pyramid.interfaces import IAuthenticationPolicy
 import pyramid.httpexceptions
 import pyramid.security
-from aybu.manager.models import User
+from aybu.manager.models import (User,
+                                 Alias)
+from sqlalchemy.orm.exc import NoResultFound
 
 log = logging.getLogger(__name__)
-__all__ = ['AuthenticationPolicy', 'AdminFactory']
+__all__ = ['AuthenticationPolicy', 'AdminFactory', 'AuthenticatedFactory',
+           'DomainUserFactory']
 
 
 def _get_basicauth_credentials(request):
@@ -37,7 +40,7 @@ def _get_basicauth_credentials(request):
         assert authmeth.lower() == 'basic'
         auth = auth.strip().decode('base64')
         username, password = auth.split(':', 1)
-        return {'username':username, 'password':password}
+        return {'username': username, 'password': password}
 
     except (AssertionError, ValueError, binascii):
         return None
@@ -84,7 +87,7 @@ class BasicAuthenticationPolicy(object):
 
         userid = credentials['username']
         groups = self.check(credentials, request)
-        if groups is None: # is None!
+        if groups is None:  # is None!
             return effective_principals
 
         effective_principals.append(pyramid.security.Authenticated)
@@ -130,11 +133,53 @@ class AuthenticationPolicy(BasicAuthenticationPolicy):
 
 
 class AdminFactory(object):
-
+    """ User must be authenticated and be an admin """
     __acl__ = [(pyramid.security.Allow,
                 "admin",
+                pyramid.security.ALL_PERMISSIONS),
+              pyramid.security.DENY_ALL]
+
+    def __init__(self, request):
+        pass
+
+
+class AuthenticatedFactory(object):
+    """ User must be logged in, but no special permission
+        is required
+    """
+    __all__ = [(pyramid.security.Allow,
+                pyramid.security.Authenticated,
                 pyramid.security.ALL_PERMISSIONS),
                pyramid.security.DENY_ALL]
 
     def __init__(self, request):
         pass
+
+
+class DomainUserFactory(object):
+    """ Check if the user has authorization for
+        the domain given as param in the request.
+        Admins are always welcome :)
+    """
+    __acl__ = [(pyramid.security.Allow,
+                "admin",
+                pyramid.security.ALL_PERMISSIONS),
+              pyramid.security.DENY_ALL]
+
+    def __init__(self, request):
+        try:
+            try:
+                domain = Alias.get(request.db_session,
+                                   request.params['domain'])\
+                              .instance.domain
+            except NoResultFound:
+                domain = request.params['domain']
+
+            ace = (pyramid.security.Allow,
+                   domain,
+                   pyramid.security.ALL_PERMISSIONS
+            )
+            self.__acl__.insert(1, ace)
+
+        except KeyError:
+            pass

@@ -17,22 +17,21 @@ limitations under the License.
 """
 
 import urllib
+from aybu.manager.rest.authentication import (AuthenticatedFactory,
+                                              DomainUserFactory)
 from aybu.manager.exc import ParamsError
-from aybu.manager.models import (Instance,
-                                 Alias,
-                                 User,
+from aybu.manager.models import (User,
                                  Group)
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm.exc import NoResultFound
 
 from pyramid.httpexceptions import (HTTPCreated,
                                     HTTPNoContent,
-                                    HTTPUnauthorized,
                                     HTTPForbidden,
                                     HTTPConflict,
                                     HTTPPreconditionFailed)
 from pyramid.view import view_config
-from pyramid.security import NO_PERMISSION_REQUIRED
+from pyramid.security import (effective_principals,
+                              authenticated_userid)
 from .exceptions import generate_empty_response
 
 
@@ -81,50 +80,20 @@ def create(context, request):
 
 
 @view_config(route_name='user', request_method=('GET', 'HEAD'),
-             request_param='action=login',
-             permission=NO_PERMISSION_REQUIRED)
-def login(context, request):
-    """ Simulate login for user for a given domain """
-
-    try:
-        email = urllib.unquote(request.matchdict['email'])
-        password = request.params['password']
-        domain = request.params['domain']
-        user = User.check(request.db_session, email, password)
-
-    except KeyError as e:
-        raise ParamsError(e)
-
-    except (ValueError, NoResultFound):
-        raise HTTPUnauthorized()
-
-    try:
-        try:
-            alias = Alias.get(request.db_session, domain)
-            instance = alias.instance
-
-        except NoResultFound:
-            instance = Instance.get_by_domain(request.db_session, domain)
-
-        for group in instance.groups:
-            if user.has_permission(group.name):
-                break
-
-        else:
-            raise NoResultFound()
-
-    except NoResultFound:
-        # as we have no permission but we need to return
-        # a 403, we have to skip the exception view for HTTPForbidden
-        return generate_empty_response(HTTPForbidden(), request, 403)
-
-    return user.to_dict()
-
-
-@view_config(route_name='user', request_method=('GET', 'HEAD'))
+             permission=AuthenticatedFactory)
 def info(context, request):
     email = urllib.unquote(request.matchdict['email'])
+    # an "normal" user get info about itself.
+    if authenticated_userid != email and \
+       'admin' not in effective_principals(request):
+        return generate_empty_response(HTTPForbidden(), 403)
     return User.get(request.db_session, email).to_dict()
+
+
+@view_config(route_name='user', request_method=('GET', 'HEAD'),
+             request_param='action=login', permission=DomainUserFactory)
+def login(context, request):
+    return info(context, request)
 
 
 @view_config(route_name='user', request_method='DELETE')
@@ -145,9 +114,16 @@ def delete(context, request):
         raise HTTPNoContent()
 
 
-@view_config(route_name='user', request_method='PUT')
+@view_config(route_name='user', request_method='PUT',
+             permission=AuthenticatedFactory)
 def update(context, request):
     email = urllib.unquote(request.matchdict['email'])
+
+    # an "normal" user can update only itself
+    if authenticated_userid != email and \
+       'admin' not in effective_principals(request):
+        return generate_empty_response(HTTPForbidden(), 403)
+
     user = User.get(request.db_session, email)
     params = {}
 
@@ -157,7 +133,7 @@ def update(context, request):
         if value:
             params[attr] = value
 
-    if 'groups' in request.params:
+    if 'admin' in effective_principals(request) and 'groups' in request.params:
         groups = request.params.getall('groups')
         params['groups'] = User.search(
             request.db_session,
