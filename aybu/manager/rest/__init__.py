@@ -36,7 +36,7 @@ def main(global_config, **settings):
     authentication_policy = AuthenticationPolicy(
                             realm=settings['authentication.realm'])
     config = Configurator(settings=settings, request_factory=Request,
-                          default_permission=pyramid.security.Authenticated,
+                          default_permission='admin',
                           authentication_policy=authentication_policy)
 
     config.include(includeme)
@@ -64,23 +64,23 @@ def includeme(config):
 
 
 def add_routes(config):
-    admfct = 'aybu.manager.rest.authentication.AdminFactory'
-    config.add_route('aliases', '/aliases', factory=admfct)
-    config.add_route('alias', '/aliases/{domain}', factory=admfct)
-    config.add_route('archives', '/archives', factory=admfct)
-    config.add_route('archive', '/archives/{name}', factory=admfct)
-    config.add_route('environments', '/environments', factory=admfct)
-    config.add_route('environment', '/environments/{name}', factory=admfct)
-    config.add_route('groups', '/groups', factory=admfct)
-    config.add_route('group', '/groups/{name}', factory=admfct)
-    config.add_route('instances', '/instances', factory=admfct)
-    config.add_route('instance', '/instances/{domain}', factory=admfct)
-    config.add_route('redirects', '/redirects', factory=admfct)
-    config.add_route('redirect', '/redirects/{source}', factory=admfct)
-    config.add_route('tasks', '/tasks', factory=admfct)
-    config.add_route('task', '/tasks/{uuid}', factory=admfct)
-    config.add_route('tasklogs', '/tasks/{uuid}/logs', factory=admfct)
-    config.add_route('themes', '/themes', factory=admfct)
-    config.add_route('theme', '/themes/{name}', factory=admfct)
-    config.add_route('users', '/users', factory=admfct)
-    config.add_route('user', '/users/{email}', factory=admfct)
+    aclfct = 'aybu.manager.rest.authentication.AuthenticatedFactory'
+    config.add_route('aliases', '/aliases', factory=aclfct)
+    config.add_route('alias', '/aliases/{domain}', factory=aclfct)
+    config.add_route('archives', '/archives', factory=aclfct)
+    config.add_route('archive', '/archives/{name}', factory=aclfct)
+    config.add_route('environments', '/environments', factory=aclfct)
+    config.add_route('environment', '/environments/{name}', factory=aclfct)
+    config.add_route('groups', '/groups', factory=aclfct)
+    config.add_route('group', '/groups/{name}', factory=aclfct)
+    config.add_route('instances', '/instances', factory=aclfct)
+    config.add_route('instance', '/instances/{domain}', factory=aclfct)
+    config.add_route('redirects', '/redirects', factory=aclfct)
+    config.add_route('redirect', '/redirects/{source}', factory=aclfct)
+    config.add_route('tasks', '/tasks', factory=aclfct)
+    config.add_route('task', '/tasks/{uuid}', factory=aclfct)
+    config.add_route('tasklogs', '/tasks/{uuid}/logs', factory=aclfct)
+    config.add_route('themes', '/themes', factory=aclfct)
+    config.add_route('theme', '/themes/{name}', factory=aclfct)
+    config.add_route('users', '/users', factory=aclfct)
+    config.add_route('user', '/users/{email}', factory=aclfct)

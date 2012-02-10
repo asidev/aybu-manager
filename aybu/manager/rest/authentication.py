@@ -24,13 +24,15 @@ from paste.httpheaders import WWW_AUTHENTICATE
 from pyramid.interfaces import IAuthenticationPolicy
 import pyramid.httpexceptions
 import pyramid.security
-from aybu.manager.models import (User,
-                                 Alias)
-from sqlalchemy.orm.exc import NoResultFound
+from pyramid.security import (Allow,
+                              Authenticated,
+                              ALL_PERMISSIONS,
+                              DENY_ALL)
+from aybu.manager.models import User
+
 
 log = logging.getLogger(__name__)
-__all__ = ['AuthenticationPolicy', 'AdminFactory', 'AuthenticatedFactory',
-           'DomainUserFactory']
+__all__ = ['AuthenticationPolicy', 'AuthenticatedFactory']
 
 
 def _get_basicauth_credentials(request):
@@ -132,54 +134,13 @@ class AuthenticationPolicy(BasicAuthenticationPolicy):
             return groups
 
 
-class AdminFactory(object):
-    """ User must be authenticated and be an admin """
-    __acl__ = [(pyramid.security.Allow,
-                "admin",
-                pyramid.security.ALL_PERMISSIONS),
-              pyramid.security.DENY_ALL]
-
-    def __init__(self, request):
-        pass
-
-
 class AuthenticatedFactory(object):
     """ User must be logged in, but no special permission
         is required
     """
-    __all__ = [(pyramid.security.Allow,
-                pyramid.security.Authenticated,
-                pyramid.security.ALL_PERMISSIONS),
-               pyramid.security.DENY_ALL]
+    __acl__ = [(Allow, 'admin', ALL_PERMISSIONS),
+               (Allow, Authenticated, 'user'),
+               DENY_ALL]
 
     def __init__(self, request):
         pass
-
-
-class DomainUserFactory(object):
-    """ Check if the user has authorization for
-        the domain given as param in the request.
-        Admins are always welcome :)
-    """
-    __acl__ = [(pyramid.security.Allow,
-                "admin",
-                pyramid.security.ALL_PERMISSIONS),
-              pyramid.security.DENY_ALL]
-
-    def __init__(self, request):
-        try:
-            try:
-                domain = Alias.get(request.db_session,
-                                   request.params['domain'])\
-                              .instance.domain
-            except NoResultFound:
-                domain = request.params['domain']
-
-            ace = (pyramid.security.Allow,
-                   domain,
-                   pyramid.security.ALL_PERMISSIONS
-            )
-            self.__acl__.insert(1, ace)
-
-        except KeyError:
-            pass
