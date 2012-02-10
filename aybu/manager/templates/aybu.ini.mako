@@ -37,6 +37,7 @@ mako.module_directory = ${instance.paths.mako_tmp_dir}
 
 # remote login
 remote_login_url = ${instance.environment.settings['api_url']}/users
+remote_login_verify_ssl = ${instance.environemt.settings['api_ssl']}
 
 [pshell]
 setup = aybu.core.utils.pshell.setup
