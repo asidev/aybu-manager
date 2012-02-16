@@ -127,7 +127,7 @@ def delete(context, request):
 def update(context, request):
 
     params = dict()
-    theme = Theme.get(request.db_session, request.matchdict(['name']))
+    theme = Theme.get(request.db_session, request.matchdict['name'])
 
     try:
         for attr in ('owner', 'author'):
@@ -147,7 +147,6 @@ def update(context, request):
 
     except NoResultFound:
         raise ParamsError('No theme named {}'.format(value))
-
 
     for attr in ('version', 'banner_height', 'banner_width', 'logo_height',
                  'logo_width', 'main_menu_levels', 'template_levels', 'name',
