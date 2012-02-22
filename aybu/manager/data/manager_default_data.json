@@ -326,6 +326,21 @@
 		"template_levels": 2,
 		"image_full_size": 676
 	},
+		{
+		"cls_": "Theme",
+		"name": "auto_grey",
+		"version": "0.1",
+		"author_email": "antongiulio@im-studio.it",
+		"parent_name": "auto",
+		"owner_email": "info@videobookservice.it",
+		"banner_width": 950,
+		"banner_height": 220,
+		"logo_width": 184,
+		"logo_height": 184,
+		"main_menu_levels": 2,
+		"template_levels": 2,
+		"image_full_size": 676
+	},
 	{
 		"cls_": "Theme",
 		"name": "auto_lightblue",
@@ -1814,8 +1829,23 @@
 		"banner_height": 250,
 		"logo_width": 150,
 		"logo_height": 150,
-		"main_menu_levels": 1,
-		"template_levels": 2,
+		"main_menu_levels": 2,
+		"template_levels": 3,
+		"image_full_size": 640
+	},
+	{
+		"cls_": "Theme",
+		"name": "wellness_water",
+		"version": "0.1",
+		"parent_name": "wellness",
+		"author_email": "antongiulio@im-studio.it",
+		"owner_email": "info@videobookservice.it",
+		"banner_width": 1200,
+		"banner_height": 250,
+		"logo_width": 150,
+		"logo_height": 150,
+		"main_menu_levels": 2,
+		"template_levels": 3,
 		"image_full_size": 640
 	},
 	{
