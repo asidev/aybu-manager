@@ -53,15 +53,14 @@ class TestValidators(unittest.TestCase):
                               validators.validate_hostname, hname)
 
         for hname in ('www.example.com', 'example.com', 'sub.sub.example.com',
-                      'www.42.com'):
+                      'www.42.com', '4r.aybu.it'):
             self.assertEqual(hname, validators.validate_hostname(hname))
 
-
     def test_validate_name(self):
-        for name in ('èlker', 'test-name', '9name'):
+        for name in ('èlker', 'test-name'):
             self.assertRaises(ValidationError, validators.validate_name, name)
 
-        for name in ('test', 'test_name', 'test_9_name'):
+        for name in ('test', 'test_name', 'test_9_name', '9name'):
             self.assertEqual(name, validators.validate_name(name))
 
     def test_validate_password(self):
