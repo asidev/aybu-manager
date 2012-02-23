@@ -18,6 +18,7 @@ limitations under the License.
 
 __all__ = ['classproperty']
 
+
 class classproperty(property):
     """ a property decorator for classmethods """
     def __get__(self, obj, type_):
@@ -26,5 +27,3 @@ class classproperty(property):
     def __set__(self, obj, value):
         cls = type(obj)
         return self.fset.__get__(None, cls)(value)
-
-

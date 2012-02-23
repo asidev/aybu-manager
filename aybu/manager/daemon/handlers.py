@@ -51,6 +51,7 @@ class RedisPUBHandler(PUBHandler):
             raise
 
         except:
+            msg = ""
             self.handleError(record)
 
         topic_list = []
@@ -69,4 +70,3 @@ class RedisPUBHandler(PUBHandler):
         if self.task:
             self.task.log(msg, record.levelname, self.ttl,
                           levelno=record.levelno)
-
