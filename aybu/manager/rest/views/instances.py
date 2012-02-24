@@ -24,6 +24,7 @@ from aybu.manager.models import (Instance,
                                  Theme,
                                  Environment)
 from aybu.manager.exc import ParamsError
+from aybu.manager.rest.views import search
 from pyramid.view import view_config
 from pyramid.httpexceptions import HTTPConflict
 from sqlalchemy.orm.exc import NoResultFound
@@ -35,7 +36,18 @@ log = logging.getLogger(__name__)
 
 @view_config(route_name='instances', request_method=('HEAD', 'GET'))
 def list(context, request):
-    return {i.domain: i.to_dict() for i in Instance.all(request.db_session)}
+    res = {}
+    searchables = dict(enabled=bool,
+                       owner_email=unicode,
+                       environment_name=unicode,
+                       theme_name=unicode,
+                       technical_contact_email=unicode)
+    instances = search(request, Instance, searchables)
+    log.debug("Instances: %s", instances)
+    for instance in instances:
+        res[instance.domain] = instance.to_dict()
+
+    return res
 
 
 @view_config(route_name='instances', request_method='POST',
