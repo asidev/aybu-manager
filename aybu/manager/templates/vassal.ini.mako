@@ -2,7 +2,6 @@
 instance_dir = ${instance.paths.dir}
 chdir = %(instance_dir)
 module = main
-#socket = ${instance.paths.socket}
 socket = :0
 subscribe-to = ${instance.environment.uwsgi_config.subscription_server.address}:${instance.environment.uwsgi_config.subscription_server.port}:@${instance.paths.dir}/domains.txt
 static-map = /static=${instance.paths.instance_dir}/static
@@ -28,4 +27,5 @@ cgroup = ${ctrl}
 % endfor
 logto = ${instance.paths.logs.vassal}
 log-5xx = true
+stats = ${instance.uwsgi_config.stats_server.address}:${instance.uwsgi_config.stats_server.port}
 
