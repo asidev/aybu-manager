@@ -48,7 +48,8 @@ ConfigDirs = collections.namedtuple('ConfigDirs',
                                     ['dir', 'uwsgi', 'nginx',
                                      'supervisor_dir', 'supervisor_conf'])
 UWSGIConf = collections.namedtuple('UWSGIConf', ['subscription_server',
-                                                 'fastrouter', 'bin'])
+                                                 'fastrouter', 'bin',
+                                                 'stats_server'])
 Address = collections.namedtuple('Address', ['address', 'port'])
 
 __all__ = ['Environment']
@@ -121,19 +122,12 @@ class Environment(Base):
             for path in sorted(paths):
                 session.activity_log.add(mkdir, path, error_on_exists=False)
 
-            pfx = cls.settings.get('supervisor.command.prefix', 'aybu')
-            session.activity_log.add(render, 'supervisor.conf.mako',
-                                     env.paths.configs.supervisor_conf,
-                                     env=env, uwsgi=env.uwsgi_config,
-                                     program_prefix=pfx)
-            sup_update_cmd = cls.settings.get('supervisor.update.cmd', None)
-            if sup_update_cmd:
-                session.activity_log.add(command, sup_update_cmd,
-                                         on_commit=True, on_rollback=True)
+            env.rewrite(skip_rollback=False, deferred=False)
 
         except:
             session.rollback()
             raise
+
         else:
             return env
 
@@ -144,7 +138,7 @@ class Environment(Base):
 
         self.log.info("Deleting %s", self)
         if self.instances:
-            raise OperationalError('Cannot delete {} as it own instances'\
+            raise OperationalError('Cannot delete {} as it owns instances'\
                                    .format(self))
         try:
             session.activity_log.add(rm, self.paths.configs.supervisor_conf,
@@ -172,6 +166,31 @@ class Environment(Base):
                     .filter(self.__class__.name == self.name)\
                     .delete()
 
+    def rewrite(self, session=None, skip_rollback=True, deferred=True):
+        self.check_initialized()
+        session = session or Session.object_session(self)
+        if not session:
+            raise DetachedInstanceError()
+
+        self.log.info("Rewriting configuration for %s", self)
+        pfx = self.settings.get('supervisor.command.prefix', 'aybu')
+
+        session.activity_log.add(render, 'supervisor.conf.mako',
+                         self.paths.configs.supervisor_conf,
+                         env=self, uwsgi=self.uwsgi_config,
+                         program_prefix=pfx,
+                         skip_rollback=skip_rollback,
+                         deferred=deferred)
+        self.update_supervisor_conf(session)
+
+    @classmethod
+    def update_supervisor_conf(cls, session):
+                    # update supervisor conf
+        sup_update_cmd = cls.settings.get('supervisor.update.cmd', None)
+        if sup_update_cmd:
+            session.activity_log.add(command, sup_update_cmd,
+                                     on_commit=True, on_rollback=True)
+
     def check_initialized(self):
         if not hasattr(self, 'settings') or not self.settings:
             self.log.error('%s has not been initialized', self)
@@ -190,7 +209,13 @@ class Environment(Base):
             address=self.settings['uwsgi.subscription_server.address'],
             port=sp)
         bin_ = self.settings.get('uwsgi.bin', 'uwsgi')
-        return UWSGIConf(fastrouter=fr, subscription_server=ss, bin=bin_)
+        ssp = int(self.settings['uwsgi.stats_server.fastrouter_base_port'])\
+             + self.id
+        statsserver = Address(
+            address=self.settings['uwsgi.stats_server.address'],
+            port=ssp)
+        return UWSGIConf(fastrouter=fr, subscription_server=ss, bin=bin_,
+                         stats_server=statsserver)
 
     @property
     def os_config(self):
