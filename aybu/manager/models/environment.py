@@ -49,7 +49,8 @@ ConfigDirs = collections.namedtuple('ConfigDirs',
                                      'supervisor_dir', 'supervisor_conf'])
 UWSGIConf = collections.namedtuple('UWSGIConf', ['subscription_server',
                                                  'fastrouter', 'bin',
-                                                 'stats_server'])
+                                                 'fastrouter_stats_server',
+                                                 'emperor_stats_server'])
 Address = collections.namedtuple('Address', ['address', 'port'])
 
 __all__ = ['Environment']
@@ -209,13 +210,19 @@ class Environment(Base):
             address=self.settings['uwsgi.subscription_server.address'],
             port=sp)
         bin_ = self.settings.get('uwsgi.bin', 'uwsgi')
-        ssp = int(self.settings['uwsgi.stats_server.fastrouter_base_port'])\
+        fssp = int(self.settings['uwsgi.stats_server.fastrouter_base_port'])\
              + self.id
-        statsserver = Address(
+        essp = int(self.settings['uwsgi.stats_server.emperor_base_port'])\
+             + self.id
+        fr_stats_server = Address(
             address=self.settings['uwsgi.stats_server.address'],
-            port=ssp)
+            port=fssp)
+        em_stats_server = Address(
+            address=self.settings['uwsgi.stats_server.address'],
+            port=essp)
         return UWSGIConf(fastrouter=fr, subscription_server=ss, bin=bin_,
-                         stats_server=statsserver)
+                         fastrouter_stats_server=fr_stats_server,
+                         emperor_stats_server=em_stats_server)
 
     @property
     def os_config(self):
