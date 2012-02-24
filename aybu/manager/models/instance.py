@@ -101,6 +101,8 @@ SessionConfig = collections.namedtuple('SessionConfig', ['paths', 'key',
 DBConf = collections.namedtuple('DBConf', ['type', 'driver', 'user',
                                            'password', 'name', 'options',
                                            'sqlalchemy_url'])
+Address = collections.namedtuple('Address', ['address', 'port'])
+UWSGIConf = collections.namedtuple('UWSGIConf', ['stats_server'])
 
 
 class Instance(Base):
@@ -353,6 +355,13 @@ class Instance(Base):
     @property
     def pids(self):
         return self.cgroup.tasks
+
+    @property
+    def uwsgi_config(self):
+        bp = self.environment.settings['uwsgi.stats_server.instance_base_port']
+        addr = self.environment.settings['uwsgi.stats_server.address']
+        ssp = int(bp) + self.id
+        return UWSGIConf(stats_server=Address(address=addr, port=ssp))
 
     def create_database_session(self, *args, **kwargs):
         if hasattr(self, "_database_session"):
