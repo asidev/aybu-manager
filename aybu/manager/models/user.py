@@ -27,6 +27,7 @@ from sqlalchemy import (Column,
                         Integer)
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import (relationship,
+                            backref,
                             object_session,
                             validates,
                             joinedload)
@@ -146,6 +147,12 @@ class Group(Base):
     __table_args__ = ({'mysql_engine': 'InnoDB'})
 
     name = Column(Unicode(255), primary_key=True)
+    parent_name = Column(Unicode(128), ForeignKey('groups.name',
+                                                  onupdate='cascade',
+                                                  ondelete='restrict'),
+                         nullable=True)
+    children = relationship('Group',
+                            backref=backref('parent', remote_side=name))
     instance_id = Column(Integer,
                          ForeignKey('instances.id',
                                     onupdate='cascade',
