@@ -21,12 +21,15 @@ from aybu.manager.models.validators import (validate_hostname,
                                             check_domain_not_used)
 from aybu.manager.models import (Instance,
                                  User,
+                                 Group,
                                  Theme,
                                  Environment)
 from aybu.manager.exc import ParamsError
 from aybu.manager.rest.views import search
 from pyramid.view import view_config
-from pyramid.httpexceptions import HTTPConflict
+from pyramid.httpexceptions import (HTTPConflict,
+                                    HTTPNoContent,
+                                    HTTPPreconditionFailed)
 from sqlalchemy.orm.exc import NoResultFound
 import os
 
@@ -218,3 +221,76 @@ def update(context, request):
         pass
 
     return request.submit_task(taskname, id=instance.id, **params)
+
+
+@view_config(route_name='instance_groups', request_method='POST')
+def set_groups(context, request):
+    domain = request.matchdict['domain']
+    request_groups = set(request.params.getall('groups'))
+    if domain not in request_groups:
+        request_groups.add(domain)
+
+    instance = Instance.get_by_domain(request.db_session, domain)
+    groups = Group.search(
+                request.db_session,
+                filters=(Group.name.in_(request_groups), )
+             )
+    if len(groups) != len(request_groups):
+        raise HTTPPreconditionFailed(
+                headers={'X-Request-Error': 'Invalid groups {}'\
+                                                .format(','.join(groups))})
+
+    instance.groups = groups
+    request.db_session.commit()
+    raise HTTPNoContent()
+
+
+@view_config(route_name='instance_groups', request_method='DELETE')
+def empty_groups(context, request):
+    domain = request.matchdict['domain']
+    group = Group.get(request.db_session, domain)
+    instance = Instance.get_by_domain(request.db_session, domain)
+    instance.groups = [group]
+    request.db_session.commit()
+    raise HTTPNoContent()
+
+
+@view_config(route_name='instance_group', request_method='PUT')
+def add_group(context, request):
+    domain = request.matchdict['domain']
+    group_name = request.matchdict['group']
+    instance = Instance.get_by_domain(request.db_session, domain)
+    try:
+        group = Group.get(request.db_session, group_name)
+
+    except NoResultFound:
+        raise HTTPPreconditionFailed(
+                                headers={'X-Request-Error': 'No such group {}'\
+                                                        .format(group_name)}
+              )
+    if group_name in (g.name for g in instance.groups):
+        raise HTTPNoContent()
+
+    instance.groups.append(group)
+    request.db_session.commit()
+    raise HTTPNoContent()
+
+
+@view_config(route_name='instance_group', request_method='DELETE')
+def delete_group(context, request):
+    domain = request.matchdict['domain']
+    group_name = request.matchdict['group']
+    instance = Instance.get_by_domain(request.db_session, domain)
+    try:
+        group = Group.get(request.db_session, group_name)
+
+    except NoResultFound:
+        raise HTTPNoContent()
+
+    if group.name == domain:
+        raise HTTPConflict(headers={'X-Request-Error': \
+                            "group {} cannot be removed".format(group_name)})
+
+    instance.groups = [g for g in instance.groups if g.name != group.name]
+    request.db_session.commit()
+    raise HTTPNoContent()
