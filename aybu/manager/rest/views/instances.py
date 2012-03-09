@@ -238,7 +238,7 @@ def set_groups(context, request):
     if len(groups) != len(request_groups):
         raise HTTPPreconditionFailed(
                 headers={'X-Request-Error': 'Invalid groups {}'\
-                                                .format(','.join(groups))})
+                                            .format(','.join(request_groups))})
 
     instance.groups = groups
     request.db_session.commit()
