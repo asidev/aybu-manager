@@ -1,4 +1,4 @@
-"""empty message
+"""change users_groups f.key size
 
 Revision ID: 4031597ba686
 Revises: 35360c0a6b47
