@@ -8,6 +8,7 @@ Create Date: 2011-12-06 14:35:51.857314
 
 # downgrade revision identifier, used by Alembic.
 down_revision = None
+revision = 'c16f3da9876'
 
 from alembic import op
 import sqlalchemy as sa
