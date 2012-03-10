@@ -223,8 +223,15 @@ def update(context, request):
     return request.submit_task(taskname, id=instance.id, **params)
 
 
+@view_config(route_name='instance_groups', request_method=('GET', 'HEAD'))
+def list_instance_groups(context, request):
+    domain = request.matchdict['domain']
+    instance = Instance.get_by_domain(request.db_session, domain)
+    return {g.name: g.to_dict() for g in instance.groups}
+
+
 @view_config(route_name='instance_groups', request_method='POST')
-def set_groups(context, request):
+def set_instance_groups(context, request):
     domain = request.matchdict['domain']
     request_groups = set(request.params.getall('groups'))
     if domain not in request_groups:
@@ -246,7 +253,7 @@ def set_groups(context, request):
 
 
 @view_config(route_name='instance_groups', request_method='DELETE')
-def empty_groups(context, request):
+def empty_instance_groups(context, request):
     domain = request.matchdict['domain']
     group = Group.get(request.db_session, domain)
     instance = Instance.get_by_domain(request.db_session, domain)
@@ -255,8 +262,16 @@ def empty_groups(context, request):
     raise HTTPNoContent()
 
 
+@view_config(route_name='instance_group', request_method=('GET', 'HEAD'))
+def instance_group_info(context, request):
+    domain = request.matchdict['domain']
+    group = request.matchdict['group']
+    instance = Instance.get_by_domain(request.db_session, domain)
+    return group.to_dict()
+
+
 @view_config(route_name='instance_group', request_method='PUT')
-def add_group(context, request):
+def add_group_to_instance(context, request):
     domain = request.matchdict['domain']
     group_name = request.matchdict['group']
     instance = Instance.get_by_domain(request.db_session, domain)
@@ -277,7 +292,7 @@ def add_group(context, request):
 
 
 @view_config(route_name='instance_group', request_method='DELETE')
-def delete_group(context, request):
+def remove_group_from_instance(context, request):
     domain = request.matchdict['domain']
     group_name = request.matchdict['group']
     instance = Instance.get_by_domain(request.db_session, domain)
@@ -294,3 +309,16 @@ def delete_group(context, request):
     instance.groups = [g for g in instance.groups if g.name != group.name]
     request.db_session.commit()
     raise HTTPNoContent()
+
+
+@view_config(route_name='instance_users', request_method='GET')
+def allowed_users_for_instance(context, request):
+    domain = request.matchdict['domain']
+    instance = Instance.get_by_domain(request.db_session, domain)
+
+    res = {}
+    for user in User.all(request.db_session):
+        if user.can_access(instance):
+            res[user.email] = user.to_dict()
+
+    return res

@@ -41,18 +41,17 @@ def create(context, request):
 
     try:
         name = request.params['name']
-        instance = request.params.get('instance')
+        parent = request.params.get('parent')
 
         g = Group(name=name)
         request.db_session.add(g)
         request.db_session.flush()
-        if instance:
+        if parent:
             try:
-                g.instance = Instance.get_by_domain(request.db_session,
-                                                    instance)
+                g.parent = Group.get(request.db_session, parent)
 
             except NoResultFound:
-                raise ParamsError('Invalid instance domain: %s', instance)
+                raise ParamsError('Invalid parent: %s', parent)
 
     except KeyError as e:
         raise ParamsError('Missing parameter: {}'.format(e))
@@ -101,18 +100,18 @@ def update(context, request):
     if 'name' in request.params:
         params['name'] = request.params['name']
 
-    if 'instance' in request.params:
-        instance = request.params['instance']
+    if 'parent' in request.params:
+        parent = request.params['parent']
 
         try:
-            if instance:
-                params['instance'] = Instance.get_by_domain(request.db_session,
-                                                            instance)
+            if parent:
+                params['parent'] = Group.get(request.db_session, parent)
+
             else:
-                params['instance'] = None
+                params['parent'] = None
 
         except NoResultFound:
-            raise ParamsError('Invalid instance domain: %s', instance)
+            raise ParamsError('Invalid parent: %s', parent)
 
     if not params:
         raise ParamsError('Missing update fields')

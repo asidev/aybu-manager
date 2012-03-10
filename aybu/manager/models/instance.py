@@ -689,8 +689,17 @@ class Instance(Base):
             instance._populate_database(session)
 
             # add group and users
-            instance_group = Group(name=instance.domain, instance=instance)
-            instance.log.info("Created group %s",  instance_group)
+            if instance.owner.organization:
+                instance_group_parent = instance.owner.organization
+
+            else:
+                None
+
+            instance_group = Group(name=instance.domain,
+                                   parent=instance_group_parent)
+            instance.log.info("Created group %s, parent=%s", instance_group,
+                              instance_group_parent)
+            instance.groups.append(instance_group)
             admins = User.search(session,
                                  User.groups.any(Group.name == u'admin'))
 
@@ -789,6 +798,7 @@ class Instance(Base):
             raise
 
         else:
+            Group.get(session, self.domain).delete()
             session.query(self.__class__)\
                    .filter(self.__class__.id == self.id)\
                    .delete()

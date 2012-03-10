@@ -20,6 +20,7 @@ import urllib
 from aybu.manager.exc import ParamsError
 from aybu.manager.models import (User,
                                  Alias,
+                                 Instance,
                                  Group)
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
@@ -49,21 +50,38 @@ def create(context, request):
         password = request.params['password']
         name = request.params['name']
         surname = request.params['surname']
-        organization = request.params.get('organization')
+        company = request.params.get('company')
         web = request.params.get('web')
         twitter = request.params.get('twitter')
-        request_groups = request.params.getall('groups')
+        request_groups = [g for g in request.params.getall('groups') if g]
         groups = Group.search(request.db_session,
-            filters=(Group.name.in_(request_groups), )
+            filters=(Group.name.in_(request_groups),)
         )
-        if len(groups) != len(request_groups):
+        organization_name = request.params.get('organization')
+
+        if organization_name:
+            try:
+                organization = Group.get(request.db_session,
+                                          organization_name)
+
+            except NoResultFound:
+                raise HTTPPreconditionFailed(headers={
+                        'X-Request-Error': 'Invalid group {}'\
+                        .format(organization_name)
+                    })
+
+        else:
+            organization = None
+
+        if request_groups and len(groups) != len(request_groups):
             raise HTTPPreconditionFailed(
                 headers={'X-Request-Error': 'Invalid groups "{}"'\
                                         .format(', '.join(request_groups))})
 
         u = User(email=email, password=password, name=name,
-                 surname=surname, organization=organization,
-                 web=web, twitter=twitter, groups=groups)
+                 surname=surname, company=company,
+                 web=web, twitter=twitter, groups=groups,
+                 organization=organization)
         request.db_session.add(u)
         request.db_session.flush()
 
@@ -101,11 +119,14 @@ def login(context, request):
     email = urllib.unquote(request.matchdict['email'])
     user = User.get(request.db_session, email)
 
+    # non-admin users cannot check if another user has permissions on a
+    # given instance
     if authenticated_userid(request) != email and \
         'admin' not in effective_principals(request):
         return generate_empty_response(HTTPForbidden(), request, 403)
 
     try:
+        # the domain could be an alias. We need the instance domain
         domain = Alias.get(request.db_session,
                            request.params['domain'])\
                       .instance.domain
@@ -117,10 +138,11 @@ def login(context, request):
         log.error('No domain in request for users.login')
         return generate_empty_response(HTTPForbidden(), request, 403)
 
-    groups = set([g.name for g in user.groups])
-    if not set(('admin', domain)) & groups:
+    instance = Instance.get(request.db_session, domain)
+    if not user.can_access(instance):
         log.error('%s cannot login on %s (%s)', email, domain, groups)
         return generate_empty_response(HTTPForbidden(), request, 403)
+
     return user.to_dict()
 
 
@@ -154,7 +176,7 @@ def update(context, request):
         return generate_empty_response(HTTPForbidden(), request, 403)
 
     params = {}
-    for attr in ('email', 'password', 'name', 'surname', 'organization',
+    for attr in ('email', 'password', 'name', 'surname', 'company',
                     'web', 'twitter'):
         value = request.params.get(attr)
         if value:
@@ -171,6 +193,25 @@ def update(context, request):
             raise HTTPPreconditionFailed(
                 headers={'X-Request-Error': 'Invalid groups {}'\
                                             .format(','.join(groups))})
+
+    if not 'admin' and 'organization' in request.params:
+        return generate_empty_response(HTTPForbidden(), request, 403)
+
+    elif 'organization' in request.params:
+        organization_name = request.params['organization']
+        if not organization_name:
+            params['organization'] = None
+
+        else:
+            try:
+                params['organization'] = Group.get(request.db_session,
+                                                    organization_name)
+
+            except NoResultFound:
+                raise HTTPPreconditionFailed(headers={
+                        'X-Request-Error': 'Invalid group {}'\
+                        .format(organization_name)
+                    })
 
     if not params:
         raise ParamsError('Missing update fields')
@@ -189,3 +230,15 @@ def update(context, request):
         request.db_session.commit()
 
     return user.to_dict()
+
+
+@view_config(route_name='user_instances', request_method='GET')
+def instances_allowed_for_user(context, request):
+    email = urllib.unquote(request.matchdict['email'])
+    user = User.get(request.db_session, email)
+    res = {}
+    for instance in Instance.all(request.db_session):
+        if user.can_access(instance):
+            res[instance.domain] = instance.to_dict()
+
+    return res

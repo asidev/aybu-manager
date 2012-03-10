@@ -78,6 +78,8 @@ def add_routes(config):
                       factory=aclfct)
     config.add_route('instance_group', '/instances/{domain}/groups/{group}',
                      factory=aclfct)
+    config.add_route('instance_users', '/instances/{domain}/users',
+                     factory=aclfct)
     config.add_route('redirects', '/redirects', factory=aclfct)
     config.add_route('redirect', '/redirects/{source}', factory=aclfct)
     config.add_route('tasks', '/tasks', factory=aclfct)
@@ -87,3 +89,5 @@ def add_routes(config):
     config.add_route('theme', '/themes/{name}', factory=aclfct)
     config.add_route('users', '/users', factory=aclfct)
     config.add_route('user', '/users/{email}', factory=aclfct)
+    config.add_route('user_instances', '/users/{email}/instances',
+                     factory=aclfct)

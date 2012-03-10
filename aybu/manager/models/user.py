@@ -43,19 +43,38 @@ __all__ = []
 
 log = getLogger(__name__)
 
-
+# FIXME: missing primary key
 users_groups = Table(u'users_groups',
                      Base.metadata,
                      Column('users_email',
                             Unicode(255),
                             ForeignKey('users.email',
                                        onupdate="cascade",
-                                       ondelete="cascade")),
+                                       ondelete="cascade"),
+                            primary_key=True),
                      Column('groups_name',
                             Unicode(255),
                             ForeignKey('groups.name',
                                        onupdate="cascade",
-                                       ondelete="cascade")),
+                                       ondelete="cascade"),
+                            primary_key=True),
+                     mysql_engine='InnoDB')
+
+
+instances_groups = Table(u'instances_groups',
+                     Base.metadata,
+                     Column('instance_domain',
+                            Unicode(255),
+                            ForeignKey('instances.domain',
+                                       onupdate="cascade",
+                                       ondelete="cascade"),
+                            primary_key=True),
+                     Column('group_name',
+                            Unicode(255),
+                            ForeignKey('groups.name',
+                                       onupdate="cascade",
+                                       ondelete="cascade"),
+                            primary_key=True),
                      mysql_engine='InnoDB')
 
 
@@ -71,11 +90,18 @@ class User(Base):
     crypted_password = Column("password", Unicode(128), nullable=False)
     name = Column(Unicode(128), nullable=False)
     surname = Column(Unicode(128), nullable=False)
-    organization = Column(Unicode(128))
+    company = Column(Unicode(128))
     web = Column(Unicode(128))
     twitter = Column(Unicode(128))
-
-    groups = relationship('Group', secondary=users_groups, backref='users')
+    organization_name = Column(Unicode(255),
+                                ForeignKey('groups.name',
+                                       onupdate="cascade",
+                                       ondelete="restrict"),
+                                nullable=True
+                                )
+    organization = relationship('Group', lazy='joined', backref='org_users')
+    groups = relationship('Group', secondary=users_groups,
+                          backref='group_users')
 
     @validates('email')
     def validate_email(self, key, email):
@@ -124,8 +150,42 @@ class User(Base):
         else:
             return user
 
+    def can_access(self, instance):
+        self.log.debug("Cheking access for user %s to instance %s",
+                      self, instance)
+
+        user_groups = set([g.name for g in self.groups])
+        if self.organization_name:
+            user_groups.add(self.organization_name)
+
+        self.log.debug("User groups: %s", user_groups)
+        if "admin" in user_groups:
+            self.log.debug("User is admin. Access granted")
+            return True
+
+        allowed_groups = set()
+        for group in instance.groups:
+            allowed_groups.add(group.name)
+            g = group.parent
+            while g:
+                allowed_groups.add(g.name)
+                g = g.parent
+
+        self.log.debug("Allowed groups for instance %s: %s",
+                       instance, allowed_groups)
+
+        if user_groups & allowed_groups:
+            self.log.debug("User %s can access instance %s", self, instance)
+            return True
+
+        self.log.debug("User %s does not have permissions for %s",
+                      self, instance)
+        return False
+
     def to_dict(self):
         res = super(User, self).to_dict()
+        res['organization'] = res['organization_name']
+        del res['organization_name']
         res.update(dict(groups=[g.name for g in self.groups]))
         return res
 
@@ -138,7 +198,7 @@ class User(Base):
 
     def __repr__(self):
         return "<User {} ({} {}) [{}]>".format(self.email, self.name,
-                                               self.surname, self.organization)
+                                               self.surname, self.company)
 
 
 class Group(Base):
@@ -147,19 +207,24 @@ class Group(Base):
     __table_args__ = ({'mysql_engine': 'InnoDB'})
 
     name = Column(Unicode(255), primary_key=True)
-    parent_name = Column(Unicode(128), ForeignKey('groups.name',
+    parent_name = Column(Unicode(255), ForeignKey('groups.name',
                                                   onupdate='cascade',
                                                   ondelete='restrict'),
                          nullable=True)
     children = relationship('Group',
                             backref=backref('parent', remote_side=name))
-    instance_id = Column(Integer,
-                         ForeignKey('instances.id',
-                                    onupdate='cascade',
-                                    ondelete='cascade'),
-                         nullable=True
-    )
-    instance = relationship('Instance', backref='groups')
+    instances = relationship('Instance', secondary=instances_groups,
+                             backref='groups')
+
+    @hybrid_property
+    def users(self):
+        res = list(self.org_users)
+        res.extend(self.group_users)
+        return res
+
+    @hybrid_property
+    def is_organization(self):
+        return bool(len(self.org_users))
 
     @validates('name')
     def validate_name(self, key, name):
@@ -168,7 +233,11 @@ class Group(Base):
     def to_dict(self):
         return {'name': self.name,
                 'users': [u.email for u in self.users],
-                'instance': self.instance.domain if self.instance else None}
+                'parent': self.parent_name,
+                'organization': self.is_organization,
+                'children': [g.name for g in self.children],
+                'instances': [i.domain for i in self.instances]
+               }
 
     def __repr__(self):
         res = "<Group {}".format(self.name)
