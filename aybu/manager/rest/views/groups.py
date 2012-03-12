@@ -18,8 +18,7 @@ limitations under the License.
 
 
 from aybu.manager.exc import ParamsError
-from aybu.manager.models import (Group,
-                                 Instance)
+from aybu.manager.models import Group
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 

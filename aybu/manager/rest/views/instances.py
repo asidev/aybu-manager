@@ -267,6 +267,9 @@ def instance_group_info(context, request):
     domain = request.matchdict['domain']
     group = request.matchdict['group']
     instance = Instance.get_by_domain(request.db_session, domain)
+    if not group.name in (g.name for g in instance.groups):
+        raise NoResultFound()
+
     return group.to_dict()
 
 
@@ -283,6 +286,7 @@ def add_group_to_instance(context, request):
                                 headers={'X-Request-Error': 'No such group {}'\
                                                         .format(group_name)}
               )
+
     if group_name in (g.name for g in instance.groups):
         raise HTTPNoContent()
 

@@ -45,8 +45,7 @@ from sqlalchemy.orm import (sessionmaker,
                             relationship,
                             backref,
                             validates)
-from sqlalchemy.orm.exc import (DetachedInstanceError,
-                                NoResultFound)
+from sqlalchemy.orm.exc import DetachedInstanceError
 from sqlalchemy import event
 
 import pwgen
@@ -55,8 +54,6 @@ import aybu.core.models
 from aybu.core.models import Base as AybuCoreBase
 from aybu.core.models import Setting as AybuCoreSetting
 from aybu.core.models import Theme as AybuCoreTheme
-from aybu.core.models import User as AybuCoreUser
-from aybu.core.models import Group as AybuCoreGroup
 from aybu.core.models import init_session_events as init_core_session_events
 from aybu.core.proxy import Proxy
 from aybu.manager.cgroup import CGroup

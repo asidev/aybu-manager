@@ -44,8 +44,8 @@ class Pip(Action):
         self.log.info("installing from %s", self.path)
         self.log.debug(command)
         try:
-            output = subprocess.check_output(shlex.split(command))
-            #self.log.debug("OUTPUT: %s", output)
+            subprocess.check_output(shlex.split(command))
+
         except subprocess.CalledProcessError as e:
             self.log.error(e.output)
             raise e

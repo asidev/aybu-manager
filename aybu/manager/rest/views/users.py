@@ -140,7 +140,7 @@ def login(context, request):
 
     instance = Instance.get(request.db_session, domain)
     if not user.can_access(instance):
-        log.error('%s cannot login on %s (%s)', email, domain, groups)
+        log.error('%s cannot login on %s', email, domain)
         return generate_empty_response(HTTPForbidden(), request, 403)
 
     return user.to_dict()
