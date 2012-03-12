@@ -1,4 +1,4 @@
-"""change users_groups f.key size
+"""Fixed length for fkey in users_groups
 
 Revision ID: 4031597ba686
 Revises: 35360c0a6b47
