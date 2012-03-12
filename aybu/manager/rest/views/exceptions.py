@@ -37,7 +37,6 @@ from pyramid.security import (NO_PERMISSION_REQUIRED,
 
 from sqlalchemy.orm.exc import NoResultFound
 
-
 DISABLED_METH_COLL = ('DELETE', 'PUT', 'OPTIONS', 'TRACE', 'CONNECT')
 DISABLED_METH_OBJ = ('POST', 'OPTIONS', 'TRACE', 'CONNECT')
 log = logging.getLogger(__name__)
@@ -67,12 +66,19 @@ def generate_empty_response(context, request, status, add_headers={}):
 @view_config(route_name='instances', request_method=('DELETE', 'OPTIONS',
                                                      'TRACE', 'CONNECT'))
 @view_config(route_name='instance', request_method=DISABLED_METH_OBJ)
+@view_config(route_name='instance_groups', request_method=('OPTIONS', 'TRACE',
+                                                           'CONNECT', 'PUT'))
+@view_config(route_name='instance_group', request_method=DISABLED_METH_OBJ)
+@view_config(route_name='instance_users',
+             request_method=DISABLED_METH_COLL + ('POST',))
 @view_config(route_name='themes', request_method=DISABLED_METH_COLL)
 @view_config(route_name='theme', request_method=DISABLED_METH_OBJ)
 @view_config(route_name='redirects', request_method=DISABLED_METH_COLL)
 @view_config(route_name='redirect', request_method=DISABLED_METH_OBJ)
 @view_config(route_name='users', request_method=DISABLED_METH_COLL)
 @view_config(route_name='user', request_method=DISABLED_METH_OBJ)
+@view_config(route_name='user_instances',
+             request_method=DISABLED_METH_COLL + ('POST',))
 @view_config(route_name='tasks',
              request_method=('POST', 'PUT', 'OPTIONS', 'TRACE', 'CONNECT'))
 @view_config(route_name='task',

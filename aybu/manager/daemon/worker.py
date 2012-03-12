@@ -88,21 +88,21 @@ class AybuManagerDaemonWorker(threading.Thread):
                 result = function(session, task, **task.command_args)
                 session.commit()
 
-            except ImportError as e:
+            except ImportError:
                 session.rollback()
                 task.status = taskstatus.FAILED
                 task.result = "Cannot find resource {}"\
                         .format(task.command_module)
                 log.exception(task.result)
 
-            except AttributeError as e:
+            except AttributeError:
                 session.rollback()
                 task.status = taskstatus.FAILED
                 task.result = "Cannot find action {} on {}"\
                         .format(task.command_name, task.command_module)
                 log.critical(task.result)
 
-            except Exception as e:
+            except Exception:
                 session.rollback()
                 log.exception('Error while executing task')
                 task.status = taskstatus.FAILED

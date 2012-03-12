@@ -45,8 +45,7 @@ from sqlalchemy.orm import (sessionmaker,
                             relationship,
                             backref,
                             validates)
-from sqlalchemy.orm.exc import (DetachedInstanceError,
-                                NoResultFound)
+from sqlalchemy.orm.exc import DetachedInstanceError
 from sqlalchemy import event
 
 import pwgen
@@ -55,8 +54,6 @@ import aybu.core.models
 from aybu.core.models import Base as AybuCoreBase
 from aybu.core.models import Setting as AybuCoreSetting
 from aybu.core.models import Theme as AybuCoreTheme
-from aybu.core.models import User as AybuCoreUser
-from aybu.core.models import Group as AybuCoreGroup
 from aybu.core.models import init_session_events as init_core_session_events
 from aybu.core.proxy import Proxy
 from aybu.manager.cgroup import CGroup
@@ -689,8 +686,17 @@ class Instance(Base):
             instance._populate_database(session)
 
             # add group and users
-            instance_group = Group(name=instance.domain, instance=instance)
-            instance.log.info("Created group %s",  instance_group)
+            if instance.owner.organization:
+                instance_group_parent = instance.owner.organization
+
+            else:
+                None
+
+            instance_group = Group(name=instance.domain,
+                                   parent=instance_group_parent)
+            instance.log.info("Created group %s, parent=%s", instance_group,
+                              instance_group_parent)
+            instance.groups.append(instance_group)
             admins = User.search(session,
                                  User.groups.any(Group.name == u'admin'))
 
@@ -789,6 +795,7 @@ class Instance(Base):
             raise
 
         else:
+            Group.get(session, self.domain).delete()
             session.query(self.__class__)\
                    .filter(self.__class__.id == self.id)\
                    .delete()
