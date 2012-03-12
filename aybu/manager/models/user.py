@@ -23,8 +23,7 @@ from logging import getLogger
 from sqlalchemy import (Column,
                         ForeignKey,
                         Unicode,
-                        Table,
-                        Integer)
+                        Table)
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import (relationship,
                             backref,
