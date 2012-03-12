@@ -138,7 +138,7 @@ def login(context, request):
         log.error('No domain in request for users.login')
         return generate_empty_response(HTTPForbidden(), request, 403)
 
-    instance = Instance.get(request.db_session, domain)
+    instance = Instance.get_by_domain(request.db_session, domain)
     if not user.can_access(instance):
         log.error('%s cannot login on %s', email, domain)
         return generate_empty_response(HTTPForbidden(), request, 403)
