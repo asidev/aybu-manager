@@ -184,15 +184,19 @@ def update(context, request):
 
     # only admins can change users groups
     if 'admin' in principals and 'groups' in request.params:
-        groups = request.params.getall('groups')
-        params['groups'] = Group.search(
-            request.db_session,
-            filters=(Group.name.in_(groups), )
-        )
-        if len(groups) != len(params['groups']):
-            raise HTTPPreconditionFailed(
-                headers={'X-Request-Error': 'Invalid groups {}'\
-                                            .format(','.join(groups))})
+        groups = [g for g in request.params.getall('groups') if g]
+        if not groups:
+            params['groups'] = []
+
+        else:
+            params['groups'] = Group.search(
+                request.db_session,
+                filters=(Group.name.in_(groups), )
+            )
+            if len(groups) != len(params['groups']):
+                raise HTTPPreconditionFailed(
+                    headers={'X-Request-Error': 'Invalid groups {}'\
+                                                .format(','.join(groups))})
 
     if not 'admin' and 'organization' in request.params:
         return generate_empty_response(HTTPForbidden(), request, 403)
