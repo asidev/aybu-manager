@@ -168,8 +168,13 @@ class User(Base):
             allowed_groups.add(group.name)
             g = group.parent
             while g:
-                allowed_groups.add(g.name)
-                g = g.parent
+                if g.name not in allowed_groups:
+                    allowed_groups.add(g.name)
+                    g = g.parent
+
+                else:
+                    # avoid endless loops
+                    break
 
         self.log.debug("Allowed groups for instance %s: %s",
                        instance, allowed_groups)
