@@ -187,6 +187,13 @@ def reload_all(context, request):
     return request.submit_task('instance.reload', id='all', **params)
 
 
+@view_config(route_name='instances', request_method="PUT",
+             request_param='action=migrate', renderer='taskresponse')
+def migrate_all(context, request):
+    revision = request.params['revision']
+    return request.submit_task('instance.migrate', id='all', revision=revision)
+
+
 @view_config(route_name='instance', request_method='PUT',
              request_param='action', renderer='taskresponse')
 @view_config(route_name='instance', request_method='DELETE',

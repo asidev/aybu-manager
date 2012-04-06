@@ -815,7 +815,8 @@ class Instance(Base):
 
     def upgrade_schema(self, revision='head'):
         """ Uses alembic to migrate aybu.core schema to given revision """
-        self.log.info("Upgrading schema to revision '%s'", revision)
+        self.log.info("Upgrading schema for %s to revision '%s'", self,
+                      revision)
         alembic.command.upgrade(self.alembic, revision)
 
     def stamp_schema(self, revision='head'):
