@@ -120,8 +120,13 @@ def change_domain(session, task, id, domain):
 
 
 def migrate(session, task, id, revision):
-    instance = Instance.get(session, id)
-    instance.upgrade_schema(revision)
+    if id == 'all':
+        instances = Instance.all(session)
+    else:
+        instances = [Instance.get(session, id)]
+
+    for instance in instances:
+        instance.upgrade_schema(revision)
 
 
 def archive(session, task, id, name):
