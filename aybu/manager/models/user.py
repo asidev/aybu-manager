@@ -245,7 +245,7 @@ class Group(Base):
 
     def __repr__(self):
         res = "<Group {}".format(self.name)
-        if self.instance:
-            return "{} [instance: {}]>".format(res, self.instance)
+        if self.instances:
+            return "{} [instances: {}]>".format(res, ", ".join(self.instance))
         else:
             return "{}>".format(res)
