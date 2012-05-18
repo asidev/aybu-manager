@@ -5,19 +5,16 @@
 	},
 	{
 		"cls_": "Group",
-		"name": "asidev",
-		"organization": true
+		"name": "asidev"
 	},
 	{
 		"cls_": "Group",
-		"name": "videobookservice",
-		"organization": true
+		"name": "videobookservice"
 	},
 	{
 		"cls_": "Group",
 		"name": "logos_com",
-		"parent_name": "videobookservice",
-		"organization": true
+		"parent_name": "videobookservice"
 	},
 	{
 		"cls_": "User",
@@ -50,7 +47,7 @@
 		"name": "Andrea",
 		"surname": "Cappelli",
 		"groups": ["admin"],
-		"organization": "asidev",
+		"organization_name": "asidev",
 		"web": "http://www.asidev.com/",
 		"company": "Asidev",
 		"twitter": "@__andreac__"
@@ -62,7 +59,7 @@
 		"name": "Giacomo",
 		"surname": "Bagnoli",
 		"groups": ["admin"],
-		"organization": "asidev",
+		"organization_name": "asidev",
 		"web": "http://www.asidev.com/",
 		"company": "Asidev",
 		"twitter": "@gbagnoli"
@@ -74,7 +71,7 @@
 		"name": "Stefano",
 		"surname": "Fontanelli",
 		"groups": ["admin"],
-		"organization": "asidev",
+		"organization_name": "asidev",
 		"web": "http://www.asidev.com/",
 		"company": "Asidev",
 		"twitter": "@stefontanelli"
@@ -119,7 +116,6 @@
 		"name": "Giuliano",
 		"surname": "Panaroni",
 		"groups": [],
-		"organization": "Zelda Graphics",
 		"web": "http://www.zeldagraphic.com/",
 		"company": "Zelda Graphics",
 		"twitter": "@GiulianoPana"
@@ -1796,21 +1792,6 @@
 	},
 	{
 		"cls_": "Theme",
-		"name": "wellness_gokart",
-		"version": "0.1",
-		"parent_name": "wellness_grey",
-		"author_email": "antongiulio@im-studio.it",
-		"owner_email": "info@videobookservice.it",
-		"banner_width": 1200,
-		"banner_height": 240,
-		"logo_width": 340,
-		"logo_height": 120,
-		"main_menu_levels": 1,
-		"template_levels": 2,
-		"image_full_size": 600
-	},
-	{
-		"cls_": "Theme",
 		"name": "wellness_grey",
 		"version": "0.1",
 		"parent_name": "wellness",
@@ -1823,6 +1804,21 @@
 		"main_menu_levels": 1,
 		"template_levels": 2,
 		"image_full_size": 640
+	},
+	{
+		"cls_": "Theme",
+		"name": "wellness_gokart",
+		"version": "0.1",
+		"parent_name": "wellness_grey",
+		"author_email": "antongiulio@im-studio.it",
+		"owner_email": "info@videobookservice.it",
+		"banner_width": 1200,
+		"banner_height": 240,
+		"logo_width": 340,
+		"logo_height": 120,
+		"main_menu_levels": 1,
+		"template_levels": 2,
+		"image_full_size": 600
 	},
 	{
 		"cls_": "Theme",
