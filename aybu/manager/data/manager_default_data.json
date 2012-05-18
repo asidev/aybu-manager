@@ -5,31 +5,19 @@
 	},
 	{
 		"cls_": "Group",
-		"name": "asidev"
+		"name": "asidev",
+		"organization": true
 	},
 	{
 		"cls_": "Group",
-		"name": "zeldagraphic"
+		"name": "videobookservice",
+		"organization": true
 	},
 	{
 		"cls_": "Group",
-		"name": "vbs"
-	},
-	{
-		"cls_": "Group",
-		"name": "author"
-	},
-	{
-		"cls_": "Group",
-		"name": "reseller"
-	},
-	{
-		"cls_": "Group",
-		"name": "client"
-	},
-	{
-		"cls_": "Group",
-		"name": "reportitalia"
+		"name": "logos_com",
+		"parent_name": "videobookservice",
+		"organization": true
 	},
 	{
 		"cls_": "User",
@@ -37,8 +25,9 @@
 		"crypted_password": "$6$$5KCcgp3LkCP8A9xBpAs/xE.jw7I37FsIeXZrEIlRQluM0uWjNMbMRTsD7t0cXFpWcKF7TN7Xqw4YX11GoqgIS0",
 		"name": "Miriam",
 		"surname": "Sari",
-		"groups": ["vbs", "reseller"],
-		"organization": "VideoBookService",
+		"groups": [],
+		"company": "VideoBookService",
+		"organization_name": "videobookservice",
 		"web": "http://www.videobookservice.it/",
 		"twitter": ""
 	},
@@ -48,9 +37,10 @@
 		"crypted_password": "$6$$tdxClBYB9Y1DsDbEhLTnZyWTYjiZ01GHWKECbJnh43DPfY3VHsJL8wgEBI0fmnRzQKb7zUfDLMdG0zSdKiqwx.",
 		"name": "Asidev",
 		"surname": "S.r.l.",
-		"groups": ["asidev", "admin"],
-		"organization": "Asidev",
+		"groups": ["admin"],
+		"organization_name": "asidev",
 		"web": "http://www.asidev.com/",
+		"company": "Asidev",
 		"twitter": "@asidev"
 	},
 	{
@@ -59,9 +49,10 @@
 		"crypted_password": "$6$$WuW8h9yei3pGLbdYyicJN16O6tqDtvVPmyDkBKMZ3mCFKeE9BJy2MoSqvcFoT5JLk9FCZ/EeSC2tflPOlDEZd0",
 		"name": "Andrea",
 		"surname": "Cappelli",
-		"groups": ["asidev", "admin"],
-		"organization": "Asidev",
+		"groups": ["admin"],
+		"organization": "asidev",
 		"web": "http://www.asidev.com/",
+		"company": "Asidev",
 		"twitter": "@__andreac__"
 	},
 	{
@@ -70,9 +61,10 @@
 		"crypted_password": "$6$$CaVwDuwErieOWKXc7tIDt4vRBmbfDKZ.i/WgMdOm.5Dhpg5ZCsJ6sshHD0GZF40qxdubm0odFBqslV4rBIMVs.",
 		"name": "Giacomo",
 		"surname": "Bagnoli",
-		"groups": ["asidev", "admin"],
-		"organization": "Asidev",
+		"groups": ["admin"],
+		"organization": "asidev",
 		"web": "http://www.asidev.com/",
+		"company": "Asidev",
 		"twitter": "@gbagnoli"
 	},
 	{
@@ -81,9 +73,10 @@
 		"crypted_password": "$6$$wEwu8QEUSk7O6pJis7oVPH5TYYYWZU/UuwCzR7t4o/HbtP2PzUAij2siXA8KD4e0b8MZPyEZKofczq9inkxWz0",
 		"name": "Stefano",
 		"surname": "Fontanelli",
-		"groups": ["asidev", "admin"],
-		"organization": "Asidev",
+		"groups": ["admin"],
+		"organization": "asidev",
 		"web": "http://www.asidev.com/",
+		"company": "Asidev",
 		"twitter": "@stefontanelli"
 	},
 	{
@@ -92,9 +85,9 @@
 		"crypted_password": "$6$$5KCcgp3LkCP8A9xBpAs/xE.jw7I37FsIeXZrEIlRQluM0uWjNMbMRTsD7t0cXFpWcKF7TN7Xqw4YX11GoqgIS0",
 		"name": "Antongiulio",
 		"surname": "Migliacci",
-		"groups": ["author"],
-		"organization": "ImStudio",
+		"groups": [],
 		"web": "http://www.im-studio.it/",
+		"company": "ImStudio",
 		"twitter": ""
 	},
 	{
@@ -103,9 +96,9 @@
 		"crypted_password": "$6$$5KCcgp3LkCP8A9xBpAs/xE.jw7I37FsIeXZrEIlRQluM0uWjNMbMRTsD7t0cXFpWcKF7TN7Xqw4YX11GoqgIS0",
 		"name": "Ludovico",
 		"surname": "D'Aietti",
-		"groups": ["author"],
-		"organization": "Asidev",
+		"groups": [],
 		"web": "http://www.ludographicdesign.com/",
+		"company": "Asidev",
 		"twitter": ""
 	},
 	{
@@ -114,9 +107,9 @@
 		"crypted_password": "$6$$5KCcgp3LkCP8A9xBpAs/xE.jw7I37FsIeXZrEIlRQluM0uWjNMbMRTsD7t0cXFpWcKF7TN7Xqw4YX11GoqgIS0",
 		"name": "Chiara",
 		"surname": "Bertin",
-		"groups": ["author"],
-		"organization": "Asidev",
+		"groups": [],
 		"web": "",
+		"company": "Asidev",
 		"twitter": ""
 	},
 	{
@@ -125,10 +118,11 @@
 		"crypted_password": "$6$$5KCcgp3LkCP8A9xBpAs/xE.jw7I37FsIeXZrEIlRQluM0uWjNMbMRTsD7t0cXFpWcKF7TN7Xqw4YX11GoqgIS0",
 		"name": "Giuliano",
 		"surname": "Panaroni",
-		"groups": ["author", "zeldagraphic"],
+		"groups": [],
 		"organization": "Zelda Graphics",
 		"web": "http://www.zeldagraphic.com/",
-		"twitter": ""
+		"company": "Zelda Graphics",
+		"twitter": "@GiulianoPana"
 	},
 	{
 		"cls_": "User",
@@ -136,8 +130,8 @@
 		"crypted_password": "$6$$5KCcgp3LkCP8A9xBpAs/xE.jw7I37FsIeXZrEIlRQluM0uWjNMbMRTsD7t0cXFpWcKF7TN7Xqw4YX11GoqgIS0",
 		"name": "Livia",
 		"surname": "Cirone",
-		"groups": ["author"],
-		"organization": "Design Studio",
+		"groups": [],
+		"company": "Design Studio",
 		"web": "http://www.liviacirone.it/",
 		"twitter": ""
 	},
@@ -147,9 +141,21 @@
 		"crypted_password": "$6$$5KCcgp3LkCP8A9xBpAs/xE.jw7I37FsIeXZrEIlRQluM0uWjNMbMRTsD7t0cXFpWcKF7TN7Xqw4YX11GoqgIS0",
 		"name": "Reportitalia",
 		"surname": "Sas",
-		"groups": ["reseller", "reportitalia"],
-		"organization": "Reportitalia",
+		"groups": [],
+		"company": "Reportitalia",
 		"web": "http://www.reportitalia.it/",
+		"twitter": ""
+	},
+	{
+		"cls_": "User",
+		"email": "laylacrisanti@logos-com.com",
+		"crypted_password": "$6$$Olp5BBRiUCMTqQUK.Pi1BYq7WcZi4czdNeZoE6vWtEuRqPJnwsjvhDhx8IOJsd7zywY8tmxBWBnYuPvvDpH270",
+		"name": "Layla",
+		"surname": "Crisanti",
+		"groups": [],
+		"organization_name": "logos_com",
+		"company": "Logos Communication",
+		"web": "http://www.logos-com.it/",
 		"twitter": ""
 	},
 	{
@@ -1012,7 +1018,7 @@
 		"template_levels": 1,
 		"image_full_size": 640,
 		"version": "0.1",
-		"parent_name": "base",
+		"parent_name": "base"
 	},
 	{
 		"cls_": "Theme",
