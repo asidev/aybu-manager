@@ -690,7 +690,7 @@ class Instance(Base):
                 instance_group_parent = instance.owner.organization
 
             else:
-                None
+                instance_group_parent = None
 
             instance_group = Group(name=instance.domain,
                                    parent=instance_group_parent)
