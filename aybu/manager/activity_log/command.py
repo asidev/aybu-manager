@@ -38,7 +38,7 @@ class command(Action):
 
     def run(self):
         try:
-            self.log.info("Executing %s", self.cmd)
+            self.log.info("Executing <%s>", self.cmd)
             subprocess.check_call(shlex.split(self.cmd),
                                   *self.args, **self.kwargs)
 

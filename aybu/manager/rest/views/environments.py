@@ -68,6 +68,15 @@ def delete(context, request):
     return request.submit_task(taskname, name=env.name)
 
 
+@view_config(route_name='environment', request_method='PUT',
+             request_param='action=rewrite', renderer='taskresponse')
+def rewrite(context, request):
+    env = Environment.get(request.db_session,
+                          request.matchdict['name'])
+    taskname = "environment.rewrite"
+    return request.submit_task(taskname, name=env.name)
+
+
 @view_config(route_name='environment', request_method='PUT')
 def update(context, request):
     raise NotImplementedError

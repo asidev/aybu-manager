@@ -31,3 +31,8 @@ def delete(session, task, name):
     env = Environment.get(session, name)
     env.delete()
 
+
+def rewrite(session, task, name):
+    env = Environment.get(session, name)
+    env.rewrite()
+

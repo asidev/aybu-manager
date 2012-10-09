@@ -35,6 +35,7 @@ from aybu.manager.activity_log.fs import (mkdir,
 from aybu.manager.activity_log.command import command
 from aybu.manager.activity_log.template import render
 from aybu.manager.exc import (NotSupported, OperationalError)
+from pyramid.settings import asbool
 from . base import Base
 from . validators import validate_name
 
@@ -46,7 +47,8 @@ SmtpConfig = collections.namedtuple('SmtpConfig', ['host', 'port'])
 OsConf = collections.namedtuple('OsConf', ['user', 'group'])
 ConfigDirs = collections.namedtuple('ConfigDirs',
                                     ['dir', 'uwsgi', 'nginx',
-                                     'supervisor_dir', 'supervisor_conf'])
+                                     'supervisor_dir', 'supervisor_conf',
+                                     'upstart_dir', 'upstart_conf'])
 UWSGIConf = collections.namedtuple('UWSGIConf', ['subscription_server',
                                                  'fastrouter', 'bin',
                                                  'fastrouter_stats_server',
@@ -142,13 +144,16 @@ class Environment(Base):
             raise OperationalError('Cannot delete {} as it owns instances'\
                                    .format(self))
         try:
-            session.activity_log.add(rm, self.paths.configs.supervisor_conf,
-                                     error_on_not_exists=False)
-            sup_update_cmd = self.settings.get('supervisor.update.cmd', None)
-            if sup_update_cmd:
-                session.activity_log.add(command, sup_update_cmd,
-                                         on_init=True, on_commit=True,
-                                         on_rollback=True)
+            if asbool(self.settings.get('supervisor.enabled')):
+                session.activity_log.add(rm, self.paths.configs.supervisor_conf,
+                                         error_on_not_exists=False)
+                self.update_supervisor_conf(session)
+
+            elif asbool(self.settings.get('upstart.enabled')):
+                session.activity_log.add(rm, self.paths.configs.upstart_conf,
+                                         error_on_not_exists=False)
+                self.update_upstart(session, "stop")
+
             session.activity_log.add(rmtree,
                                      self.paths.configs.uwsgi,
                                      error_on_not_exists=False)
@@ -174,15 +179,25 @@ class Environment(Base):
             raise DetachedInstanceError()
 
         self.log.info("Rewriting configuration for %s", self)
-        pfx = self.settings.get('supervisor.command.prefix', 'aybu')
 
-        session.activity_log.add(render, 'supervisor.conf.mako',
-                         self.paths.configs.supervisor_conf,
-                         env=self, uwsgi=self.uwsgi_config,
-                         program_prefix=pfx,
-                         skip_rollback=skip_rollback,
-                         deferred=deferred)
-        self.update_supervisor_conf(session)
+        if asbool(self.settings.get('supervisor.enabled')):
+            pfx = self.settings.get('supervisor.command.prefix', 'aybu')
+            session.activity_log.add(render, 'supervisor.conf.mako',
+                             self.paths.configs.supervisor_conf,
+                             env=self, uwsgi=self.uwsgi_config,
+                             program_prefix=pfx,
+                             skip_rollback=skip_rollback,
+                             deferred=deferred)
+            self.update_supervisor_conf(session)
+
+        elif asbool(self.settings.get('upstart.enabled')):
+            self.log.info("rendering %s", self.paths.configs.upstart_conf)
+            session.activity_log.add(render, 'upstart.conf.mako',
+                                     self.paths.configs.upstart_conf,
+                                     env=self, uwsgi=self.uwsgi_config,
+                                     skip_rollback=skip_rollback,
+                                     deferred=deferred)
+            self.update_upstart(session, "start")
 
     @classmethod
     def update_supervisor_conf(cls, session):
@@ -191,6 +206,15 @@ class Environment(Base):
         if sup_update_cmd:
             session.activity_log.add(command, sup_update_cmd,
                                      on_commit=True, on_rollback=True)
+
+    def update_upstart(self, session, action="start"):
+        us_cmd = self.settings['upstart.{}.cmd'.format(action)]
+        us_pfx = self.settings.get('upstart.prefix', 'aybu')
+        if us_cmd:
+            us_cmd = "{} {}_{}".format(us_cmd, us_pfx, self.name)
+            session.activity_log.add(command, us_cmd,
+                                     on_init=True, on_commit=True,
+                                     on_rollback=True)
 
     def check_initialized(self):
         if not hasattr(self, 'settings') or not self.settings:
@@ -271,12 +295,21 @@ class Environment(Base):
         migrations = os.path.realpath(
             pkg_resources.resource_filename('aybu.core.models', 'migrations'))
 
+        us_pfx = self.settings.get('upstart.prefix', 'aybu')
+
         configs = ConfigDirs(uwsgi=join(c['configs.uwsgi'], self.name),
                              nginx=c['configs.nginx'],
                              supervisor_dir=c['configs.supervisor'],
                              supervisor_conf=join(c['configs.supervisor'],
                                                   "{}.conf".format(self.name)),
-                             dir=c['configs'])
+                             dir=c['configs'],
+                             upstart_dir=join(c['configs.upstart']),
+                             upstart_conf=join(c['configs.upstart'],
+                                               "{}_{}.conf".format(
+                                                    us_pfx,
+                                                    self.name)
+                                              )
+                            )
 
         log = join(c['logs'], "{}_emperor.log".format(self.name))
         self._paths = Paths(root=c['root'],

@@ -38,6 +38,7 @@ paths.configs = %(paths.root)s/configs
 paths.configs.uwsgi = %(paths.configs)s/uwsgi
 paths.configs.nginx = %(paths.configs)s/nginx
 paths.configs.supervisor = %(paths.configs)s/supervisor
+paths.configs.upstart = /etc/init
 paths.sites = %(paths.root)s/sites
 paths.archives = %(paths.root)s/archives
 paths.cgroups = /sys/fs/cgroup
@@ -68,12 +69,20 @@ uwsgi.bin = /usr/local/bin/uwsgi
 
 nginx.port = 8080
 nginx.restart.cmd = sudo /etc/init.d/nginx restart
-supervisor.update.cmd = /usr/bin/supervisorctl update
-supervisor.command.prefix = aybu
 proxy.address = 127.0.0.1
 proxy.port = 80
 # True or False: must be python bool literals
 proxy.enabled = True
+
+supervisor.enabled = true
+supervisor.update.cmd = /usr/bin/supervisorctl update
+supervisor.command.prefix = aybu
+
+upstart.enabled = false
+upstart.prefix = aybu
+upstart.start.cmd = sudo initctl start
+upstart.stop.cmd = sudo initctl stop
+upstart.restart.cmd = sudo initctl restart
 
 
 [pipeline:main]
