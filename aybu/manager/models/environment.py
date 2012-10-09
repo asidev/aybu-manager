@@ -125,7 +125,7 @@ class Environment(Base):
             for path in sorted(paths):
                 session.activity_log.add(mkdir, path, error_on_exists=False)
 
-            env.rewrite(skip_rollback=False, deferred=False)
+            env.rewrite(skip_rollback=False, deferred=False, start=True)
 
         except:
             session.rollback()
@@ -172,7 +172,8 @@ class Environment(Base):
                     .filter(self.__class__.name == self.name)\
                     .delete()
 
-    def rewrite(self, session=None, skip_rollback=True, deferred=True):
+    def rewrite(self, session=None, skip_rollback=True, deferred=True,
+                start=False):
         self.check_initialized()
         session = session or Session.object_session(self)
         if not session:
@@ -197,7 +198,8 @@ class Environment(Base):
                                      env=self, uwsgi=self.uwsgi_config,
                                      skip_rollback=skip_rollback,
                                      deferred=deferred)
-            self.update_upstart(session, "start")
+            action = "start" if start else "restart"
+            self.update_upstart(session, action)
 
     @classmethod
     def update_supervisor_conf(cls, session):
