@@ -1,5 +1,5 @@
 description "Aybu Environment ${env.name}"
-start on runlevel [2345]
+start on stopped aybu_create_cgroups
 stop on runlevel [06]
 setuid ${env.os_config.user}
 setgid ${env.os_config.group}

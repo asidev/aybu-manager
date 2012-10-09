@@ -212,8 +212,7 @@ class Environment(Base):
         us_pfx = self.settings.get('upstart.prefix', 'aybu')
         if us_cmd:
             us_cmd = "{} {}_{}".format(us_cmd, us_pfx, self.name)
-            session.activity_log.add(command, us_cmd,
-                                     on_init=True, on_commit=True,
+            session.activity_log.add(command, us_cmd, on_commit=True,
                                      on_rollback=True)
 
     def check_initialized(self):
