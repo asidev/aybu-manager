@@ -19,7 +19,7 @@ setup(name='aybu-manager',
       zip_safe=False,
       install_requires=(
           'alembic>=0.2',
-          'SQLAlchemy>=0.7',
+          'SQLAlchemy<0.8a',
           'pyramid',
           'pyzmq',
           'redis',
