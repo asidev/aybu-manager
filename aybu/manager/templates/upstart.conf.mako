@@ -1,4 +1,4 @@
-description "Aybu Environment ${env.name}"
+description "Aybu Environment: ${env.name}"
 start on stopped aybu_create_cgroups
 stop on runlevel [06]
 setuid ${env.os_config.user}

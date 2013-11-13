@@ -211,7 +211,7 @@ class Environment(Base):
 
     def update_upstart(self, session, action="start"):
         us_cmd = self.settings['upstart.{}.cmd'.format(action)]
-        us_pfx = self.settings.get('upstart.prefix', 'aybu')
+        us_pfx = self.settings.get('upstart.prefix', 'aybu_env')
         if us_cmd:
             us_cmd = "{} {}_{}".format(us_cmd, us_pfx, self.name)
             session.activity_log.add(command, us_cmd, on_commit=True,
@@ -296,7 +296,7 @@ class Environment(Base):
         migrations = os.path.realpath(
             pkg_resources.resource_filename('aybu.core.models', 'migrations'))
 
-        us_pfx = self.settings.get('upstart.prefix', 'aybu')
+        us_pfx = self.settings.get('upstart.prefix', 'aybu_env')
 
         configs = ConfigDirs(uwsgi=join(c['configs.uwsgi'], self.name),
                              nginx=c['configs.nginx'],
